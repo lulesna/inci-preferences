@@ -1,10 +1,33 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
-    test
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block title %}Analizator Kosmetyków{% endblock %}
+
+{% block content %}
+    <section class="main-section">
+        <h2>Wyszukaj kosmetyk</h2>
+        <form class="search-form" action="/search" method="GET">
+            <div class="search-container">
+                <input
+                    type="text"
+                    name="q"
+                    class="search-input"
+                    placeholder="Wpisz nazwę kosmetyku..."
+                    required
+                >
+                <button type="submit" class="search-btn">
+                    <span>Szukaj</span>
+                </button>
+            </div>
+        </form>
+    </section>
+
+    <section class="info-section">
+        <h2>Jak to działa?</h2>
+        <ol class="steps-list">
+            <li>Wyszukaj kosmetyk i sprawdź jego skład</li>
+            <li>Po założeniu konta dostosuj jakie składniki ci służą, a których chcesz unikać</li>
+            <li>Dodaj konkretny kosmetyk i jego skład</li>
+            <li>Wyszukuj kosmetyki po kategoriach</li>
+        </ol>
+    </section>
+{% endblock %}
