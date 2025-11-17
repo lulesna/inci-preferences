@@ -46,7 +46,7 @@
 
 :root {
     --main-green: #82A284;
-    --dark-green: #446A46;
+    --dark-green: rgb(68, 106, 70);
     --main-pink: #E4AEC5;
     --light-pink: #FFC4DD;
 
@@ -129,13 +129,12 @@ nav ul li a:hover {
     display: inline-block;
     font-weight: bold;
     transition: all 0.3s;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 6px rgba(79, 120, 86, 0.3);
 }
 
 .login-btn:hover {
     background-color: var(--light-pink);
     color: var(--main-green);
-    transform: translateY(-2px);
     box-shadow: 0 6px 12px rgba(237, 174, 220, 0.56);
 }
 
