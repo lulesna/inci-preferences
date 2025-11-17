@@ -4,22 +4,66 @@
     box-sizing: border-box;
 }
 
+
+
+@font-face {
+  font-family: 'KineksRound';
+  src: url('/static/fonts/KineksRound-Light.woff2') format('woff2'),
+       url('/static/fonts/KineksRound-Light.woff') format('woff');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'KineksRound';
+  src: url('/static/fonts/KineksRound-Regular.woff2') format('woff2'),
+       url('/static/fonts/KineksRound-Regular.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'KineksRound';
+  src: url('/static/fonts/KineksRound-Medium.woff2') format('woff2'),
+       url('/static/fonts/KineksRound-Medium.woff') format('woff');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'KineksRound';
+  src: url('/static/fonts/KineksRound-Bold.woff2') format('woff2'),
+       url('/static/fonts/KineksRound-Bold.woff') format('woff');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+
+
 :root {
-    --main-green: #a4e4c9;
-    --dark-green: #42a582;
+    --main-green: #82A284;
+    --dark-green: #446A46;
+    --main-pink: #E4AEC5;
+    --light-pink: #FFC4DD;
+
     --dark-mint: rgba(55, 126, 110, 0.97);
-    --main-pink: #edaedc;
-    --accent-pink: #dd73c8;
+    --accent-pink: #d878c5;
     --accent-mint: #bfefe9;
     --accent-dark: #c54ea3;
     --accent-green: #71dd99;
-    --text: #2f3332;
+    --text: #55716a;
+    --gradient-pink: linear-gradient(135deg, var(--main-pink) 0%, var(--light-pink) 100%);
 }
 
 body {
-    font-family: Arial, sans-serif;
+    font-family: 'KineksRound', sans-serif;
+    font-weight: 400;
     line-height: 1.6;
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    background: linear-gradient(135deg, rgba(253, 245, 248, 0.5) 0%, rgba(147, 181, 149, 0.46) 100%);
     min-height: 100vh;
 }
 
@@ -48,10 +92,9 @@ nav {
 
 nav h1 {
     font-size: 24px;
-    color: var(--dark-mint);
-    font-weight: bold;
-    font-family: 'Consolas', 'Menlo', 'DejaVu Sans Mono', 'Bitstream Vera Sans Mono', monospace;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+    color: var(--dark-green);
+    font-weight: 700;
+    font-family: 'KineksRound', sans-serif;
 }
 
 nav ul {
@@ -62,23 +105,22 @@ nav ul {
 }
 
 nav ul li a {
-    color: var(--text);
+    color: var(--dark-green);
     text-decoration: none;
     padding: 8px 16px;
     transition: all 0.3s;
     border-radius: 8px;
-    font-weight: 500;
+    font-weight: 700;
 }
 
 nav ul li a:hover {
-    background-color: var(--main-green);
-    color: white;
+    color: var(--main-pink);
     transform: translateY(-2px);
 }
 
 .login-btn {
     background-color: var(--main-green);
-    color: var(--text);
+    color: white;
     border: none;
     padding: 10px 24px;
     border-radius: 50px;
@@ -91,9 +133,10 @@ nav ul li a:hover {
 }
 
 .login-btn:hover {
-    background-color: var(--accent-green);
+    background-color: var(--light-pink);
+    color: var(--main-green);
     transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 6px 12px rgba(237, 174, 220, 0.56);
 }
 
 main {
@@ -105,19 +148,17 @@ main {
 
 
 .main-section {
-    background: linear-gradient(135deg, var(--main-pink) 0%, var(--accent-pink) 100%);
-    color: white;
+    color: var(--main-pink);
     padding: 48px 32px;
     border-radius: 12px;
     text-align: center;
-    margin-bottom: 32px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    margin-bottom: 22px;
 }
 
 .main-section h2 {
     font-size: 32px;
     margin-bottom: 16px;
-    color: white;
+    color: var(--main-pink);
 }
 
 .main-section p {
@@ -148,7 +189,7 @@ main {
     background-color: white;
     border-radius: 8px;
     position: relative;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    box-shadow: 0 2px 4px rgba(130, 162, 132, 0.75);
     color: var(--text);
 }
 
@@ -158,7 +199,7 @@ main {
     left: 16px;
     top: 50%;
     transform: translateY(-50%);
-    background-color: var(--main-green);
+    background-color: var(--main-pink);
     color: var(--text);
     width: 32px;
     height: 32px;
@@ -188,22 +229,22 @@ main {
     border: none;
     border-radius: 50px;
     outline: none;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 8px rgba(228, 174, 197, 0.65);
     transition: box-shadow 0.3s;
 }
 
 .search-input:focus {
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    box-shadow: 0 4px 12px rgb(228, 174, 197);
 }
 
 .search-input::placeholder {
-    color: var(--accent-green);
+    color: var(--main-green);
 }
 
 .search-btn {
     padding: 16px 32px;
-    background-color: var(--main-green);
-    color: var(--text);
+    background-color: var(--main-pink);
+    color: white;
     border: none;
     border-radius: 50px;
     font-size: 16px;
@@ -214,13 +255,8 @@ main {
 }
 
 .search-btn:hover {
-    background-color: var(--accent-green);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-
-.search-btn:active {
-    transform: translateY(0);
+    background-color: var(--main-green);
+    box-shadow: 0 4px 12px rgba(228, 174, 197, 0.76);
 }
 
 
