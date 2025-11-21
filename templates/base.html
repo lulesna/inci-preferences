@@ -14,10 +14,10 @@
         <nav>
             <h1>Analizator Kosmetyków</h1>
             <ul>
-                <li><a href="index.html">Strona Główna</a></li>
-                <li><a href="categories.html">Kategorie</a></li>
-                <li><a href="addcosmetic.html">Dodaj kosmetyk</a></li>
-                <li><a href="login.html" class="login-btn">Zaloguj</a></li>
+                <li><a href="{% url 'index' %}">Strona Główna</a></li>
+                <li><a href="{% url 'categories' %}">Kategorie</a></li>
+                <li><a href="{% url 'addcosmetic' %}">Dodaj kosmetyk</a></li>
+                <li><a href="{% url 'login' %}" class="login-btn">Zaloguj</a></li>
             </ul>
         </nav>
     </header>

@@ -21,6 +21,9 @@ from . import views
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', views.index, name='index'),
+    path('categories/', views.categories, name='categories'),
+    path('addcosmetic/', views.add_cosmetic, name='addcosmetic'),
+    path('login/', views.login_view, name='login'),
     path('api/', include('apps.ingredients.urls')),
     path('api/', include('apps.cosmetics.urls')),
 ]
