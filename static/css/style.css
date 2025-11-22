@@ -92,7 +92,7 @@ nav {
 
 nav h1 a {
     font-size: 24px;
-    color: var(--dark-green);
+    color: var(--main-pink);
     font-weight: 700;
     font-family: 'KineksRound', sans-serif;
     text-decoration: none;
@@ -101,8 +101,7 @@ nav h1 a {
 }
 
 nav h1 a:hover {
-    color: var(--main-pink);
-    transform: translateY(-2px);
+    color: var(--dark-green);
 }
 
 nav ul {
