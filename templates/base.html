@@ -5,7 +5,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Analizator Kosmetyków{% endblock %}</title>
-    {% load static %}
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
     {% block extra_css %}{% endblock %}
 </head>
@@ -17,12 +16,29 @@
                 <li><a href="{% url 'index' %}">Strona Główna</a></li>
                 <li><a href="{% url 'categories' %}">Kategorie</a></li>
                 <li><a href="{% url 'addcosmetic' %}">Dodaj kosmetyk</a></li>
-                <li><a href="{% url 'login' %}" class="login-btn">Zaloguj</a></li>
+
+                {% if user.is_authenticated %}
+                    <li><span class="user-greeting">Witaj, {{ user.username }}!</span></li>
+                    <li><a href="{% url 'users:logout' %}" class="logout-btn">Wyloguj</a></li>
+                {% else %}
+                    <li><a href="{% url 'users:login' %}" class="login-btn">Zaloguj</a></li>
+                    <li><a href="{% url 'users:register' %}" class="register-btn">Zarejestruj</a></li>
+                {% endif %}
             </ul>
         </nav>
     </header>
 
     <main>
+        {% if messages %}
+            <div class="messages-container">
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
         {% block content %}
         {% endblock %}
     </main>

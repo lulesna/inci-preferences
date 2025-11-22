@@ -11,4 +11,4 @@ def add_cosmetic(request):
     return render(request, 'addcosmetic.html')
 
 def login_view(request):
-    return render(request, 'login.html')
+    return render(request, 'users/login.html')

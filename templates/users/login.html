@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block title %}Logowanie - Analizator Kosmetyków{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="auth-form">
+        <h2>Zaloguj się</h2>
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="username">Nazwa użytkownika:</label>
+                <input type="text" name="username" id="username" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Hasło:</label>
+                <input type="password" name="password" id="password" required>
+            </div>
+            <button type="submit" class="btn-primary">Zaloguj</button>
+        </form>
+
+        <p class="auth-link">
+            Nie masz konta? <a href="{% url 'users:register' %}">Zarejestruj się tutaj</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

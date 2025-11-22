@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block title %}Rejestracja - Analizator Kosmetyków{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="auth-form">
+        <h2>Zarejestruj się</h2>
+
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit" class="btn-primary">Zarejestruj</button>
+        </form>
+
+        <p class="auth-link">
+            Masz już konto? <a href="{% url 'users:login' %}">Zaloguj się tutaj</a>
+        </p>
+    </div>
+</div>
+{% endblock %}
