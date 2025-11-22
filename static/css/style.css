@@ -90,11 +90,19 @@ nav {
     padding: 0 20px;
 }
 
-nav h1 {
+nav h1 a {
     font-size: 24px;
     color: var(--dark-green);
     font-weight: 700;
     font-family: 'KineksRound', sans-serif;
+    text-decoration: none;
+    transition: all 0.3s;
+    display: inline-block;
+}
+
+nav h1 a:hover {
+    color: var(--main-pink);
+    transform: translateY(-2px);
 }
 
 nav ul {

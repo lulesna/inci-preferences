@@ -11,9 +11,8 @@
 <body>
     <header>
         <nav>
-            <h1>Analizator Kosmetyków</h1>
+            <h1><a href="{% url 'index' %}">Analizator Kosmetyków</a></h1>
             <ul>
-                <li><a href="{% url 'index' %}">Strona Główna</a></li>
                 <li><a href="{% url 'categories' %}">Kategorie</a></li>
                 <li><a href="{% url 'addcosmetic' %}">Dodaj kosmetyk</a></li>
 
@@ -22,7 +21,6 @@
                     <li><a href="{% url 'users:logout' %}" class="logout-btn">Wyloguj</a></li>
                 {% else %}
                     <li><a href="{% url 'users:login' %}" class="login-btn">Zaloguj</a></li>
-                    <li><a href="{% url 'users:register' %}" class="register-btn">Zarejestruj</a></li>
                 {% endif %}
             </ul>
         </nav>
