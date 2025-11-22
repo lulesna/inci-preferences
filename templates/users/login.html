@@ -1,6 +1,11 @@
 {% extends 'base.html' %}
+{% load static %}
 
-{% block title %}Logowanie - Analizator Kosmetyków{% endblock %}
+{% block title %}Logowanie{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/auth.css' %}">
+{% endblock %}
 
 {% block content %}
 <div class="container">

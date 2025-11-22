@@ -1,0 +1,230 @@
+.container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: calc(100vh - 200px);
+    padding: 10px;
+}
+
+.auth-form {
+    background: rgba(253, 245, 249, 0.49);
+    backdrop-filter: blur(10px);
+    padding: 40px;
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(130, 162, 132, 0.3);
+    width: 100%;
+    max-width: 450px;
+    border: 1px solid rgba(255, 255, 255, 0.8);
+}
+
+.auth-form h2 {
+    color: var(--main-pink);
+    text-align: center;
+    margin-bottom: 30px;
+    font-size: 28px;
+    font-weight: 700;
+}
+
+.auth-form form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-group label {
+    color: var(--text);
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.form-group input {
+    padding: 12px 16px;
+    border: 2px solid rgba(130, 162, 132, 0.3);
+    border-radius: 12px;
+    font-size: 16px;
+    font-family: 'KineksRound', sans-serif;
+    transition: all 0.3s;
+    background: white;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: var(--main-pink);
+    box-shadow: 0 0 0 3px rgba(228, 174, 197, 0.2);
+}
+
+
+.auth-form form p {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-bottom: 10px;
+}
+
+.auth-form form p label {
+    color: var(--text);
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.auth-form form p input {
+    padding: 12px 16px;
+    border: 2px solid rgba(130, 162, 132, 0.3);
+    border-radius: 12px;
+    font-size: 16px;
+    font-family: 'KineksRound', sans-serif;
+    transition: all 0.3s;
+    background: white;
+}
+
+.auth-form form p input:focus {
+    outline: none;
+    border-color: var(--main-pink);
+    box-shadow: 0 0 0 3px rgba(228, 174, 197, 0.2);
+}
+
+
+.auth-form form ul.helptext {
+    list-style: none;
+    padding-left: 0;
+    margin: 4px 0 0 0;
+    font-size: 8px;
+}
+
+.auth-form form ul.helptext li {
+    padding: 1px 0;
+    color: var(--text);
+    opacity: 0.6;
+    line-height: 1.2;
+    font-size: 8px;
+}
+
+.auth-form form ul.helptext li:before {
+    content: "• ";
+    color: var(--main-green);
+    margin-right: 4px;
+}
+
+.auth-form form ul.helptext {
+    list-style: none;
+    padding-left: 0;
+    margin: 4px 0 0 0;
+    font-size: 9px;
+}
+
+.auth-form form ul.helptext li {
+    padding: 1px 0;
+    color: var(--text);
+    opacity: 0.6;
+    line-height: 1.2;
+    font-size: 9px;
+}
+
+.auth-form form ul.helptext li:before {
+    content: "• ";
+    color: var(--main-green);
+    margin-right: 4px;
+}
+
+
+.auth-form form .helptext {
+    font-size: 12px;
+    color: var(--text);
+    opacity: 0.6;
+    margin-top: 2px;
+    line-height: 1.2;
+    display: block;
+}
+
+.auth-form form .errorlist {
+    list-style: none;
+    padding: 8px 12px;
+    background: var(--gradient-pink);
+    border-left: 3px solid var(--light-pink);
+    border-radius: 6px;
+    margin-top: 8px;
+}
+
+.auth-form form .errorlist li {
+    color: white;
+    font-size: 14px;
+}
+
+.btn-primary {
+    padding: 14px 32px;
+    background: var(--gradient-pink);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    font-size: 16px;
+    font-weight: 700;
+    font-family: 'KineksRound', sans-serif;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 4px 12px rgba(228, 174, 197, 0.4);
+    margin-top: 10px;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(228, 174, 197, 0.6);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+}
+
+.auth-link {
+    text-align: center;
+    margin-top: 24px;
+    color: var(--text);
+    font-size: 14px;
+}
+
+.auth-link a {
+    color: var(--main-pink);
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.3s;
+}
+
+.auth-link a:hover {
+    color: var(--dark-green);
+}
+
+
+
+@media (max-width: 768px) {
+    .auth-form {
+        padding: 30px 20px;
+    }
+
+    .auth-form h2 {
+        font-size: 24px;
+    }
+
+    .form-group input,
+    .auth-form form p input {
+        font-size: 14px;
+        padding: 10px 14px;
+    }
+
+    .btn-primary {
+        padding: 12px 24px;
+        font-size: 14px;
+    }
+
+    .auth-form form .helptext {
+        font-size: 10px;
+    }
+
+    .password-requirements {
+        font-size: 9px;
+    }
+}
