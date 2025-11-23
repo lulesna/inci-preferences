@@ -1,33 +1,33 @@
 {% extends "base.html" %}
 
-{% block title %}Analizator Kosmetyków{% endblock %}
+{% block title %}INCI Preferences{% endblock %}
 
 {% block content %}
     <section class="main-section">
-        <h2>Wyszukaj kosmetyk</h2>
+        <h2>Search for cosmetics</h2>
         <form class="search-form" action="/search" method="GET">
             <div class="search-container">
                 <input
                     type="text"
                     name="q"
                     class="search-input"
-                    placeholder="Wpisz nazwę..."
+                    placeholder="Search here..."
                     required
                 >
                 <button type="submit" class="search-btn">
-                    <span>Szukaj</span>
+                    <span>Search</span>
                 </button>
             </div>
         </form>
     </section>
 
     <section class="info-section">
-        <h2>Jak to działa?</h2>
+        <h2>How does it work?</h2>
         <ol class="steps-list">
-            <li>Wyszukaj kosmetyk i sprawdź jego skład</li>
-            <li>Po założeniu konta dostosuj jakie składniki Ci służą, a których chcesz unikać</li>
-            <li>Dodaj konkretny kosmetyk i jego skład</li>
-            <li>Wyszukuj kosmetyki po kategoriach</li>
+            <li>Search for a cosmetic and check its ingredients</li>
+            <li>After login in choose which ingredients suit you and which you wish to avoid</li>
+            <li>Add specific cosmetic and its ingredients</li>
+            <li>Look up items by categories</li>
         </ol>
     </section>
 

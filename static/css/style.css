@@ -78,7 +78,7 @@ header {
     -webkit-backdrop-filter: blur(10px);
     border-radius: 20px;
     border: 1px solid rgba(255, 255, 255, 0);
-    box-shadow: 0 8px 32px 0 rgba(61, 140, 122, 0.37);
+    box-shadow: 0 8px 32px 0 rgba(61, 140, 122, 0.32);
 }
 
 nav {
