@@ -6,7 +6,6 @@ class Cosmetic(models.Model):
         ('FACE', 'Face'),
         ('MAKEUP', 'Make-up'),
         ('BODY', 'Body'),
-        ('HANDS', 'Hands'),
     ]
 
     FACE_SUBCATEGORIES = [
@@ -55,7 +54,7 @@ class Cosmetic(models.Model):
     main_category = models.CharField(
         max_length=20,
         choices=MAIN_CATEGORIES,
-        verbose_name="Main Category (Face, Make-up, Body, Hands)"
+        verbose_name="Main Category (Face, Make-up, Body)"
     )
     subcategory = models.CharField(
         max_length=50,
