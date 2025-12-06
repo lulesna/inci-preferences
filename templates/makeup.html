@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Makeup - INCI Preferences{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/categories.css' %}">
+{% endblock %}
+
+{% block content %}
+    <section class="main-section">
+        <h2>Makeup</h2>
+        
+        <div class="categories-container">
+            <a href="#" class="category-card">
+                <img src="{% static 'images/makeup/makeup1.jpg' %}" alt="Foundation">
+                <p>Foundation</p>
+            </a>
+            
+            <a href="#" class="category-card">
+                <img src="{% static 'images/makeup/makeup2.jpg' %}" alt="Blush">
+                <p>Blush</p>
+            </a>
+            
+            <a href="#" class="category-card">
+                <img src="{% static 'images/makeup/makeup3.jpg' %}" alt="Eyeshadow">
+                <p>Eyeshadow</p>
+            </a>
+        </div>
+    </section>
+{% endblock %}

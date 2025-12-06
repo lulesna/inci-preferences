@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Skincare - INCI Preferences{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/categories.css' %}">
+{% endblock %}
+
+{% block content %}
+    <section class="main-section">
+        <h2>Skincare</h2>
+
+        <div class="categories-container">
+            <a href="#" class="category-card">
+                <img src="{% static 'images/skincare/skincare1.jpg' %}" alt="Cleansers">
+                <p>Cleansers</p>
+            </a>
+
+            <a href="#" class="category-card">
+                <img src="{% static 'images/skincare/skincare2.jpg' %}" alt="Moisturizers">
+                <p>Moisturizers</p>
+            </a>
+
+            <a href="#" class="category-card">
+                <img src="{% static 'images/skincare/skincare3.jpg' %}" alt="Serums">
+                <p>Serums</p>
+            </a>
+        </div>
+    </section>
+{% endblock %}

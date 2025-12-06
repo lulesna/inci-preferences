@@ -1,0 +1,52 @@
+:root {
+    --main-green: #82A284;
+    --dark-green: rgb(68, 106, 70);
+    --main-pink: #E4AEC5;
+    --light-pink: #FFC4DD;
+
+    --dark-mint: rgba(55, 126, 110, 0.97);
+    --accent-pink: #d878c5;
+    --accent-mint: #bfefe9;
+    --accent-dark: #c54ea3;
+    --accent-green: #71dd99;
+    --text: #55716a;
+    --gradient-pink: linear-gradient(135deg, var(--main-pink) 0%, var(--light-pink) 100%);
+}
+
+.categories-container {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    flex-wrap: wrap;
+    padding: 40px 20px;
+}
+
+.category-card {
+    width: 200px;
+    height: 200px;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 8px rgba(44, 108, 70, 0.38);
+    cursor: pointer;
+    transition: transform 0.3s ease;
+    background-color: var(--light-pink);
+    text-decoration: none;
+    color: inherit;
+}
+
+.category-card:hover {
+    background-color: rgba(44, 108, 70, 0.24);
+}
+
+.category-card img {
+    width: 100%;
+    height: 160px;
+    object-fit: cover;
+}
+
+.category-card p {
+    text-align: center;
+    margin: 10px 0;
+    font-weight: 800;
+    color: var(--main-green);
+}
