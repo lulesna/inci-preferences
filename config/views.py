@@ -8,13 +8,13 @@ def categories(request):
     return render(request, 'categories.html')
 
 def skincare(request):
-    return render(request, 'skincare.html')
+    return render(request, 'categories/skincare.html')
 
 def makeup(request):
-    return render(request, 'makeup.html')
+    return render(request, 'categories/makeup.html')
 
 def bodycare(request):
-    return render(request, 'bodycare.html')
+    return render(request, 'categories/bodycare.html')
 
 def add_cosmetic(request):
     return render(request, 'addcosmetic.html')
