@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'apps.cosmetics',
     'apps.users',
     'apps.preferences',
+    'django_filters',
 ]
 
 MIDDLEWARE = [
