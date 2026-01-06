@@ -27,6 +27,7 @@ urlpatterns = [
     path('categories/makeup', views.makeup, name='makeup'),
     path('categories/bodycare', views.bodycare, name='bodycare'),
     path('addcosmetic/', views.add_cosmetic, name='addcosmetic'),
+    path('check/', views.check_cosmetic, name='check_cosmetic'),
     path('api/', include('apps.ingredients.urls')),
     path('api/', include('apps.cosmetics.urls')),
 ]

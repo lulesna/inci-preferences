@@ -72,8 +72,8 @@ class Cosmetic(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        verbose_name = "Kosmetyk"
-        verbose_name_plural = "Kosmetyki"
+        verbose_name = "Cosmetic"
+        verbose_name_plural = "Cosmetics"
 
     def __str__(self):
         return f"{self.name} - {self.brand}"
