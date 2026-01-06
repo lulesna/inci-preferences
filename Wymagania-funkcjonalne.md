@@ -19,7 +19,7 @@ KOSMETYK:
 
 SKŁADNIKI:
 1.	Podświetlenie określonych przez użytkownika składników na określony kolor (zielony, żółty, czerwony)
-2.	Możliwość dodania (np. skopiowanego z innej strony) składu do określonego kosmetyku.
+2.	Możliwość dodania (np. skopiowanego z innej strony) składu do określonego kosmetyku. ✅
 3.	Automatycznie rozdzielanie skopiowanych składników i wyświetlanie ich podświetlonych według preferencji użytkownika.
 4.	Możliwość wyszukania kosmetyków na podstawie pożądanego składnika/składników.
 
