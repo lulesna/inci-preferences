@@ -11,9 +11,9 @@ UŻYTKOWNIK:
 7.	Możliwość dodania kosmetyku do ulubionych.
 
 KOSMETYK:
-1.	Posiada nazwę, producenta, skład oraz kategorię (np. krem do twarzy, oczyszczanie twarzy itp..).
-2.	Możliwość dodania nowego kosmetyku wraz ze składem.
-3.	Możliwość edycji, usunięcia danego kosmetyku. 
+1.	Posiada nazwę, producenta, skład oraz kategorię (np. krem do twarzy, oczyszczanie twarzy itp..). ✅
+2.	Możliwość dodania nowego kosmetyku wraz ze składem. ✅
+3.	Możliwość edycji, usunięcia danego kosmetyku. ✅
 4.	Kosmetyki będą wyświetlane u każdego użytkownika inaczej w zależności od tego jakie składniki użytkownik określi jako bezpieczne, średnio bezpieczne i niebezpieczne dla jego cery (podświetlenie zielone, żółte lub czerwone).
 5.	Możliwość wyszukania konkretnych kosmetyków po nazwie lub kategorii do której są przypisane
 
@@ -30,7 +30,7 @@ PREFERENCJE:
 
 ADMINISTRATOR:
 1.	Możliwość edycji, dodania lub usunięcia kosmetyku i/lub jego składu.
-2.	Możliwość usunięcia konta użytkownika.
-3.	Możliwość  zmiany kategorii do której jest przypisany kosmetyk.
+2.	Możliwość usunięcia konta użytkownika. ✅
+3.	Możliwość zmiany kategorii do której jest przypisany kosmetyk. ✅
 
 

@@ -68,7 +68,17 @@ class Cosmetic(models.Model):
         blank=True,
         help_text="Specific product type (only for Make-up)"
     )
-    ingredients = models.ManyToManyField(Ingredient, related_name='cosmetics', verbose_name="Ingredients")
+    ingredients = models.ManyToManyField(
+        Ingredient,
+        related_name='cosmetics',
+        verbose_name="Ingredients",
+        blank=True
+    )
+    ingredients_text = models.TextField(
+        blank=True,
+        verbose_name="Paste ingredients list",
+        help_text="Paste full INCI list (separated by commas)."
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -85,3 +95,42 @@ class Cosmetic(models.Model):
         if self.product_type:
             parts.append(self.product_type)
         return " > ".join(parts)
+
+    def parse_and_add_ingredients(self, auto_create=True):
+        if not self.ingredients_text:
+            return {'matched': [], 'not_found': []}
+
+        # potrzebne do składników typu '1,2-Hexanediol'
+        import re
+        ingredients = re.split(r',\s+', self.ingredients_text)
+
+        matched = []
+        not_found = []
+
+        for ingredient in ingredients:
+            clean_name = ingredient.strip().strip('.')
+
+            if not clean_name:
+                continue
+
+            # case-insensitive
+            try:
+                ingredient = Ingredient.objects.get(inci_name__iexact=clean_name)
+                self.ingredients.add(ingredient)
+                matched.append(ingredient.inci_name)
+            except Ingredient.DoesNotExist:
+                not_found.append(clean_name)
+                if auto_create:
+                    ingredient = Ingredient.objects.create(
+                        inci_name=clean_name,
+                        purpose='Unknown'
+                    )
+                    self.ingredients.add(ingredient)
+                    matched.append(ingredient.inci_name)
+                else:
+                    not_found.append(clean_name)
+
+        return {
+            'matched': matched,
+            'not_found': not_found
+        }
