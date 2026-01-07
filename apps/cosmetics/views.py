@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import Cosmetic
 from .serializers import CosmeticSerializer
+from ..ingredients.models import Ingredient
 
 
 def _get_safety_message(is_safe, has_unwanted, allergy_count):
@@ -112,3 +113,23 @@ class CosmeticViewSet(viewsets.ModelViewSet):
             'results': results,
             'user': request.user.username
         })
+
+    @action(detail=False, methods=['get'])
+    def by_ingredient(self, request):
+        ingredient_name = request.query_params.get('ingredient', '')
+
+        if not ingredient_name:
+            return Response({'error': 'Provide ingredient parameter'}, status=400)
+
+        try:
+            ingredient = Ingredient.objects.get(inci_name__iexact=ingredient_name)
+            cosmetics = self.queryset.filter(ingredients=ingredient)
+            serializer = self.get_serializer(cosmetics, many=True)
+
+            return Response({
+                'ingredient': ingredient.inci_name,
+                'count': cosmetics.count(),
+                'cosmetics': serializer.data
+            })
+        except Ingredient.DoesNotExist:
+            return Response({'error': 'Ingredient not found'}, status=404)

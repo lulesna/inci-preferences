@@ -33,20 +33,26 @@ class CosmeticAdmin(admin.ModelAdmin):
 
     get_ingredients_count.short_description = 'Ingredients'
 
-    def save_model(self, request, obj, form, change):
-        super().save_model(request, obj, form, change)
+    def get_ingredients_count(self, obj):
+        return obj.ingredients.count()
 
+    get_ingredients_count.short_description = 'Ingredients'
+
+    def save_related(self, request, form, formsets, change):
+        super().save_related(request, form, formsets, change)
+
+        obj = form.instance
         if obj.ingredients_text:
             result = obj.parse_and_add_ingredients(auto_create=True)
 
             if result['matched']:
                 messages.success(
                     request,
-                    f"Matched {len(result['matched'])} ingredients: {', '.join(result['matched'][:5])}{'...' if len(result['matched']) > 5 else ''}"
+                    f"Matched {len(result['matched'])} ingredients"
                 )
 
             if result['not_found']:
                 messages.warning(
                     request,
-                    f"Not found in database ({len(result['not_found'])}): {', '.join(result['not_found'][:10])}{'...' if len(result['not_found']) > 10 else ''}"
+                    f"Not found: {', '.join(result['not_found'][:5])}"
                 )
