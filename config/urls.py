@@ -30,4 +30,5 @@ urlpatterns = [
     path('check/', views.check_cosmetic, name='check_cosmetic'),
     path('api/', include('apps.ingredients.urls')),
     path('api/', include('apps.cosmetics.urls')),
+    path('api/', include('apps.preferences.urls')),
 ]
