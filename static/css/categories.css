@@ -45,13 +45,10 @@
 }
 
 .category-card p {
-    position: absolute;
     text-align: center;
     margin: 10px 0;
     font-weight: 800;
     color: var(--main-green);
-    padding: 8px 16px;
-    border-radius: 20px;
-    width: 80%;
+
 }
 
