@@ -12,22 +12,17 @@
         <h2>Makeup</h2>
         
         <div class="categories-container">
-            <a href="#" class="category-card">
+            <a href="{% url 'makeup_face' %}" class="category-card">
                 <img src="{% static 'images/makeup/face.jpg' %}" alt="Face">
                 <p>Face</p>
             </a>
 
-            <a href="#" class="category-card">
+            <a href="{% url 'makeup_eyes' %}" class="category-card">
                 <img src="{% static 'images/makeup/eyes.jpg' %}" alt="Eyes">
                 <p>Eyes</p>
             </a>
-            
-            <a href="#" class="category-card">
-                <img src="{% static 'images/makeup/cheeks.jpg' %}" alt="Cheeks">
-                <p>Cheeks</p>
-            </a>
 
-            <a href="#" class="category-card">
+            <a href="{% url 'makeup_lips' %}" class="category-card">
                 <img src="{% static 'images/makeup/lips.jpg' %}" alt="Lips">
                 <p>Lips</p>
             </a>

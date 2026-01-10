@@ -12,44 +12,29 @@
         <h2>Skincare</h2>
 
         <div class="categories-container">
-            <a href="#" class="category-card">
+            <a href="{% url 'skincare_cleanser' %}" class="category-card">
                 <img src="{% static 'images/skincare/cleanser.jpg' %}" alt="Cleanser">
                 <p>Cleanser</p>
             </a>
 
-            <a href="#" class="category-card">
+            <a href="{% url 'skincare_moisturizer' %}" class="category-card">
                 <img src="{% static 'images/skincare/moisturizer.jpg' %}" alt="Moisturizer">
                 <p>Moisturizer</p>
             </a>
 
-            <a href="#" class="category-card">
-                <img src="{% static 'images/skincare/sunscreen.jpg' %}" alt="Sunscreen">
+            <a href="{% url 'skincare_sunscreen' %}" class="category-card">
+                <img src="{% static 'images/skincare/spf.jpg' %}" alt="Sunscreen">
                 <p>Sunscreen</p>
             </a>
 
-            <a href="#" class="category-card">
-                <img src="{% static 'images/skincare/serums.jpg' %}" alt="Serum">
+            <a href="{% url 'skincare_serum' %}" class="category-card">
+                <img src="{% static 'images/skincare/serum.jpg' %}" alt="Serum">
                 <p>Serum</p>
             </a>
 
-            <a href="#" class="category-card">
-                <img src="{% static 'images/skincare/tonic.jpg' %}" alt="Tonic">
-                <p>Tonic</p>
-            </a>
-
-            <a href="#" class="category-card">
-                <img src="{% static 'images/skincare/eyecreams.jpg' %}" alt="Eyecream">
-                <p>Eye cream</p>
-            </a>
-
-            <a href="#" class="category-card">
-                <img src="{% static 'images/skincare/facemask.jpg' %}" alt="Facemask">
-                <p>Face Mask</p>
-            </a>
-
-            <a href="#" class="category-card">
-                <img src="{% static 'images/skincare/micellar.jpg' %}" alt="micellar">
-                <p>Makeup removers</p>
+            <a href="{% url 'skincare_toner' %}" class="category-card">
+                <img src="{% static 'images/skincare/toner.jpg' %}" alt="Toner">
+                <p>Toner</p>
             </a>
 
         </div>

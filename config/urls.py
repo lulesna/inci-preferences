@@ -26,6 +26,17 @@ urlpatterns = [
     path('categories/skincare', views.skincare, name='skincare'),
     path('categories/makeup', views.makeup, name='makeup'),
     path('categories/bodycare', views.bodycare, name='bodycare'),
+
+    path('categories/makeup/makeup_eyes', views.makeup_eyes, name='makeup_eyes'),
+    path('categories/makeup/makeup_face', views.makeup_face, name='makeup_face'),
+    path('categories/makeup/makeup_lips', views.makeup_lips, name='makeup_lips'),
+
+    path('categories/skincare/skincare_cleanser', views.skincare_cleanser, name='skincare_cleanser'),
+    path('categories/skincare/skincare_moisturizer', views.skincare_moisturizer, name='skincare_moisturizer'),
+    path('categories/skincare/skincare_serum', views.skincare_serum, name='skincare_serum'),
+    path('categories/skincare/skincare_sunscreen', views.skincare_sunscreen, name='skincare_sunscreen'),
+    path('categories/skincare/skincare_toner', views.skincare_toner, name='skincare_toner'),
+
     path('addcosmetic/', views.add_cosmetic, name='addcosmetic'),
     path('check/', views.check_cosmetic, name='check_cosmetic'),
     path('api/', include('apps.ingredients.urls')),
