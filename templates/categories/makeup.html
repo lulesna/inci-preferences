@@ -13,19 +13,57 @@
         
         <div class="categories-container">
             <a href="{% url 'makeup_face' %}" class="category-card">
-                <img src="{% static 'images/makeup/face.jpg' %}" alt="Face">
                 <p>Face</p>
             </a>
 
             <a href="{% url 'makeup_eyes' %}" class="category-card">
-                <img src="{% static 'images/makeup/eyes.jpg' %}" alt="Eyes">
                 <p>Eyes</p>
             </a>
 
             <a href="{% url 'makeup_lips' %}" class="category-card">
-                <img src="{% static 'images/makeup/lips.jpg' %}" alt="Lips">
                 <p>Lips</p>
             </a>
         </div>
+
+        <h3>All Makeup Products:</h3>
+        <div id="cosmetics-list">
+            <p>Loading cosmetics...</p>
+        </div>
     </section>
+
+    <script>
+    async function loadCosmetics() {
+        try {
+            const response = await fetch('/api/cosmetics/?main_category=MAKEUP');
+            const cosmetics = await response.json();
+
+            const container = document.getElementById('cosmetics-list');
+
+            if (cosmetics.length === 0) {
+                container.innerHTML = '<p>No makeup products found.</p>';
+                return;
+            }
+
+            let html = '<div>';
+            cosmetics.forEach(cosmetic => {
+                html += `
+                    <div style="border: 1px solid #ccc; padding: 10px; margin: 10px 0;">
+                        <h3>${cosmetic.name}</h3>
+                        <p><strong>Brand:</strong> ${cosmetic.brand}</p>
+                        <p><strong>Type:</strong> ${cosmetic.subcategory || 'N/A'} - ${cosmetic.product_type || 'N/A'}</p>
+                        <p><strong>Ingredients:</strong> ${cosmetic.ingredients.length}</p>
+                        <a href="/cosmetic/${cosmetic.id}/">View Details</a>
+                    </div>
+                `;
+            });
+            html += '</div>';
+
+            container.innerHTML = html;
+        } catch (error) {
+            document.getElementById('cosmetics-list').innerHTML = '<p>Error loading cosmetics</p>';
+        }
+    }
+
+    loadCosmetics();
+    </script>
 {% endblock %}

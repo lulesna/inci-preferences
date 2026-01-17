@@ -11,8 +11,43 @@
     <section class="main-section">
         <h2>Bodycare</h2>
         
-        <div class="categories-container">
-
+        <div id="cosmetics-list">
+            <p>Loading cosmetics...</p>
         </div>
     </section>
+
+    <script>
+    async function loadCosmetics() {
+        try {
+            const response = await fetch('/api/cosmetics/?main_category=BODY');
+            const cosmetics = await response.json();
+
+            const container = document.getElementById('cosmetics-list');
+
+            if (cosmetics.length === 0) {
+                container.innerHTML = '<p>No bodycare products found.</p>';
+                return;
+            }
+
+            let html = '<div class="categories-container">';
+            cosmetics.forEach(cosmetic => {
+                html += `
+                    <div class="category-card">
+                        <h3>${cosmetic.name}</h3>
+                        <p><strong>Brand:</strong> ${cosmetic.brand}</p>
+                        <p><strong>Ingredients:</strong> ${cosmetic.ingredients.length}</p>
+                        <a href="/cosmetic/${cosmetic.id}/">View Details</a>
+                    </div>
+                `;
+            });
+            html += '</div>';
+
+            container.innerHTML = html;
+        } catch (error) {
+            document.getElementById('cosmetics-list').innerHTML = '<p>Error loading cosmetics</p>';
+        }
+    }
+
+    loadCosmetics();
+    </script>
 {% endblock %}

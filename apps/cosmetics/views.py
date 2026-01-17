@@ -16,6 +16,14 @@ class CosmeticViewSet(viewsets.ModelViewSet):
     filterset_fields = ['main_category', 'subcategory', 'brand']
     search_fields = ['name', 'brand']
 
+    def perform_create(self, serializer):
+        cosmetic = serializer.save()
+
+        if 'ingredients_text' in self.request.data and self.request.data['ingredients_text']:
+            cosmetic.ingredients_text = self.request.data['ingredients_text']
+            cosmetic.save()
+            cosmetic.parse_and_add_ingredients(auto_create=True)
+
     def get_serializer_class(self):
         if self.action in ['with_colors', 'list'] and self.request.user.is_authenticated:
             return CosmeticWithSafetySerializer

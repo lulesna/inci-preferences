@@ -26,6 +26,8 @@ urlpatterns = [
     path('categories/skincare', views.skincare, name='skincare'),
     path('categories/makeup', views.makeup, name='makeup'),
     path('categories/bodycare', views.bodycare, name='bodycare'),
+    path('search/', views.search, name='search'),
+    path('cosmetic/<int:pk>/', views.cosmetic_detail, name='cosmetic_detail'),
 
     path('categories/makeup/makeup_eyes', views.makeup_eyes, name='makeup_eyes'),
     path('categories/makeup/makeup_face', views.makeup_face, name='makeup_face'),

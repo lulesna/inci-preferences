@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}Cosmetic Details - INCI Preferences{% endblock %}
+
+{% block content %}
+    <section class="main-section">
+        <div id="cosmetic-details">
+            <p>Loading cosmetic details...</p>
+        </div>
+    </section>
+
+    <script>
+    const cosmeticId = window.location.pathname.split('/').filter(Boolean).pop();
+    
+    async function loadCosmeticDetails() {
+        try {
+            const response = await fetch(`/api/cosmetics/${cosmeticId}/`);
+            const cosmetic = await response.json();
+            
+            let html = `
+                <h2>${cosmetic.name}</h2>
+                <p><strong>Brand:</strong> ${cosmetic.brand}</p>
+                <p><strong>Category:</strong> ${cosmetic.main_category}</p>
+                ${cosmetic.subcategory ? `<p><strong>Subcategory:</strong> ${cosmetic.subcategory}</p>` : ''}
+                ${cosmetic.product_type ? `<p><strong>Product Type:</strong> ${cosmetic.product_type}</p>` : ''}
+                
+                <hr>
+                
+                <h3>Ingredients (${cosmetic.ingredients.length}):</h3>
+            `;
+            
+            if (cosmetic.ingredients.length > 0) {
+                html += '<ul>';
+                cosmetic.ingredients.forEach(ing => {
+                    html += `<li><strong>${ing.inci_name}</strong>${ing.purpose ? ' - ' + ing.purpose : ''}</li>`;
+                });
+                html += '</ul>';
+            } else {
+                html += '<p>No ingredients listed.</p>';
+            }
+            
+            {% if user.is_authenticated %}
+            html += '<hr><h3>Safety Check:</h3><div id="safety-check"><p>Loading safety analysis...</p></div>';
+            {% endif %}
+            
+            document.getElementById('cosmetic-details').innerHTML = html;
+            
+            {% if user.is_authenticated %}
+            loadSafetyCheck();
+            {% endif %}
+            
+        } catch (error) {
+            document.getElementById('cosmetic-details').innerHTML = '<p>Error loading cosmetic details.</p>';
+        }
+    }
+    
+    {% if user.is_authenticated %}
+    async function loadSafetyCheck() {
+        try {
+            const response = await fetch(`/api/cosmetics/${cosmeticId}/check_safety/`);
+            const data = await response.json();
+            
+            const colorEmoji = {
+                'GREEN': '✅',
+                'YELLOW': '⚠️',
+                'RED': '🚫'
+            };
+            
+            let html = `
+                <p><strong>${colorEmoji[data.safety_color]} ${data.message}</strong></p>
+            `;
+            
+            if (data.safe_ingredients && data.safe_ingredients.length > 0) {
+                html += '<p><strong>Safe ingredients:</strong></p><ul>';
+                data.safe_ingredients.forEach(ing => {
+                    html += `<li style="color: green;">${ing}</li>`;
+                });
+                html += '</ul>';
+            }
+            
+            if (data.moderate_ingredients && data.moderate_ingredients.length > 0) {
+                html += '<p><strong>Moderate ingredients:</strong></p><ul>';
+                data.moderate_ingredients.forEach(ing => {
+                    html += `<li style="color: orange;">${ing}</li>`;
+                });
+                html += '</ul>';
+            }
+            
+            if (data.unsafe_ingredients && data.unsafe_ingredients.length > 0) {
+                html += '<p><strong>Unsafe ingredients (for you):</strong></p><ul>';
+                data.unsafe_ingredients.forEach(ing => {
+                    html += `<li style="color: red;">${ing}</li>`;
+                });
+                html += '</ul>';
+            }
+            
+            document.getElementById('safety-check').innerHTML = html;
+        } catch (error) {
+            document.getElementById('safety-check').innerHTML = '<p>Could not load safety check. Please set your preferences first.</p>';
+        }
+    }
+    {% endif %}
+    
+    loadCosmeticDetails();
+    </script>
+{% endblock %}

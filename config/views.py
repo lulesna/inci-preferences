@@ -25,7 +25,6 @@ def makeup_face(request):
 def makeup_lips(request):
     return render(request, 'categories/makeup/makeup_lips.html')
 
-
 def skincare_moisturizer(request):
     return render(request, 'categories/skincare/skincare_moisturizer.html')
 
@@ -50,3 +49,9 @@ def login_view(request):
 
 def check_cosmetic(request):
     return render(request, 'check_cosmetic.html')
+
+def search(request):
+    return render(request, 'search.html')
+
+def cosmetic_detail(request, pk):
+    return render(request, 'cosmetic_detail.html', {'cosmetic_id': pk})

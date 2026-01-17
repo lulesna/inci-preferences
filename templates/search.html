@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}Search - INCI Preferences{% endblock %}
+
+{% block content %}
+    <section class="main-section">
+        <h2>Search for cosmetics</h2>
+        
+        <form id="search-form">
+            <div>
+                <label for="search-query">Search by name or brand:</label>
+                <input type="text" id="search-query" name="q" placeholder="Enter product name or brand..." value="{{ request.GET.q }}" required>
+            </div>
+
+            <div>
+                <label for="category-filter">Filter by category (optional):</label>
+                <select id="category-filter" name="category">
+                    <option value="">All Categories</option>
+                    <option value="FACE">Face Care</option>
+                    <option value="MAKEUP">Makeup</option>
+                    <option value="BODY">Body Care</option>
+                    <option value="HANDS">Hand Care</option>
+                </select>
+            </div>
+
+            <button type="submit">Search</button>
+        </form>
+
+        <hr>
+
+        <div id="search-results">
+            <p>Enter a search term to find cosmetics</p>
+        </div>
+    </section>
+
+    <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const queryFromUrl = urlParams.get('q');
+
+    if (queryFromUrl) {
+        document.getElementById('search-query').value = queryFromUrl;
+        performSearch(queryFromUrl);
+    }
+
+    document.getElementById('search-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const query = document.getElementById('search-query').value;
+        const category = document.getElementById('category-filter').value;
+
+        performSearch(query, category);
+    });
+
+    async function performSearch(query, category = '') {
+        const resultsDiv = document.getElementById('search-results');
+        resultsDiv.innerHTML = '<p>Searching...</p>';
+
+        try {
+            let url = `/api/cosmetics/?search=${encodeURIComponent(query)}`;
+            if (category) {
+                url += `&main_category=${category}`;
+            }
+
+            const response = await fetch(url);
+            const cosmetics = await response.json();
+
+            if (cosmetics.length === 0) {
+                resultsDiv.innerHTML = '<p>No cosmetics found matching your search.</p>';
+                return;
+            }
+
+            let html = '<h3>Search Results (' + cosmetics.length + '):</h3>';
+
+            cosmetics.forEach(cosmetic => {
+                html += `
+                    <div style="border: 1px solid #ccc; padding: 15px; margin: 10px 0;">
+                        <h3>${cosmetic.name}</h3>
+                        <p><strong>Brand:</strong> ${cosmetic.brand}</p>
+                        <p><strong>Category:</strong> ${cosmetic.main_category}</p>
+                        <p><strong>Ingredients:</strong> ${cosmetic.ingredients.length}</p>
+                        <a href="/cosmetic/${cosmetic.id}/">View Full Details</a>
+                        <button onclick="viewDetails(${cosmetic.id})">Quick View Ingredients</button>
+                        <div id="details-${cosmetic.id}" style="display:none; margin-top:10px;"></div>
+                    </div>
+                `;
+            });
+
+            resultsDiv.innerHTML = html;
+        } catch (error) {
+            resultsDiv.innerHTML = '<p>Error searching cosmetics. Please try again.</p>';
+        }
+    }
+    
+    async function viewDetails(cosmeticId) {
+        const detailsDiv = document.getElementById('details-' + cosmeticId);
+        
+        if (detailsDiv.style.display === 'block') {
+            detailsDiv.style.display = 'none';
+            return;
+        }
+        
+        detailsDiv.innerHTML = '<p>Loading ingredients...</p>';
+        detailsDiv.style.display = 'block';
+        
+        try {
+            const response = await fetch(`/api/cosmetics/${cosmeticId}/`);
+            const cosmetic = await response.json();
+            
+            let html = '<h4>Ingredients:</h4><ul>';
+            cosmetic.ingredients.forEach(ing => {
+                html += `<li>${ing.inci_name}${ing.purpose ? ' - ' + ing.purpose : ''}</li>`;
+            });
+            html += '</ul>';
+            
+            detailsDiv.innerHTML = html;
+        } catch (error) {
+            detailsDiv.innerHTML = '<p>Error loading details</p>';
+        }
+    }
+    </script>
+{% endblock %}

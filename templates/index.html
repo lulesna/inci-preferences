@@ -5,7 +5,7 @@
 {% block content %}
     <section class="main-section">
         <h2>Search for cosmetics</h2>
-        <form class="search-form" action="/search" method="GET">
+        <form class="search-form" action="{% url 'search' %}" method="GET">
             <div class="search-container">
                 <input
                     type="text"

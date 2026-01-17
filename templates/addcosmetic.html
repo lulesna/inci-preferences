@@ -1,10 +1,212 @@
 {% extends "base.html" %}
 
-{% block title %}Add cosmetic INCI Preferences{% endblock %}
+{% block title %}Add cosmetic - INCI Preferences{% endblock %}
 
 {% block content %}
     <section class="main-section">
         <h2>Add new cosmetic</h2>
 
+        {% if not user.is_authenticated %}
+            <p>You must be <a href="{% url 'users:login' %}">logged in</a> to add cosmetics.</p>
+        {% else %}
+            <form id="add-cosmetic-form">
+                <div>
+                    <label for="name">Product Name:</label>
+                    <input type="text" id="name" name="name" required>
+                </div>
+
+                <div>
+                    <label for="brand">Brand:</label>
+                    <input type="text" id="brand" name="brand" required>
+                </div>
+
+                <div>
+                    <label for="main_category">Main Category:</label>
+                    <select id="main_category" name="main_category" required>
+                        <option value="">-- Select --</option>
+                        <option value="FACE">Face Care</option>
+                        <option value="MAKEUP">Makeup</option>
+                        <option value="BODY">Body Care</option>
+                        <option value="HANDS">Hand Care</option>
+                    </select>
+                </div>
+
+                <div id="subcategory-container" style="display: none;">
+                    <label for="subcategory">Subcategory:</label>
+                    <select id="subcategory" name="subcategory">
+                        <option value="">-- Select subcategory --</option>
+                    </select>
+                </div>
+
+                <div id="product-type-container" style="display: none;">
+                    <label for="product_type">Product Type:</label>
+                    <select id="product_type" name="product_type">
+                        <option value="">-- Select product type --</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="ingredients_text">Paste Ingredients List:</label>
+                    <textarea id="ingredients_text" name="ingredients_text" rows="6" placeholder="Paste full INCI list here (comma-separated)&#10;Example: Aqua, Glycerin, Niacinamide, Panthenol" required></textarea>
+                </div>
+
+                <button type="submit">Add Cosmetic</button>
+
+                <div id="result-message"></div>
+            </form>
+        {% endif %}
     </section>
+
+    <script>
+    {% if user.is_authenticated %}
+    const subcategories = {
+        'FACE': [
+            {value: 'CLEANSER', label: 'Cleanser'},
+            {value: 'TONER_SERUM', label: 'Toner & Serum'},
+            {value: 'CREAM_MOISTURIZER', label: 'Cream & Moisturizer'},
+            {value: 'SPF', label: 'SPF & Sun Protection'}
+        ],
+        'MAKEUP': [
+            {value: 'EYES', label: 'Eyes'},
+            {value: 'FACE', label: 'Face'},
+            {value: 'LIPS', label: 'Lips'},
+            {value: 'BROWS', label: 'Brows'}
+        ],
+        'BODY': [],
+        'HANDS': []
+    };
+
+    const productTypes = {
+        'EYES': [
+            {value: 'MASCARA', label: 'Mascara'},
+            {value: 'EYESHADOW', label: 'Eyeshadow'},
+            {value: 'EYELINER', label: 'Eyeliner'},
+            {value: 'EYE_PRIMER', label: 'Eye Primer'}
+        ],
+        'FACE': [
+            {value: 'FOUNDATION', label: 'Foundation'},
+            {value: 'CONCEALER', label: 'Concealer'},
+            {value: 'POWDER', label: 'Powder'},
+            {value: 'BLUSH', label: 'Blush'},
+            {value: 'BRONZER', label: 'Bronzer'},
+            {value: 'HIGHLIGHTER', label: 'Highlighter'},
+            {value: 'PRIMER', label: 'Face Primer'}
+        ],
+        'LIPS': [
+            {value: 'LIPSTICK', label: 'Lipstick'},
+            {value: 'LIP_GLOSS', label: 'Lip Gloss'},
+            {value: 'LIP_LINER', label: 'Lip Liner'},
+            {value: 'LIP_BALM', label: 'Lip Balm'}
+        ],
+        'BROWS': [
+            {value: 'BROW_PENCIL', label: 'Brow Pencil'},
+            {value: 'BROW_POMADE', label: 'Brow Pomade'},
+            {value: 'BROW_GEL', label: 'Brow Gel'}
+        ]
+    };
+
+    document.getElementById('main_category').addEventListener('change', function() {
+        const mainCategory = this.value;
+        const subcategoryContainer = document.getElementById('subcategory-container');
+        const subcategorySelect = document.getElementById('subcategory');
+        const productTypeContainer = document.getElementById('product-type-container');
+
+        subcategorySelect.innerHTML = '<option value="">-- Select subcategory --</option>';
+        productTypeContainer.style.display = 'none';
+
+        if (mainCategory && subcategories[mainCategory].length > 0) {
+            subcategoryContainer.style.display = 'block';
+
+            subcategories[mainCategory].forEach(sub => {
+                const option = document.createElement('option');
+                option.value = sub.value;
+                option.textContent = sub.label;
+                subcategorySelect.appendChild(option);
+            });
+        } else {
+            subcategoryContainer.style.display = 'none';
+        }
+    });
+
+    document.getElementById('subcategory').addEventListener('change', function() {
+        const subcategory = this.value;
+        const productTypeContainer = document.getElementById('product-type-container');
+        const productTypeSelect = document.getElementById('product_type');
+
+        productTypeSelect.innerHTML = '<option value="">-- Select product type --</option>';
+
+        if (subcategory && productTypes[subcategory]) {
+            productTypeContainer.style.display = 'block';
+
+            productTypes[subcategory].forEach(type => {
+                const option = document.createElement('option');
+                option.value = type.value;
+                option.textContent = type.label;
+                productTypeSelect.appendChild(option);
+            });
+        } else {
+            productTypeContainer.style.display = 'none';
+        }
+    });
+
+    document.getElementById('add-cosmetic-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const resultDiv = document.getElementById('result-message');
+        resultDiv.innerHTML = '<p>Adding cosmetic...</p>';
+
+        const formData = {
+            name: document.getElementById('name').value,
+            brand: document.getElementById('brand').value,
+            main_category: document.getElementById('main_category').value,
+            subcategory: document.getElementById('subcategory').value || '',
+            product_type: document.getElementById('product_type').value || '',
+            ingredients_text: document.getElementById('ingredients_text').value
+        };
+
+        try {
+            const response = await fetch('/api/cosmetics/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify(formData)
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                resultDiv.innerHTML = '<p style="color: green;">✅ Cosmetic added successfully!</p>';
+                document.getElementById('add-cosmetic-form').reset();
+                document.getElementById('subcategory-container').style.display = 'none';
+                document.getElementById('product-type-container').style.display = 'none';
+
+                setTimeout(() => {
+                    window.location.href = '/categories/';
+                }, 2000);
+            } else {
+                const error = await response.json();
+                resultDiv.innerHTML = '<p style="color: red;">❌ Error: ' + JSON.stringify(error) + '</p>';
+            }
+        } catch (error) {
+            resultDiv.innerHTML = '<p style="color: red;">❌ Error adding cosmetic. Please try again.</p>';
+        }
+    });
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    {% endif %}
+    </script>
 {% endblock %}

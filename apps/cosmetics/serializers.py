@@ -6,6 +6,7 @@ from apps.ingredients.serializers import IngredientSerializer
 class CosmeticSerializer(serializers.ModelSerializer):
     ingredients = IngredientSerializer(many=True, read_only=True)
     full_category = serializers.CharField(source='get_full_category', read_only=True)
+    ingredients_text = serializers.CharField(write_only=True, required=False, allow_blank=True)
 
     class Meta:
         model = Cosmetic
@@ -18,6 +19,7 @@ class CosmeticSerializer(serializers.ModelSerializer):
             'product_type',
             'full_category',
             'ingredients',
+            'ingredients_text',
             'created_at'
         ]
 
