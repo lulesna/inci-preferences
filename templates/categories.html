@@ -13,17 +13,23 @@
 
         <div class="categories-container">
             <a href="{% url 'skincare' %}" class="category-card">
-                <img src="{% static 'images/category-skincare.jpg' %}" alt="Skincare">
+                <div class="category-card-circle">
+                    <img src="{% static 'images/category-skincare.png' %}" alt="Skincare">
+                </div>
                 <p>Skincare</p>
             </a>
 
             <a href="{% url 'makeup' %}" class="category-card">
-                <img src="{% static 'images/category-makeup.jpg' %}" alt="Category 2">
+                <div class="category-card-circle">
+                    <img src="{% static 'images/category-makeup.png' %}" alt="Makeup">
+                </div>
                 <p>Makeup</p>
             </a>
 
             <a href="{% url 'bodycare' %}" class="category-card">
-                <img src="{% static 'images/category-bodycare.jpg' %}" alt="Category 3">
+                <div class="category-card-circle">
+                    <img src="{% static 'images/category-bodycare.png' %}" alt="Bodycare">
+                </div>
                 <p>Bodycare</p>
             </a>
         </div>

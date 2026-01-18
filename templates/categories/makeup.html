@@ -10,22 +10,31 @@
 {% block content %}
     <section class="main-section">
         <h2>Makeup</h2>
-        
+
         <div class="categories-container">
             <a href="{% url 'makeup_face' %}" class="category-card">
+                <div class="category-card-circle">
+                    <img src="{% static 'images/makeup-face.png' %}" alt="Face">
+                </div>
                 <p>Face</p>
             </a>
 
             <a href="{% url 'makeup_eyes' %}" class="category-card">
+                <div class="category-card-circle">
+                    <img src="{% static 'images/makeup-eyes.png' %}" alt="Eyes">
+                </div>
                 <p>Eyes</p>
             </a>
 
             <a href="{% url 'makeup_lips' %}" class="category-card">
+                <div class="category-card-circle">
+                    <img src="{% static 'images/makeup-lips.png' %}" alt="Lips">
+                </div>
                 <p>Lips</p>
             </a>
         </div>
 
-        <h3>All Makeup Products:</h3>
+        <h3 class="section-title">All Makeup Products</h3>
         <div id="cosmetics-list">
             <p>Loading cosmetics...</p>
         </div>
@@ -44,15 +53,17 @@
                 return;
             }
 
-            let html = '<div>';
+            let html = '<div class="products-grid">';
             cosmetics.forEach(cosmetic => {
                 html += `
-                    <div style="border: 1px solid #ccc; padding: 10px; margin: 10px 0;">
+                    <div class="product-card">
                         <h3>${cosmetic.name}</h3>
-                        <p><strong>Brand:</strong> ${cosmetic.brand}</p>
-                        <p><strong>Type:</strong> ${cosmetic.subcategory || 'N/A'} - ${cosmetic.product_type || 'N/A'}</p>
-                        <p><strong>Ingredients:</strong> ${cosmetic.ingredients.length}</p>
-                        <a href="/cosmetic/${cosmetic.id}/">View Details</a>
+                        <div class="product-info">
+                            <p><strong>Brand:</strong> ${cosmetic.brand}</p>
+                            <p><strong>Type:</strong> ${cosmetic.subcategory || 'N/A'} - ${cosmetic.product_type || 'N/A'}</p>
+                            <p><strong>Ingredients:</strong> ${cosmetic.ingredients.length}</p>
+                        </div>
+                        <a href="/cosmetic/${cosmetic.id}/" class="view-details-btn">View Details</a>
                     </div>
                 `;
             });
@@ -60,6 +71,7 @@
 
             container.innerHTML = html;
         } catch (error) {
+            console.error('Error loading cosmetics:', error);
             document.getElementById('cosmetics-list').innerHTML = '<p>Error loading cosmetics</p>';
         }
     }

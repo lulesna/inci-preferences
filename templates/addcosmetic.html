@@ -1,6 +1,16 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Add cosmetic - INCI Preferences{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-section {
+        max-width: 700px;
+        margin: 0 auto;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
     <section class="main-section">
@@ -9,51 +19,53 @@
         {% if not user.is_authenticated %}
             <p>You must be <a href="{% url 'users:login' %}">logged in</a> to add cosmetics.</p>
         {% else %}
-            <form id="add-cosmetic-form">
-                <div>
-                    <label for="name">Product Name:</label>
-                    <input type="text" id="name" name="name" required>
-                </div>
+            <div class="form-section">
+                <form id="add-cosmetic-form">
+                    <div>
+                        <label for="name">Product Name:</label>
+                        <input type="text" id="name" name="name" required placeholder="e.g., Hydrating Face Cream">
+                    </div>
 
-                <div>
-                    <label for="brand">Brand:</label>
-                    <input type="text" id="brand" name="brand" required>
-                </div>
+                    <div>
+                        <label for="brand">Brand:</label>
+                        <input type="text" id="brand" name="brand" required placeholder="e.g., CeraVe">
+                    </div>
 
-                <div>
-                    <label for="main_category">Main Category:</label>
-                    <select id="main_category" name="main_category" required>
-                        <option value="">-- Select --</option>
-                        <option value="FACE">Face Care</option>
-                        <option value="MAKEUP">Makeup</option>
-                        <option value="BODY">Body Care</option>
-                        <option value="HANDS">Hand Care</option>
-                    </select>
-                </div>
+                    <div>
+                        <label for="main_category">Main Category:</label>
+                        <select id="main_category" name="main_category" required>
+                            <option value="">-- Select Category --</option>
+                            <option value="FACE">Face Care</option>
+                            <option value="MAKEUP">Makeup</option>
+                            <option value="BODY">Body Care</option>
+                            <option value="HANDS">Hand Care</option>
+                        </select>
+                    </div>
 
-                <div id="subcategory-container" style="display: none;">
-                    <label for="subcategory">Subcategory:</label>
-                    <select id="subcategory" name="subcategory">
-                        <option value="">-- Select subcategory --</option>
-                    </select>
-                </div>
+                    <div id="subcategory-container" style="display: none;">
+                        <label for="subcategory">Subcategory:</label>
+                        <select id="subcategory" name="subcategory">
+                            <option value="">-- Select subcategory --</option>
+                        </select>
+                    </div>
 
-                <div id="product-type-container" style="display: none;">
-                    <label for="product_type">Product Type:</label>
-                    <select id="product_type" name="product_type">
-                        <option value="">-- Select product type --</option>
-                    </select>
-                </div>
+                    <div id="product-type-container" style="display: none;">
+                        <label for="product_type">Product Type:</label>
+                        <select id="product_type" name="product_type">
+                            <option value="">-- Select product type --</option>
+                        </select>
+                    </div>
 
-                <div>
-                    <label for="ingredients_text">Paste Ingredients List:</label>
-                    <textarea id="ingredients_text" name="ingredients_text" rows="6" placeholder="Paste full INCI list here (comma-separated)&#10;Example: Aqua, Glycerin, Niacinamide, Panthenol" required></textarea>
-                </div>
+                    <div>
+                        <label for="ingredients_text">Paste Ingredients List:</label>
+                        <textarea id="ingredients_text" name="ingredients_text" rows="6" placeholder="Paste full INCI list here (comma-separated)&#10;Example: Aqua, Glycerin, Niacinamide, Panthenol" required></textarea>
+                    </div>
 
-                <button type="submit">Add Cosmetic</button>
+                    <button type="submit">Add Cosmetic</button>
 
-                <div id="result-message"></div>
-            </form>
+                    <div id="result-message"></div>
+                </form>
+            </div>
         {% endif %}
     </section>
 
@@ -153,7 +165,7 @@
         e.preventDefault();
 
         const resultDiv = document.getElementById('result-message');
-        resultDiv.innerHTML = '<p>Adding cosmetic...</p>';
+        resultDiv.innerHTML = '<p style="color: var(--text);">Adding cosmetic...</p>';
 
         const formData = {
             name: document.getElementById('name').value,
@@ -176,7 +188,7 @@
 
             if (response.ok) {
                 const data = await response.json();
-                resultDiv.innerHTML = '<p style="color: green;">✅ Cosmetic added successfully!</p>';
+                resultDiv.innerHTML = '<p style="color: var(--accent-green); font-weight: 700;">✅ Cosmetic added successfully!</p>';
                 document.getElementById('add-cosmetic-form').reset();
                 document.getElementById('subcategory-container').style.display = 'none';
                 document.getElementById('product-type-container').style.display = 'none';
@@ -186,10 +198,10 @@
                 }, 2000);
             } else {
                 const error = await response.json();
-                resultDiv.innerHTML = '<p style="color: red;">❌ Error: ' + JSON.stringify(error) + '</p>';
+                resultDiv.innerHTML = '<p style="color: var(--accent-dark); font-weight: 700;">❌ Error: ' + JSON.stringify(error) + '</p>';
             }
         } catch (error) {
-            resultDiv.innerHTML = '<p style="color: red;">❌ Error adding cosmetic. Please try again.</p>';
+            resultDiv.innerHTML = '<p style="color: var(--accent-dark); font-weight: 700;">❌ Error adding cosmetic. Please try again.</p>';
         }
     });
 

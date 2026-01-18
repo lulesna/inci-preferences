@@ -13,27 +13,42 @@
 
         <div class="categories-container">
             <a href="{% url 'skincare_cleanser' %}" class="category-card">
+                <div class="category-card-circle">
+                    <img src="{% static 'images/skincare-cleanser.png' %}" alt="Cleanser">
+                </div>
                 <p>Cleanser</p>
             </a>
 
             <a href="{% url 'skincare_moisturizer' %}" class="category-card">
+                <div class="category-card-circle">
+                    <img src="{% static 'images/skincare-moisturizer.png' %}" alt="Moisturizer">
+                </div>
                 <p>Moisturizer</p>
             </a>
 
             <a href="{% url 'skincare_sunscreen' %}" class="category-card">
+                <div class="category-card-circle">
+                    <img src="{% static 'images/skincare-sunscreen.png' %}" alt="Sunscreen">
+                </div>
                 <p>Sunscreen</p>
             </a>
 
             <a href="{% url 'skincare_serum' %}" class="category-card">
+                <div class="category-card-circle">
+                    <img src="{% static 'images/skincare-serum.png' %}" alt="Serum">
+                </div>
                 <p>Serum</p>
             </a>
 
             <a href="{% url 'skincare_toner' %}" class="category-card">
+                <div class="category-card-circle">
+                    <img src="{% static 'images/skincare-toner.png' %}" alt="Toner">
+                </div>
                 <p>Toner</p>
             </a>
         </div>
 
-        <h3>All Skincare Products:</h3>
+        <h3 class="section-title">All Skincare Products</h3>
         <div id="cosmetics-list">
             <p>Loading cosmetics...</p>
         </div>
@@ -52,15 +67,17 @@
                 return;
             }
 
-            let html = '<div>';
+            let html = '<div class="products-grid">';
             cosmetics.forEach(cosmetic => {
                 html += `
-                    <div style="border: 1px solid #ccc; padding: 10px; margin: 10px 0;">
+                    <div class="product-card">
                         <h3>${cosmetic.name}</h3>
-                        <p><strong>Brand:</strong> ${cosmetic.brand}</p>
-                        <p><strong>Type:</strong> ${cosmetic.subcategory || 'N/A'}</p>
-                        <p><strong>Ingredients:</strong> ${cosmetic.ingredients.length}</p>
-                        <a href="/cosmetic/${cosmetic.id}/">View Details</a>
+                        <div class="product-info">
+                            <p><strong>Brand:</strong> ${cosmetic.brand}</p>
+                            <p><strong>Type:</strong> ${cosmetic.subcategory || 'N/A'}</p>
+                            <p><strong>Ingredients:</strong> ${cosmetic.ingredients.length}</p>
+                        </div>
+                        <a href="/cosmetic/${cosmetic.id}/" class="view-details-btn">View Details</a>
                     </div>
                 `;
             });
@@ -68,6 +85,7 @@
 
             container.innerHTML = html;
         } catch (error) {
+            console.error('Error loading cosmetics:', error);
             document.getElementById('cosmetics-list').innerHTML = '<p>Error loading cosmetics</p>';
         }
     }
