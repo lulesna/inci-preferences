@@ -1,31 +1,31 @@
 {% extends "base.html" %}
-{% load static %}
 
-{% block title %}Cleanser - INCI Preferences{% endblock %}
-
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/categories.css' %}">
-{% endblock %}
+{% block title %}My Favorites - INCI Preferences{% endblock %}
 
 {% block content %}
     <section class="main-section">
-        <h2>Skincare - Cleanser</h2>
-
-        <div id="cosmetics-list">
-            <p>Loading cosmetics...</p>
-        </div>
+        {% if not user.is_authenticated %}
+            <p>You must be <a href="{% url 'users:login' %}">logged in</a> to view favorites.</p>
+        {% else %}
+            <h2>My Favorite Cosmetics</h2>
+            
+            <div id="favorites-list">
+                <p>Loading favorites...</p>
+            </div>
+        {% endif %}
     </section>
 
     <script>
+    {% if user.is_authenticated %}
+
     async function displayCosmeticsWithSafety(cosmetics, containerId) {
         const container = document.getElementById(containerId);
 
         if (cosmetics.length === 0) {
-            container.innerHTML = '<p style="text-align: center; color: var(--text);">No cosmetics found.</p>';
+            container.innerHTML = '<p class="no-preferences-message">You have no favorite cosmetics yet. Add some from cosmetic pages!</p>';
             return;
         }
 
-        {% if user.is_authenticated %}
         let userPreferences = null;
         try {
             const prefResponse = await fetch('/api/preferences/my_preferences/');
@@ -67,28 +67,30 @@
             }
             return '';
         }
-        {% endif %}
+
+        function formatCategory(category) {
+            return category.charAt(0) + category.slice(1).toLowerCase();
+        }
 
         let html = '<div class="cosmetics-grid">';
 
         cosmetics.forEach(cosmetic => {
-            {% if user.is_authenticated %}
             const safetyClass = getSafetyClass(cosmetic);
             const safetyBadge = getSafetyBadge(safetyClass);
-            {% else %}
-            const safetyClass = '';
-            const safetyBadge = '';
-            {% endif %}
 
-            const displayType = cosmetic.product_type || cosmetic.subcategory || cosmetic.main_category;
+            const displayType = cosmetic.product_type || cosmetic.subcategory || '';
+            const displayCategory = formatCategory(cosmetic.main_category);
 
             html += `
                 <div class="cosmetic-result-card ${safetyClass}">
                     ${safetyBadge}
-                    <h3>${cosmetic.name}</h3>
-                    <p><strong>Brand:</strong> ${cosmetic.brand}</p>
-                    ${displayType ? `<p><strong>Type:</strong> ${displayType}</p>` : ''}
-                    <p><strong>Ingredients:</strong> ${cosmetic.ingredients.length}</p>
+                    <div class="card-content">
+                        <h3>${cosmetic.name}</h3>
+                        <p><strong>Brand:</strong> ${cosmetic.brand}</p>
+                        <p><strong>Category:</strong> ${displayCategory}</p>
+                        ${displayType ? `<p><strong>Type:</strong> ${displayType}</p>` : ''}
+                        <p><strong>Ingredients:</strong> ${cosmetic.ingredients.length}</p>
+                    </div>
                     <a href="/cosmetic/${cosmetic.id}/">View Details</a>
                 </div>
             `;
@@ -98,17 +100,18 @@
         container.innerHTML = html;
     }
 
-    async function loadCosmetics() {
+    async function loadFavorites() {
         try {
-            const response = await fetch('/api/cosmetics/?main_category=FACE&subcategory=Cleanser');
-            const cosmetics = await response.json();
+            const response = await fetch('/api/preferences/my_favorites/');
+            const favorites = await response.json();
 
-            await displayCosmeticsWithSafety(cosmetics, 'cosmetics-list');
+            await displayCosmeticsWithSafety(favorites, 'favorites-list');
         } catch (error) {
-            document.getElementById('cosmetics-list').innerHTML = '<p>Error loading cosmetics</p>';
+            document.getElementById('favorites-list').innerHTML = '<p>Error loading favorites.</p>';
         }
     }
-
-    loadCosmetics();
+    
+    loadFavorites();
+    {% endif %}
     </script>
 {% endblock %}

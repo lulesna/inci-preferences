@@ -22,6 +22,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('users/', include('apps.users.urls')),
     path('', views.index, name='index'),
+    path('profile/', views.profile, name='profile'),
+    path('favorites/', views.favorites, name='favorites'),
     path('categories/', views.categories, name='categories'),
     path('categories/skincare', views.skincare, name='skincare'),
     path('categories/makeup', views.makeup, name='makeup'),

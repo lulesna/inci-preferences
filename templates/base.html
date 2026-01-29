@@ -24,7 +24,8 @@
                 <li><a href="{% url 'addcosmetic' %}">Add cosmetic</a></li>
 
                 {% if user.is_authenticated %}
-                    <li><span class="user-greeting">Hello, {{ user.username }}!</span></li>
+                    <li><a href="{% url 'favorites' %}">My Favorites</a></li>
+                    <li><a href="{% url 'profile' %}">My Profile</a></li>
                     <li><a href="{% url 'users:logout' %}" class="logout-btn">Logout</a></li>
                 {% else %}
                     <li><a href="{% url 'users:login' %}" class="login-btn">Login</a></li>

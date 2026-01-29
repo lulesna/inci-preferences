@@ -4,103 +4,177 @@
 
 {% block content %}
     <section class="main-section">
-        <div id="cosmetic-details">
+        <div class="cosmetic-detail-container" id="cosmetic-details">
             <p>Loading cosmetic details...</p>
         </div>
     </section>
 
     <script>
     const cosmeticId = window.location.pathname.split('/').filter(Boolean).pop();
-    
+    let userPreferences = null;
+
+    async function loadUserPreferences() {
+        {% if user.is_authenticated %}
+        try {
+            const response = await fetch('/api/preferences/my_preferences/');
+            const data = await response.json();
+            userPreferences = {
+                safe: data.safe_ingredients.map(ing => ing.id),
+                moderate: data.moderate_ingredients.map(ing => ing.id),
+                unsafe: data.unsafe_ingredients.map(ing => ing.id)
+            };
+        } catch (error) {
+            userPreferences = null;
+        }
+        {% endif %}
+    }
+
+    function getIngredientColor(ingredientId) {
+        if (!userPreferences) return 'none';
+
+        if (userPreferences.safe.includes(ingredientId)) return 'safe';
+        if (userPreferences.moderate.includes(ingredientId)) return 'moderate';
+        if (userPreferences.unsafe.includes(ingredientId)) return 'unsafe';
+        return 'none';
+    }
+
+    function formatCategory(text) {
+        if (!text) return '';
+        return text.charAt(0) + text.slice(1).toLowerCase();
+    }
+
     async function loadCosmeticDetails() {
+        await loadUserPreferences();
+
         try {
             const response = await fetch(`/api/cosmetics/${cosmeticId}/`);
             const cosmetic = await response.json();
-            
+
             let html = `
-                <h2>${cosmetic.name}</h2>
-                <p><strong>Brand:</strong> ${cosmetic.brand}</p>
-                <p><strong>Category:</strong> ${cosmetic.main_category}</p>
-                ${cosmetic.subcategory ? `<p><strong>Subcategory:</strong> ${cosmetic.subcategory}</p>` : ''}
-                ${cosmetic.product_type ? `<p><strong>Product Type:</strong> ${cosmetic.product_type}</p>` : ''}
-                
-                <hr>
-                
-                <h3>Ingredients (${cosmetic.ingredients.length}):</h3>
+                <div class="cosmetic-detail-header">
+                    <h2>${cosmetic.name}</h2>
+                    {% if user.is_authenticated %}
+                    <button id="favorite-btn" onclick="toggleFavorite()" title="Add to favorites">☆</button>
+                    {% endif %}
+                    <p><strong>Brand:</strong> ${cosmetic.brand}</p>
+                    <p><strong>Category:</strong> ${formatCategory(cosmetic.main_category)}</p>
+                    ${cosmetic.subcategory ? `<p><strong>Subcategory:</strong> ${formatCategory(cosmetic.subcategory)}</p>` : ''}
+                    ${cosmetic.product_type ? `<p><strong>Product Type:</strong> ${formatCategory(cosmetic.product_type)}</p>` : ''}
+                </div>
+
+                <div class="ingredients-section">
+                    <h3>Full Ingredients List (${cosmetic.ingredients.length})</h3>
             `;
-            
+
             if (cosmetic.ingredients.length > 0) {
-                html += '<ul>';
-                cosmetic.ingredients.forEach(ing => {
-                    html += `<li><strong>${ing.inci_name}</strong>${ing.purpose ? ' - ' + ing.purpose : ''}</li>`;
+                html += '<div class="ingredients-list">';
+
+                cosmetic.ingredients.forEach((ing, index) => {
+                    const color = getIngredientColor(ing.id);
+
+                    html += `<span class="ingredient-tag ${color}" title="${ing.purpose || 'No purpose listed'}">${ing.inci_name}</span>`;
+
+                    if (index < cosmetic.ingredients.length - 1) {
+                        html += ' ';
+                    }
                 });
-                html += '</ul>';
+
+                html += '</div>';
+
+                {% if user.is_authenticated %}
+                if (userPreferences) {
+                    html += `<div class="ingredient-legend">
+                        <span class="ingredient-tag safe">Safe</span>
+                        <span class="ingredient-tag moderate">Moderate</span>
+                        <span class="ingredient-tag unsafe">Unsafe</span>
+                        <span style="color: var(--text); font-size: 12px;">based on your preferences</span>
+                    </div>`;
+                }
+                {% endif %}
+
             } else {
                 html += '<p>No ingredients listed.</p>';
             }
-            
-            {% if user.is_authenticated %}
-            html += '<hr><h3>Safety Check:</h3><div id="safety-check"><p>Loading safety analysis...</p></div>';
-            {% endif %}
-            
+
+            html += '</div>';
+
             document.getElementById('cosmetic-details').innerHTML = html;
-            
+
             {% if user.is_authenticated %}
-            loadSafetyCheck();
+            checkIfFavorite();
             {% endif %}
-            
+
         } catch (error) {
             document.getElementById('cosmetic-details').innerHTML = '<p>Error loading cosmetic details.</p>';
         }
     }
-    
+
     {% if user.is_authenticated %}
-    async function loadSafetyCheck() {
+    let isFavorite = false;
+
+    async function checkIfFavorite() {
         try {
-            const response = await fetch(`/api/cosmetics/${cosmeticId}/check_safety/`);
-            const data = await response.json();
-            
-            const colorEmoji = {
-                'GREEN': '✅',
-                'YELLOW': '⚠️',
-                'RED': '🚫'
-            };
-            
-            let html = `
-                <p><strong>${colorEmoji[data.safety_color]} ${data.message}</strong></p>
-            `;
-            
-            if (data.safe_ingredients && data.safe_ingredients.length > 0) {
-                html += '<p><strong>Safe ingredients:</strong></p><ul>';
-                data.safe_ingredients.forEach(ing => {
-                    html += `<li style="color: green;">${ing}</li>`;
-                });
-                html += '</ul>';
-            }
-            
-            if (data.moderate_ingredients && data.moderate_ingredients.length > 0) {
-                html += '<p><strong>Moderate ingredients:</strong></p><ul>';
-                data.moderate_ingredients.forEach(ing => {
-                    html += `<li style="color: orange;">${ing}</li>`;
-                });
-                html += '</ul>';
-            }
-            
-            if (data.unsafe_ingredients && data.unsafe_ingredients.length > 0) {
-                html += '<p><strong>Unsafe ingredients (for you):</strong></p><ul>';
-                data.unsafe_ingredients.forEach(ing => {
-                    html += `<li style="color: red;">${ing}</li>`;
-                });
-                html += '</ul>';
-            }
-            
-            document.getElementById('safety-check').innerHTML = html;
+            const response = await fetch('/api/preferences/my_favorites/');
+            const favorites = await response.json();
+            isFavorite = favorites.some(fav => fav.id == cosmeticId);
+            updateFavoriteButton();
         } catch (error) {
-            document.getElementById('safety-check').innerHTML = '<p>Could not load safety check. Please set your preferences first.</p>';
+            console.error('Error checking favorites');
         }
     }
+
+    function updateFavoriteButton() {
+        const btn = document.getElementById('favorite-btn');
+        if (btn) {
+            if (isFavorite) {
+                btn.textContent = '☆';
+                btn.style.backgroundColor = 'var(--main-pink)';
+                btn.title = 'Remove from favorites';
+            } else {
+                btn.textContent = '☆';
+                btn.style.backgroundColor = 'var(--lime)';
+                btn.title = 'Add to favorites';
+            }
+        }
+    }
+
+    async function toggleFavorite() {
+        try {
+            const response = await fetch('/api/preferences/toggle_favorite/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({cosmetic_id: cosmeticId})
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                isFavorite = data.is_favorite;
+                updateFavoriteButton();
+            }
+        } catch (error) {
+            alert('Error updating favorites');
+        }
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
     {% endif %}
-    
+
     loadCosmeticDetails();
     </script>
 {% endblock %}

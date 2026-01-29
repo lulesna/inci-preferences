@@ -10,16 +10,16 @@
 {% block content %}
 <div class="container">
     <div class="auth-form">
-        <h2>Zarejestruj się</h2>
+        <h2>Register</h2>
 
         <form method="post">
             {% csrf_token %}
             {{ form.as_p }}
-            <button type="submit" class="btn-primary">Zarejestruj</button>
+            <button type="submit" class="btn-primary">Register</button>
         </form>
 
         <p class="auth-link">
-            Masz już konto? <a href="{% url 'users:login' %}">Zaloguj się tutaj</a>
+            Have an account? <a href="{% url 'users:login' %}">Log in here</a>
         </p>
     </div>
 </div>

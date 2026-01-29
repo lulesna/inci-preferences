@@ -55,3 +55,9 @@ def search(request):
 
 def cosmetic_detail(request, pk):
     return render(request, 'cosmetic_detail.html', {'cosmetic_id': pk})
+
+def profile(request):
+    return render(request, 'profile.html')
+
+def favorites(request):
+    return render(request, 'favorites.html')

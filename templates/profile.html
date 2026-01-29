@@ -1,0 +1,347 @@
+{% extends "base.html" %}
+
+{% block title %}My Profile - INCI Preferences{% endblock %}
+
+{% block content %}
+    {% if not user.is_authenticated %}
+        <section class="main-section">
+            <p>You must be <a href="{% url 'users:login' %}">logged in</a> to view your profile.</p>
+        </section>
+    {% else %}
+        <div class="profile-container">
+            <section class="main-section">
+                <h2>My Profile</h2>
+            </section>
+
+            <div class="profile-section">
+                <h3>Account Settings</h3>
+                <div class="account-info">
+                    <p><strong>Username:</strong> {{ user.username }}</p>
+                </div>
+
+                <div class="profile-buttons">
+                    <button class="profile-btn" onclick="toggleEditAccount()">Edit Account</button>
+                    <button class="profile-btn profile-btn-danger" onclick="confirmDeleteAccount()">Delete Account</button>
+                </div>
+
+                <div id="edit-account-form" class="edit-account-form" style="display: none;">
+                    <h4>Change Username</h4>
+                    <form method="post" action="{% url 'users:update_account' %}">
+                        {% csrf_token %}
+                        <div>
+                            <label for="username">New Username:</label>
+                            <input type="text" name="username" id="username" value="{{ user.username }}" required>
+                        </div>
+                        <button type="submit">Update Username</button>
+                        <button type="button" onclick="toggleEditAccount()">Cancel</button>
+                    </form>
+
+                    <hr>
+
+                    <h4>Change Password</h4>
+                    <form method="post" action="{% url 'users:change_password' %}">
+                        {% csrf_token %}
+                        <div>
+                            <label for="old_password">Old Password:</label>
+                            <input type="password" name="old_password" id="old_password" required>
+                        </div>
+                        <div>
+                            <label for="new_password1">New Password:</label>
+                            <input type="password" name="new_password1" id="new_password1" required>
+                        </div>
+                        <div>
+                            <label for="new_password2">Confirm New Password:</label>
+                            <input type="password" name="new_password2" id="new_password2" required>
+                        </div>
+                        <button type="submit">Change Password</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="profile-section">
+                <h3>My Ingredient Preferences</h3>
+                <p style="color: var(--text); margin-bottom: 20px;">Mark ingredients as safe, moderate, or unsafe for your skin.</p>
+
+                <div class="ingredient-search-box">
+                    <label for="ingredient-input">Search for an ingredient:</label>
+                    <input type="text" id="ingredient-input" placeholder="Start typing ingredient name..." autocomplete="off">
+                    <div id="suggestions"></div>
+                </div>
+
+                <div id="selected-ingredient" class="selected-ingredient-box" style="display: none;">
+                    <h4 id="selected-name"></h4>
+                    <p id="selected-purpose"></p>
+                    <label>Set preference:</label>
+                    <select id="color-select">
+                        <option value="NONE">Not set</option>
+                        <option value="GREEN">✅ Safe</option>
+                        <option value="YELLOW">⚠️ Moderate</option>
+                        <option value="RED">🚫 Unsafe</option>
+                    </select>
+                    <button onclick="savePreference()">Save Preference</button>
+                    <button onclick="clearSelection()">Cancel</button>
+                </div>
+            </div>
+
+            <div class="profile-section">
+                <h3>Summary</h3>
+                <div id="summary" class="summary-box">
+                    <div class="summary-item">
+                        <strong>0</strong>
+                        <span>Safe ingredients</span>
+                    </div>
+                    <div class="summary-item">
+                        <strong>0</strong>
+                        <span>Moderate ingredients</span>
+                    </div>
+                    <div class="summary-item">
+                        <strong>0</strong>
+                        <span>Unsafe ingredients</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="profile-section">
+                <h3>My Preferences</h3>
+                <div id="my-preferences" class="preferences-list">
+                    <p class="no-preferences-message">Loading your preferences...</p>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <script>
+    {% if user.is_authenticated %}
+    let allIngredients = [];
+    let selectedIngredient = null;
+    let userPreferences = {
+        safe: [],
+        moderate: [],
+        unsafe: []
+    };
+
+    async function loadIngredients() {
+        try {
+            const response = await fetch('/api/ingredients/');
+            allIngredients = await response.json();
+
+            await loadUserPreferences();
+        } catch (error) {
+            console.error('Error loading ingredients');
+        }
+    }
+
+    async function loadUserPreferences() {
+        try {
+            const response = await fetch('/api/preferences/my_preferences/');
+            const data = await response.json();
+
+            userPreferences.safe = data.safe_ingredients || [];
+            userPreferences.moderate = data.moderate_ingredients || [];
+            userPreferences.unsafe = data.unsafe_ingredients || [];
+
+            updateSummary();
+            displayMyPreferences();
+        } catch (error) {
+            console.log('No preferences yet');
+            updateSummary();
+        }
+    }
+
+    document.getElementById('ingredient-input').addEventListener('input', function(e) {
+        const searchTerm = e.target.value.toLowerCase();
+
+        if (searchTerm.length < 2) {
+            document.getElementById('suggestions').style.display = 'none';
+            return;
+        }
+
+        const matches = allIngredients.filter(ing =>
+            ing.inci_name.toLowerCase().includes(searchTerm)
+        ).slice(0, 10);
+
+        if (matches.length === 0) {
+            document.getElementById('suggestions').style.display = 'none';
+            return;
+        }
+
+        let html = '';
+        matches.forEach(ing => {
+            html += `<div onclick="selectIngredient(${ing.id})">
+                <strong>${ing.inci_name}</strong>${ing.purpose ? ' - ' + ing.purpose : ''}
+            </div>`;
+        });
+
+        document.getElementById('suggestions').innerHTML = html;
+        document.getElementById('suggestions').style.display = 'block';
+    });
+
+    function selectIngredient(ingredientId) {
+        selectedIngredient = allIngredients.find(ing => ing.id === ingredientId);
+
+        if (!selectedIngredient) return;
+
+        document.getElementById('selected-name').textContent = selectedIngredient.inci_name;
+        document.getElementById('selected-purpose').textContent = selectedIngredient.purpose || 'No purpose listed';
+        document.getElementById('selected-ingredient').style.display = 'block';
+        document.getElementById('suggestions').style.display = 'none';
+        document.getElementById('ingredient-input').value = selectedIngredient.inci_name;
+
+        const currentColor = getIngredientColor(selectedIngredient.id);
+        document.getElementById('color-select').value = currentColor;
+    }
+
+    function clearSelection() {
+        selectedIngredient = null;
+        document.getElementById('selected-ingredient').style.display = 'none';
+        document.getElementById('ingredient-input').value = '';
+    }
+
+    async function savePreference() {
+        if (!selectedIngredient) return;
+
+        const color = document.getElementById('color-select').value;
+
+        try {
+            const response = await fetch('/api/preferences/set_ingredient_color/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    ingredient_id: selectedIngredient.id,
+                    color: color
+                })
+            });
+
+            if (response.ok) {
+                clearSelection();
+                await loadUserPreferences();
+            } else {
+                alert('Error saving preference');
+            }
+        } catch (error) {
+            alert('Error saving preference');
+        }
+    }
+
+    function getIngredientColor(ingredientId) {
+        const safe = userPreferences.safe.find(ing => ing.id === ingredientId);
+        const moderate = userPreferences.moderate.find(ing => ing.id === ingredientId);
+        const unsafe = userPreferences.unsafe.find(ing => ing.id === ingredientId);
+
+        if (safe) return 'GREEN';
+        if (moderate) return 'YELLOW';
+        if (unsafe) return 'RED';
+        return 'NONE';
+    }
+
+    function updateSummary() {
+        const html = `
+            <div class="summary-item">
+                <strong>${userPreferences.safe.length}</strong>
+                <span>Safe ingredients</span>
+            </div>
+            <div class="summary-item">
+                <strong>${userPreferences.moderate.length}</strong>
+                <span>Moderate ingredients</span>
+            </div>
+            <div class="summary-item">
+                <strong>${userPreferences.unsafe.length}</strong>
+                <span>Unsafe ingredients</span>
+            </div>
+        `;
+        document.getElementById('summary').innerHTML = html;
+    }
+
+    function displayMyPreferences() {
+        let html = '';
+
+        if (userPreferences.safe.length > 0) {
+            html += '<h4 style="color: var(--accent-green);">Safe Ingredients</h4><ul class="safe-list">';
+            userPreferences.safe.forEach(ing => {
+                html += `<li>${ing.inci_name} <button onclick="removePreference(${ing.id})">Remove</button></li>`;
+            });
+            html += '</ul>';
+        }
+
+        if (userPreferences.moderate.length > 0) {
+            html += '<h4 style="color: var(--main-pink);">Moderate Ingredients</h4><ul class="moderate-list">';
+            userPreferences.moderate.forEach(ing => {
+                html += `<li>${ing.inci_name} <button onclick="removePreference(${ing.id})">Remove</button></li>`;
+            });
+            html += '</ul>';
+        }
+
+        if (userPreferences.unsafe.length > 0) {
+            html += '<h4 style="color: var(--accent-dark);">Unsafe Ingredients</h4><ul class="unsafe-list">';
+            userPreferences.unsafe.forEach(ing => {
+                html += `<li>${ing.inci_name} <button onclick="removePreference(${ing.id})">Remove</button></li>`;
+            });
+            html += '</ul>';
+        }
+
+        if (html === '') {
+            html = '<p class="no-preferences-message">No preferences set yet. Start by searching for an ingredient above.</p>';
+        }
+
+        document.getElementById('my-preferences').innerHTML = html;
+    }
+
+    async function removePreference(ingredientId) {
+        try {
+            const response = await fetch('/api/preferences/set_ingredient_color/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    ingredient_id: ingredientId,
+                    color: 'NONE'
+                })
+            });
+
+            if (response.ok) {
+                await loadUserPreferences();
+            } else {
+                alert('Error removing preference');
+            }
+        } catch (error) {
+            alert('Error removing preference');
+        }
+    }
+
+    function toggleEditAccount() {
+        const form = document.getElementById('edit-account-form');
+        form.style.display = form.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function confirmDeleteAccount() {
+        if (confirm('Are you sure you want to delete your account? This action cannot be undone!')) {
+            if (confirm('This will permanently delete all your data. Are you absolutely sure?')) {
+                window.location.href = '{% url "users:delete_account" %}';
+            }
+        }
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
+    loadIngredients();
+    {% endif %}
+    </script>
+{% endblock %}

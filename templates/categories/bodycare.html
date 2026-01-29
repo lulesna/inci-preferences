@@ -10,43 +10,101 @@
 {% block content %}
     <section class="main-section">
         <h2>Bodycare</h2>
-        
+
         <div id="cosmetics-list">
             <p>Loading cosmetics...</p>
         </div>
     </section>
 
     <script>
+    async function displayCosmeticsWithSafety(cosmetics, containerId) {
+        const container = document.getElementById(containerId);
+
+        if (cosmetics.length === 0) {
+            container.innerHTML = '<p style="text-align: center; color: var(--text);">No cosmetics found.</p>';
+            return;
+        }
+
+        {% if user.is_authenticated %}
+        let userPreferences = null;
+        try {
+            const prefResponse = await fetch('/api/preferences/my_preferences/');
+            const prefData = await prefResponse.json();
+            userPreferences = {
+                safe: prefData.safe_ingredients.map(ing => ing.id),
+                moderate: prefData.moderate_ingredients.map(ing => ing.id),
+                unsafe: prefData.unsafe_ingredients.map(ing => ing.id)
+            };
+        } catch (error) {
+            userPreferences = null;
+        }
+
+        function getSafetyClass(cosmetic) {
+            if (!userPreferences) return '';
+
+            const hasUnsafe = cosmetic.ingredients.some(ing =>
+                userPreferences.unsafe.includes(ing.id)
+            );
+
+            if (hasUnsafe) return 'unsafe';
+
+            const hasModerate = cosmetic.ingredients.some(ing =>
+                userPreferences.moderate.includes(ing.id)
+            );
+
+            if (hasModerate) return 'moderate';
+
+            return 'safe';
+        }
+
+        function getSafetyBadge(safetyClass) {
+            if (safetyClass === 'unsafe') {
+                return '<span class="safety-badge">🚫</span>';
+            } else if (safetyClass === 'moderate') {
+                return '<span class="safety-badge">⚠️</span>';
+            } else if (safetyClass === 'safe') {
+                return '<span class="safety-badge">✅</span>';
+            }
+            return '';
+        }
+        {% endif %}
+
+        let html = '<div class="cosmetics-grid">';
+
+        cosmetics.forEach(cosmetic => {
+            {% if user.is_authenticated %}
+            const safetyClass = getSafetyClass(cosmetic);
+            const safetyBadge = getSafetyBadge(safetyClass);
+            {% else %}
+            const safetyClass = '';
+            const safetyBadge = '';
+            {% endif %}
+
+            const displayType = cosmetic.product_type || cosmetic.subcategory || cosmetic.main_category;
+
+            html += `
+                <div class="cosmetic-result-card ${safetyClass}">
+                    ${safetyBadge}
+                    <h3>${cosmetic.name}</h3>
+                    <p><strong>Brand:</strong> ${cosmetic.brand}</p>
+                    ${displayType ? `<p><strong>Type:</strong> ${displayType}</p>` : ''}
+                    <p><strong>Ingredients:</strong> ${cosmetic.ingredients.length}</p>
+                    <a href="/cosmetic/${cosmetic.id}/">View Details</a>
+                </div>
+            `;
+        });
+
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
     async function loadCosmetics() {
         try {
             const response = await fetch('/api/cosmetics/?main_category=BODY');
             const cosmetics = await response.json();
 
-            const container = document.getElementById('cosmetics-list');
-
-            if (cosmetics.length === 0) {
-                container.innerHTML = '<p>No bodycare products found.</p>';
-                return;
-            }
-
-            let html = '<div class="products-grid">';
-            cosmetics.forEach(cosmetic => {
-                html += `
-                    <div class="product-card">
-                        <h3>${cosmetic.name}</h3>
-                        <div class="product-info">
-                            <p><strong>Brand:</strong> ${cosmetic.brand}</p>
-                            <p><strong>Ingredients:</strong> ${cosmetic.ingredients.length}</p>
-                        </div>
-                        <a href="/cosmetic/${cosmetic.id}/" class="view-details-btn">View Details</a>
-                    </div>
-                `;
-            });
-            html += '</div>';
-
-            container.innerHTML = html;
+            await displayCosmeticsWithSafety(cosmetics, 'cosmetics-list');
         } catch (error) {
-            console.error('Error loading cosmetics:', error);
             document.getElementById('cosmetics-list').innerHTML = '<p>Error loading cosmetics</p>';
         }
     }

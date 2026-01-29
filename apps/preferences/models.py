@@ -1,66 +1,38 @@
 from django.db import models
 from django.contrib.auth.models import User
+from apps import cosmetics
 from apps.ingredients.models import Ingredient
 
 
 class UserProfile(models.Model):
-    SKIN_TYPE_CHOICES = [
-        ('DRY', 'Dry'),
-        ('OILY', 'Oily'),
-        ('COMBINATION', 'Combination'),
-        ('SENSITIVE', 'Sensitive'),
-        ('NORMAL', 'Normal'),
-    ]
-
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
 
-    allergic_to = models.ManyToManyField(
+    safe_ingredients = models.ManyToManyField(
         Ingredient,
         blank=True,
-        related_name='allergic_users',
-        verbose_name="Allergic to ingredients"
+        related_name='safe_for_users',
+        verbose_name="Safe ingredients (GREEN)"
     )
 
-    avoided_ingredients = models.ManyToManyField(
+    moderate_ingredients = models.ManyToManyField(
         Ingredient,
         blank=True,
-        related_name='avoided_by_users',
-        verbose_name="Avoided ingredients (not allergic, but prefer to avoid)"
+        related_name='moderate_for_users',
+        verbose_name="Moderate ingredients (YELLOW)"
     )
 
-    preferred_ingredients = models.ManyToManyField(
+    unsafe_ingredients = models.ManyToManyField(
         Ingredient,
         blank=True,
-        related_name='preferred_by_users',
-        verbose_name="Preferred ingredients"
+        related_name='unsafe_for_users',
+        verbose_name="Unsafe ingredients (RED)"
     )
 
-    skin_type = models.CharField(
-        max_length=20,
-        choices=SKIN_TYPE_CHOICES,
+    favorite_cosmetics = models.ManyToManyField(
+        'cosmetics.Cosmetic',
         blank=True,
-        verbose_name="Skin type"
-    )
-
-    skin_concerns = models.TextField(
-        blank=True,
-        verbose_name="Skin concerns",
-        help_text="Acne, wrinkles, dark spots, redness..."
-    )
-
-    vegan_only = models.BooleanField(
-        default=False,
-        verbose_name="Vegan products only"
-    )
-
-    cruelty_free_only = models.BooleanField(
-        default=False,
-        verbose_name="Cruelty-free products only"
-    )
-
-    fragrance_free = models.BooleanField(
-        default=False,
-        verbose_name="Fragrance-free products preferred"
+        related_name='favorited_by',
+        verbose_name="Favorite Cosmetics"
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -73,13 +45,31 @@ class UserProfile(models.Model):
     def __str__(self):
         return f"{self.user.username}'s profile"
 
-    def get_all_unwanted_ingredients(self):
-        allergies = set(self.allergic_to.all())
-        avoided = set(self.avoided_ingredients.all())
-        return allergies.union(avoided)
-
-    def is_cosmetic_safe(self, cosmetic):
-        unwanted = self.get_all_unwanted_ingredients()
+    def get_cosmetic_safety_color(self, cosmetic):
         cosmetic_ingredients = set(cosmetic.ingredients.all())
-        dangerous = unwanted.intersection(cosmetic_ingredients)
-        return len(dangerous) == 0, list(dangerous)
+
+        unsafe = set(self.unsafe_ingredients.all())
+        if cosmetic_ingredients.intersection(unsafe):
+            return 'RED'
+
+        moderate = set(self.moderate_ingredients.all())
+        if cosmetic_ingredients.intersection(moderate):
+            return 'YELLOW'
+
+        return 'GREEN'
+
+    def get_cosmetic_safety_details(self, cosmetic):
+        cosmetic_ingredients = set(cosmetic.ingredients.all())
+
+        unsafe = set(self.unsafe_ingredients.all()).intersection(cosmetic_ingredients)
+        moderate = set(self.moderate_ingredients.all()).intersection(cosmetic_ingredients)
+        safe = set(self.safe_ingredients.all()).intersection(cosmetic_ingredients)
+
+        color = self.get_cosmetic_safety_color(cosmetic)
+
+        return {
+            'color': color,
+            'safe_ingredients': [ing.inci_name for ing in safe],
+            'moderate_ingredients': [ing.inci_name for ing in moderate],
+            'unsafe_ingredients': [ing.inci_name for ing in unsafe],
+        }

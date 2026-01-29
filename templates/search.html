@@ -5,31 +5,27 @@
 {% block content %}
     <section class="main-section">
         <h2>Search for cosmetics</h2>
-        
-        <form id="search-form">
+
+        <form id="search-form" class="search-page-form">
             <div>
                 <label for="search-query">Search by name or brand:</label>
                 <input type="text" id="search-query" name="q" placeholder="Enter product name or brand..." value="{{ request.GET.q }}" required>
             </div>
 
             <div>
-                <label for="category-filter">Filter by category (optional):</label>
+                <label for="category-filter">Filter by category:</label>
                 <select id="category-filter" name="category">
                     <option value="">All Categories</option>
-                    <option value="FACE">Face Care</option>
+                    <option value="FACE">Skincare</option>
                     <option value="MAKEUP">Makeup</option>
-                    <option value="BODY">Body Care</option>
-                    <option value="HANDS">Hand Care</option>
+                    <option value="BODY">Body</option>
                 </select>
             </div>
 
             <button type="submit">Search</button>
         </form>
 
-        <hr>
-
         <div id="search-results">
-            <p>Enter a search term to find cosmetics</p>
         </div>
     </section>
 
@@ -51,6 +47,95 @@
         performSearch(query, category);
     });
 
+    async function displayCosmeticsWithSafety(cosmetics, containerId) {
+        const container = document.getElementById(containerId);
+
+        if (cosmetics.length === 0) {
+            container.innerHTML = '<p style="text-align: center; color: var(--text);">No cosmetics found.</p>';
+            return;
+        }
+
+        {% if user.is_authenticated %}
+        let userPreferences = null;
+        try {
+            const prefResponse = await fetch('/api/preferences/my_preferences/');
+            const prefData = await prefResponse.json();
+            userPreferences = {
+                safe: prefData.safe_ingredients.map(ing => ing.id),
+                moderate: prefData.moderate_ingredients.map(ing => ing.id),
+                unsafe: prefData.unsafe_ingredients.map(ing => ing.id)
+            };
+        } catch (error) {
+            userPreferences = null;
+        }
+
+        function getSafetyClass(cosmetic) {
+            if (!userPreferences) return '';
+
+            const hasUnsafe = cosmetic.ingredients.some(ing =>
+                userPreferences.unsafe.includes(ing.id)
+            );
+
+            if (hasUnsafe) return 'unsafe';
+
+            const hasModerate = cosmetic.ingredients.some(ing =>
+                userPreferences.moderate.includes(ing.id)
+            );
+
+            if (hasModerate) return 'moderate';
+
+            return 'safe';
+        }
+
+        function getSafetyBadge(safetyClass) {
+            if (safetyClass === 'unsafe') {
+                return '<span class="safety-badge">🚫</span>';
+            } else if (safetyClass === 'moderate') {
+                return '<span class="safety-badge">⚠️</span>';
+            } else if (safetyClass === 'safe') {
+                return '<span class="safety-badge">✅</span>';
+            }
+            return '';
+        }
+        {% endif %}
+
+        function formatCategory(category) {
+            return category.charAt(0) + category.slice(1).toLowerCase();
+        }
+
+        let html = '<div class="cosmetics-grid">';
+
+        cosmetics.forEach(cosmetic => {
+            {% if user.is_authenticated %}
+            const safetyClass = getSafetyClass(cosmetic);
+            const safetyBadge = getSafetyBadge(safetyClass);
+            {% else %}
+            const safetyClass = '';
+            const safetyBadge = '';
+            {% endif %}
+
+            const displayType = cosmetic.product_type || cosmetic.subcategory || '';
+            const displayCategory = formatCategory(cosmetic.main_category);
+
+            html += `
+                <div class="cosmetic-result-card ${safetyClass}">
+                    ${safetyBadge}
+                    <div class="card-content">
+                        <h3>${cosmetic.name}</h3>
+                        <p><strong>Brand:</strong> ${cosmetic.brand}</p>
+                        <p><strong>Category:</strong> ${displayCategory}</p>
+                        ${displayType ? `<p><strong>Type:</strong> ${displayType}</p>` : ''}
+                        <p><strong>Ingredients:</strong> ${cosmetic.ingredients.length}</p>
+                    </div>
+                    <a href="/cosmetic/${cosmetic.id}/">View Details</a>
+                </div>
+            `;
+        });
+
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
     async function performSearch(query, category = '') {
         const resultsDiv = document.getElementById('search-results');
         resultsDiv.innerHTML = '<p>Searching...</p>';
@@ -65,33 +150,19 @@
             const cosmetics = await response.json();
 
             if (cosmetics.length === 0) {
-                resultsDiv.innerHTML = '<p>No cosmetics found matching your search.</p>';
+                resultsDiv.innerHTML = '<p style="text-align: center; color: var(--text); font-size: 16px;">No cosmetics found matching your search.</p>';
                 return;
             }
 
-            let html = '<h3>Search Results (' + cosmetics.length + '):</h3>';
+            resultsDiv.innerHTML = '<h3>Search Results (' + cosmetics.length + '):</h3><div id="cosmetics-container"></div>';
+            await displayCosmeticsWithSafety(cosmetics, 'cosmetics-container');
 
-            cosmetics.forEach(cosmetic => {
-                html += `
-                    <div style="border: 1px solid #ccc; padding: 15px; margin: 10px 0;">
-                        <h3>${cosmetic.name}</h3>
-                        <p><strong>Brand:</strong> ${cosmetic.brand}</p>
-                        <p><strong>Category:</strong> ${cosmetic.main_category}</p>
-                        <p><strong>Ingredients:</strong> ${cosmetic.ingredients.length}</p>
-                        <a href="/cosmetic/${cosmetic.id}/">View Full Details</a>
-                        <button onclick="viewDetails(${cosmetic.id})">Quick View Ingredients</button>
-                        <div id="details-${cosmetic.id}" style="display:none; margin-top:10px;"></div>
-                    </div>
-                `;
-            });
-
-            resultsDiv.innerHTML = html;
         } catch (error) {
-            resultsDiv.innerHTML = '<p>Error searching cosmetics. Please try again.</p>';
+            resultsDiv.innerHTML = '<p style="text-align: center; color: var(--accent-dark);">Error searching cosmetics. Please try again.</p>';
         }
     }
-    
-    async function viewDetails(cosmeticId) {
+
+    async function viewQuickDetails(cosmeticId) {
         const detailsDiv = document.getElementById('details-' + cosmeticId);
         
         if (detailsDiv.style.display === 'block') {

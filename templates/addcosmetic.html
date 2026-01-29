@@ -23,36 +23,35 @@
                 <form id="add-cosmetic-form">
                     <div>
                         <label for="name">Product Name:</label>
-                        <input type="text" id="name" name="name" required placeholder="e.g., Hydrating Face Cream">
+                        <input type="text" id="name" name="name" required placeholder="Full Product Name">
                     </div>
 
                     <div>
                         <label for="brand">Brand:</label>
-                        <input type="text" id="brand" name="brand" required placeholder="e.g., CeraVe">
+                        <input type="text" id="brand" name="brand" required placeholder="Brand">
                     </div>
 
                     <div>
                         <label for="main_category">Main Category:</label>
                         <select id="main_category" name="main_category" required>
-                            <option value="">-- Select Category --</option>
-                            <option value="FACE">Face Care</option>
+                            <option value="">Select Category</option>
+                            <option value="FACE">Skincare</option>
                             <option value="MAKEUP">Makeup</option>
-                            <option value="BODY">Body Care</option>
-                            <option value="HANDS">Hand Care</option>
+                            <option value="BODY">Bodycare</option>
                         </select>
                     </div>
 
                     <div id="subcategory-container" style="display: none;">
                         <label for="subcategory">Subcategory:</label>
                         <select id="subcategory" name="subcategory">
-                            <option value="">-- Select subcategory --</option>
+                            <option value="">Select subcategory</option>
                         </select>
                     </div>
 
                     <div id="product-type-container" style="display: none;">
                         <label for="product_type">Product Type:</label>
                         <select id="product_type" name="product_type">
-                            <option value="">-- Select product type --</option>
+                            <option value="">Select product type</option>
                         </select>
                     </div>
 
@@ -74,18 +73,17 @@
     const subcategories = {
         'FACE': [
             {value: 'CLEANSER', label: 'Cleanser'},
-            {value: 'TONER_SERUM', label: 'Toner & Serum'},
-            {value: 'CREAM_MOISTURIZER', label: 'Cream & Moisturizer'},
+            {value: 'TONER', label: 'Toner'},
+            {value: 'SERUM', label: 'Serum'},
+            {value: 'MOISTURIZER', label: 'Moisturizer'},
             {value: 'SPF', label: 'SPF & Sun Protection'}
         ],
         'MAKEUP': [
             {value: 'EYES', label: 'Eyes'},
             {value: 'FACE', label: 'Face'},
-            {value: 'LIPS', label: 'Lips'},
-            {value: 'BROWS', label: 'Brows'}
+            {value: 'LIPS', label: 'Lips'}
         ],
-        'BODY': [],
-        'HANDS': []
+        'BODY': []
     };
 
     const productTypes = {
@@ -93,7 +91,7 @@
             {value: 'MASCARA', label: 'Mascara'},
             {value: 'EYESHADOW', label: 'Eyeshadow'},
             {value: 'EYELINER', label: 'Eyeliner'},
-            {value: 'EYE_PRIMER', label: 'Eye Primer'}
+            {value: 'BROWS', label: 'Products For Brows'}
         ],
         'FACE': [
             {value: 'FOUNDATION', label: 'Foundation'},
@@ -102,18 +100,16 @@
             {value: 'BLUSH', label: 'Blush'},
             {value: 'BRONZER', label: 'Bronzer'},
             {value: 'HIGHLIGHTER', label: 'Highlighter'},
-            {value: 'PRIMER', label: 'Face Primer'}
+            {value: 'CONTOUR', label: 'Contour'},
+            {value: 'PRIMER', label: 'Face Primer'},
+            {value: 'SETTING_SPRAY', label: 'Setting Spray'}
         ],
         'LIPS': [
             {value: 'LIPSTICK', label: 'Lipstick'},
             {value: 'LIP_GLOSS', label: 'Lip Gloss'},
             {value: 'LIP_LINER', label: 'Lip Liner'},
-            {value: 'LIP_BALM', label: 'Lip Balm'}
-        ],
-        'BROWS': [
-            {value: 'BROW_PENCIL', label: 'Brow Pencil'},
-            {value: 'BROW_POMADE', label: 'Brow Pomade'},
-            {value: 'BROW_GEL', label: 'Brow Gel'}
+            {value: 'LIP_BALM', label: 'Lip Balm'},
+            {value: 'LIP_STAIN', label: 'Lip Stain'}
         ]
     };
 
@@ -123,7 +119,7 @@
         const subcategorySelect = document.getElementById('subcategory');
         const productTypeContainer = document.getElementById('product-type-container');
 
-        subcategorySelect.innerHTML = '<option value="">-- Select subcategory --</option>';
+        subcategorySelect.innerHTML = '<option value="">Select subcategory</option>';
         productTypeContainer.style.display = 'none';
 
         if (mainCategory && subcategories[mainCategory].length > 0) {
@@ -145,7 +141,7 @@
         const productTypeContainer = document.getElementById('product-type-container');
         const productTypeSelect = document.getElementById('product_type');
 
-        productTypeSelect.innerHTML = '<option value="">-- Select product type --</option>';
+        productTypeSelect.innerHTML = '<option value="">Select product type</option>';
 
         if (subcategory && productTypes[subcategory]) {
             productTypeContainer.style.display = 'block';
@@ -188,7 +184,7 @@
 
             if (response.ok) {
                 const data = await response.json();
-                resultDiv.innerHTML = '<p style="color: var(--accent-green); font-weight: 700;">✅ Cosmetic added successfully!</p>';
+                resultDiv.innerHTML = '<p style="color: var(--accent-green); font-weight: 700;">Cosmetic added successfully!</p>';
                 document.getElementById('add-cosmetic-form').reset();
                 document.getElementById('subcategory-container').style.display = 'none';
                 document.getElementById('product-type-container').style.display = 'none';
@@ -198,10 +194,10 @@
                 }, 2000);
             } else {
                 const error = await response.json();
-                resultDiv.innerHTML = '<p style="color: var(--accent-dark); font-weight: 700;">❌ Error: ' + JSON.stringify(error) + '</p>';
+                resultDiv.innerHTML = '<p style="color: var(--accent-dark); font-weight: 700;">Error: ' + JSON.stringify(error) + '</p>';
             }
         } catch (error) {
-            resultDiv.innerHTML = '<p style="color: var(--accent-dark); font-weight: 700;">❌ Error adding cosmetic. Please try again.</p>';
+            resultDiv.innerHTML = '<p style="color: var(--accent-dark); font-weight: 700;">Error adding cosmetic. Please try again.</p>';
         }
     });
 

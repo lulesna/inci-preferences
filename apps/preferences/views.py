@@ -163,3 +163,48 @@ class UserPreferencesViewSet(viewsets.ReadOnlyModelViewSet):
             'ingredient_name': ingredient.inci_name,
             'color': color
         })
+
+    @action(detail=False, methods=['post'])
+    def toggle_favorite(self, request):
+        try:
+            profile = request.user.profile
+        except UserProfile.DoesNotExist:
+            profile = UserProfile.objects.create(user=request.user)
+
+        cosmetic_id = request.data.get('cosmetic_id')
+
+        if not cosmetic_id:
+            return Response({'error': 'Provide cosmetic_id'}, status=400)
+
+        try:
+            from apps.cosmetics.models import Cosmetic
+            cosmetic = Cosmetic.objects.get(id=cosmetic_id)
+        except Cosmetic.DoesNotExist:
+            return Response({'error': 'Cosmetic not found'}, status=404)
+
+        if cosmetic in profile.favorite_cosmetics.all():
+            profile.favorite_cosmetics.remove(cosmetic)
+            is_favorite = False
+            message = 'Removed from favorites'
+        else:
+            profile.favorite_cosmetics.add(cosmetic)
+            is_favorite = True
+            message = 'Added to favorites'
+
+        return Response({
+            'success': True,
+            'is_favorite': is_favorite,
+            'message': message
+        })
+
+    @action(detail=False, methods=['get'])
+    def my_favorites(self, request):
+        try:
+            profile = request.user.profile
+            from apps.cosmetics.serializers import CosmeticSerializer
+            favorites = profile.favorite_cosmetics.all()
+            serializer = CosmeticSerializer(favorites, many=True)
+            return Response(serializer.data)
+        except UserProfile.DoesNotExist:
+            return Response([])
+
