@@ -7,6 +7,7 @@ from rest_framework import filters
 from .models import Cosmetic
 from .serializers import CosmeticSerializer, CosmeticWithSafetySerializer
 from apps.ingredients.models import Ingredient
+from apps.preferences.models import UserProfile
 
 
 class CosmeticViewSet(viewsets.ModelViewSet):
@@ -122,6 +123,54 @@ class CosmeticViewSet(viewsets.ModelViewSet):
             'yellow_count': len(results['yellow']),
             'red_count': len(results['red']),
             'results': results
+        })
+
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    def recommended(self, request):
+        try:
+            profile = request.user.profile
+        except UserProfile.DoesNotExist:
+            return Response({'error': 'No profile found'}, status=400)
+
+        safe_ingredients = set(profile.safe_ingredients.all())
+        moderate_ingredients = set(profile.moderate_ingredients.all())
+        unsafe_ingredients = set(profile.unsafe_ingredients.all())
+
+        recommendations = []
+
+        for cosmetic in self.queryset.all():
+            cosmetic_ingredients = set(cosmetic.ingredients.all())
+
+            has_moderate = bool(cosmetic_ingredients.intersection(moderate_ingredients))
+            has_unsafe = bool(cosmetic_ingredients.intersection(unsafe_ingredients))
+
+            if has_moderate or has_unsafe:
+                continue
+
+            safe_count = len(cosmetic_ingredients.intersection(safe_ingredients))
+
+            if safe_count > 0:
+                recommendations.append({
+                    'cosmetic': cosmetic,
+                    'safe_count': safe_count
+                })
+
+        recommendations.sort(key=lambda x: x['safe_count'], reverse=True)
+
+        top_recommendations = recommendations[:10]
+
+        from apps.cosmetics.serializers import CosmeticSerializer
+        serialized = [
+            {
+                **CosmeticSerializer(rec['cosmetic']).data,
+                'safe_ingredients_count': rec['safe_count']
+            }
+            for rec in top_recommendations
+        ]
+
+        return Response({
+            'count': len(serialized),
+            'recommendations': serialized
         })
 
     @action(detail=False, methods=['get'])
