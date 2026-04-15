@@ -1436,3 +1436,16 @@ main {
         padding: 20px;
     }
 }
+
+.recommendations-section {
+    margin-top: 50px;
+    padding-top: 30px;
+    border-top: 2px solid rgba(193, 207, 161, 0.3);
+}
+
+.recommendations-section h2 {
+    color: var(--lime);
+    font-size: 29px;
+    text-align: center;
+    margin-bottom: 10px;
+}
