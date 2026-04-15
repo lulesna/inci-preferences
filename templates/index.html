@@ -31,4 +31,63 @@
         </ol>
     </section>
 
+    {% if user.is_authenticated %}
+    <section class="recommendations-section">
+        <h2>Recommended for You</h2>
+        <p style="color: var(--text); margin-bottom: 20px;">Based on your safe ingredients</p>
+        <div id="recommendations-list">
+            <p>Loading recommendations...</p>
+        </div>
+    </section>
+
+    <script>
+    function formatCategory(text) {
+        if (!text) return '';
+        return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+    }
+
+    async function loadRecommendations() {
+        try {
+            const response = await fetch('/api/cosmetics/recommended/');
+            const data = await response.json();
+
+            const container = document.getElementById('recommendations-list');
+
+            if (data.recommendations.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: var(--text);">No recommendations yet. <a href="/profile/" style="color: var(--main-pink);">Set your ingredient preferences</a> to get personalized recommendations!</p>';
+                return;
+            }
+
+            let html = '<div class="cosmetics-grid">';
+
+            data.recommendations.forEach(cosmetic => {
+                const displayType = formatCategory(cosmetic.product_type || cosmetic.subcategory || '');
+                const displayCategory = formatCategory(cosmetic.main_category);
+
+                html += `
+                    <div class="cosmetic-result-card safe">
+                        <div class="card-content">
+                            <h3>${cosmetic.name}</h3>
+                            <p><strong>Brand:</strong> ${cosmetic.brand}</p>
+                            <p><strong>Category:</strong> ${displayCategory}</p>
+                            ${displayType ? `<p><strong>Type:</strong> ${displayType}</p>` : ''}
+                            <p><strong>Safe ingredients:</strong> ${cosmetic.safe_ingredients_count}</p>
+                        </div>
+                        <a href="/cosmetic/${cosmetic.id}/">View Details</a>
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+            container.innerHTML = html;
+
+        } catch (error) {
+            document.getElementById('recommendations-list').innerHTML = '<p style="text-align: center; color: var(--text);">Error loading recommendations.</p>';
+        }
+    }
+
+    loadRecommendations();
+    </script>
+    {% endif %}
+
 {% endblock %}
