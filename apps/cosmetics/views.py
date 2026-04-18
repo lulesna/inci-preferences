@@ -192,3 +192,53 @@ class CosmeticViewSet(viewsets.ModelViewSet):
             })
         except Ingredient.DoesNotExist:
             return Response({'error': 'Ingredient not found'}, status=404)
+
+    @action(detail=True, methods=['get'])
+    def find_dupes(self, request, pk=None):
+        original = self.get_object()
+        original_ingredients = set(ing.id for ing in original.ingredients.all())
+
+        if len(original_ingredients) == 0:
+            return Response({'error': 'This cosmetic has no ingredients'}, status=400)
+
+        dupes = []
+
+        candidates = self.queryset.filter(
+            main_category=original.main_category
+        ).exclude(id=original.id)
+
+        for cosmetic in candidates:
+            cosmetic_ingredients = set(ing.id for ing in cosmetic.ingredients.all())
+
+            if len(cosmetic_ingredients) == 0:
+                continue
+
+            matching = len(original_ingredients & cosmetic_ingredients)
+
+            similarity = (matching / len(original_ingredients)) * 100
+
+            # min 60% składników się pokrywa
+            if similarity >= 60:
+                dupes.append({
+                    'cosmetic': cosmetic,
+                    'similarity': round(similarity, 1),
+                    'matching': matching
+                })
+
+        dupes.sort(key=lambda x: x['similarity'], reverse=True)
+
+        # top 10
+        from apps.cosmetics.serializers import CosmeticSerializer
+        result = [
+            {
+                **CosmeticSerializer(d['cosmetic']).data,
+                'similarity_score': d['similarity'],
+                'matching_ingredients_count': d['matching']
+            }
+            for d in dupes[:10]
+        ]
+
+        return Response({
+            'original': CosmeticSerializer(original).data,
+            'dupes': result
+        })

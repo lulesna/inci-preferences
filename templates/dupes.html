@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}Find Similar Products{% endblock %}
+
+{% block content %}
+<section class="main-section">
+    <div style="max-width: 1200px; margin: 0 auto;">
+        <h2>Find Similar Products</h2>
+        
+        <div id="original-product" style="margin-bottom: 40px;">
+            <p>Loading...</p>
+        </div>
+        
+        <div id="dupes-results"></div>
+    </div>
+</section>
+
+<script>
+const cosmeticId = new URLSearchParams(window.location.search).get('id');
+
+function formatCategory(text) {
+    if (!text) return '';
+    return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+}
+
+async function loadDupes() {
+    try {
+        const response = await fetch(`/api/cosmetics/${cosmeticId}/find_dupes/`);
+        const data = await response.json();
+        
+        const original = data.original;
+        document.getElementById('original-product').innerHTML = `
+            <div class="cosmetic-detail-header">
+                <h3>${original.name}</h3>
+                <p><strong>Brand:</strong> ${original.brand}</p>
+                <p><strong>Ingredients:</strong> ${original.ingredients.length}</p>
+            </div>
+        `;
+        
+        const container = document.getElementById('dupes-results');
+        
+        if (data.dupes.length === 0) {
+            container.innerHTML = '<p style="text-align: center; color: var(--text);">No similar products found.</p>';
+            return;
+        }
+        
+        let html = `<h3 style="color: var(--lime); margin-bottom: 20px;">Found ${data.dupes.length} Similar Products</h3><div class="cosmetics-grid">`;
+        
+        data.dupes.forEach(dupe => {
+            const displayType = formatCategory(dupe.product_type || dupe.subcategory || '');
+            
+            html += `
+                <div class="cosmetic-result-card safe">
+                    <div class="similarity-badge" style="
+                        position: absolute;
+                        top: 12px;
+                        right: 12px;
+                        background: var(--lime);
+                        color: white;
+                        padding: 6px 12px;
+                        border-radius: 50px;
+                        font-size: 12px;
+                        font-weight: 700;
+                    ">
+                        ${dupe.similarity_score}% match
+                    </div>
+                    <div class="card-content">
+                        <h3 style="padding-right: 90px;">${dupe.name}</h3>
+                        <p><strong>Brand:</strong> ${dupe.brand}</p>
+                        ${displayType ? `<p><strong>Type:</strong> ${displayType}</p>` : ''}
+                        <p><strong>Matching:</strong> ${dupe.matching_ingredients_count}/${original.ingredients.length}</p>
+                    </div>
+                    <a href="/cosmetic/${dupe.id}/">View Details</a>
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+        container.innerHTML = html;
+        
+    } catch (error) {
+        document.getElementById('dupes-results').innerHTML = '<p>Error loading dupes.</p>';
+    }
+}
+
+if (cosmeticId) {
+    loadDupes();
+}
+</script>
+{% endblock %}

@@ -71,9 +71,7 @@
 
                 cosmetic.ingredients.forEach((ing, index) => {
                     const color = getIngredientColor(ing.id);
-
                     html += `<span class="ingredient-tag ${color}" title="${ing.purpose || 'No purpose listed'}">${ing.inci_name}</span>`;
-
                     if (index < cosmetic.ingredients.length - 1) {
                         html += ' ';
                     }
@@ -84,9 +82,9 @@
                 {% if user.is_authenticated %}
                 if (userPreferences) {
                     html += `<div class="ingredient-legend">
-                        <span class="ingredient-tag safe">Safe</span>
-                        <span class="ingredient-tag moderate">Moderate</span>
-                        <span class="ingredient-tag unsafe">Unsafe</span>
+                        <span class="ingredient-tag safe">✅ Safe</span>
+                        <span class="ingredient-tag moderate">⚠️ Moderate</span>
+                        <span class="ingredient-tag unsafe">🚫 Unsafe</span>
                         <span style="color: var(--text); font-size: 12px;">based on your preferences</span>
                     </div>`;
                 }
@@ -97,6 +95,25 @@
             }
 
             html += '</div>';
+
+            // TUTAJ dodaj link do dupes - WEWNĄTRZ funkcji!
+            html += `
+                <div style="text-align: center; margin-top: 30px;">
+                    <a href="/dupes/?id=${cosmetic.id}" style="
+                        display: inline-block;
+                        padding: 12px 24px;
+                        background-color: var(--main-pink);
+                        color: white;
+                        text-decoration: none;
+                        border-radius: 50px;
+                        font-weight: 600;
+                        transition: all 0.3s;
+                    " onmouseover="this.style.transform='translateY(-2px)'"
+                       onmouseout="this.style.transform='translateY(0)'">
+                        🔍 Find Similar Products
+                    </a>
+                </div>
+            `;
 
             document.getElementById('cosmetic-details').innerHTML = html;
 
@@ -173,6 +190,7 @@
         }
         return cookieValue;
     }
+
     {% endif %}
 
     loadCosmeticDetails();

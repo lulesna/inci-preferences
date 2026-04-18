@@ -17,6 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from . import views
+from django.views.generic import TemplateView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -30,6 +31,7 @@ urlpatterns = [
     path('categories/bodycare', views.bodycare, name='bodycare'),
     path('search/', views.search, name='search'),
     path('cosmetic/<int:pk>/', views.cosmetic_detail, name='cosmetic_detail'),
+    path('dupes/', TemplateView.as_view(template_name='dupes.html'), name='dupes'),
 
     path('categories/makeup/makeup_eyes', views.makeup_eyes, name='makeup_eyes'),
     path('categories/makeup/makeup_face', views.makeup_face, name='makeup_face'),
