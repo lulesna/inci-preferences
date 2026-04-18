@@ -587,7 +587,7 @@ main {
 }
 
 .cosmetic-result-card {
-    background: white;
+    background: rgba(255, 255, 255, 0.44);
     border: 3px solid var(--lime);
     border-radius: 20px;
     padding: 25px 20px 15px 20px;
@@ -608,7 +608,7 @@ main {
     font-size: 10px;
     padding-right: 70px;
     line-height: 1;
-    color: black;
+    color: var(--main-pink);
 }
 
 .cosmetic-result-card p {
@@ -631,8 +631,7 @@ main {
 }
 
 .cosmetic-result-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 6px 20px rgb(255, 255, 255);
+    border: 3px solid var(--main-pink);
 }
 
 .cosmetic-result-card.safe {
@@ -689,13 +688,13 @@ main {
 }
 
 .cosmetic-result-card p {
-    color: black;
+    color: var(--text);
     margin-bottom: 8px;
     font-size: 15px;
 }
 
 .cosmetic-result-card p strong {
-    color: black;
+    color: var(--lime);
 }
 
 .cosmetic-result-card a,
@@ -1251,13 +1250,13 @@ main {
 }
 
 .cosmetic-detail-header p {
-    color: var(--lime);
+    color: var(--main-pink);
     font-size: 16px;
     margin-bottom: 10px;
 }
 
 .cosmetic-detail-header p strong {
-    color: var(--main-pink);
+    color: var(--lime);
 }
 
 #favorite-btn {
