@@ -267,7 +267,7 @@
         }
 
         if (userPreferences.moderate.length > 0) {
-            html += '<h4 style="color: var(--main-pink);">Moderate Ingredients</h4><ul class="moderate-list">';
+            html += '<h4 style="color: rgba(181,131,60,0.67);">Moderate Ingredients</h4><ul class="moderate-list">';
             userPreferences.moderate.forEach(ing => {
                 html += `<li>${ing.inci_name} <button onclick="removePreference(${ing.id})">Remove</button></li>`;
             });

@@ -73,7 +73,6 @@ header {
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     border-radius: 20px;
-    border: 2px solid white;
 }
 
 nav {
@@ -123,7 +122,6 @@ nav ul li a {
     border-radius: 8px;
     font-weight: 700;
     text-shadow:
-        -1px -1px 0 white,
          1px -1px 0 white,
         -1px  1px 0 white,
          1px  1px 0 white;
@@ -749,16 +747,20 @@ main {
 }
 
 .profile-container {
-    max-width: 900px;
+    background: rgba(255, 255, 255, 0.45);
+    border-radius: 40px;
+    padding: 35px;
+    box-shadow: none;
+    max-width: 85%;
     margin: 0 auto;
 }
 
 .profile-section {
-    background: white;
-    border-radius: 20px;
-    padding: 30px;
-    margin-bottom: 30px;
-    box-shadow: 0 4px 12px rgba(130, 162, 132, 0.25);
+    background: transparent;
+    border-radius: 0;
+    padding: 25px 0;
+    margin-bottom: 0;
+    box-shadow: none;
 }
 
 .profile-section h3 {
@@ -1089,10 +1091,6 @@ main {
     transition: all 0.3s;
 }
 
-.preferences-list li:hover {
-    border-color: var(--lime);
-    transform: translateX(5px);
-}
 
 .preferences-list li button {
     padding: 6px 16px;
@@ -1113,12 +1111,12 @@ main {
 
 .preferences-list .safe-list li {
     border-color: rgba(113, 221, 153, 0.4);
-    background: rgba(113, 221, 153, 0.05);
+    background: rgba(113, 221, 153, 0.09);
 }
 
 .preferences-list .moderate-list li {
-    border-color: rgba(223, 150, 180, 0.4);
-    background: rgba(223, 150, 180, 0.05);
+    border-color: rgba(198, 179, 104, 0.4);
+    background: rgba(223, 189, 150, 0.11);
 }
 
 .preferences-list .unsafe-list li {
@@ -1236,7 +1234,7 @@ main {
 }
 
 .cosmetic-detail-header {
-    background: white;
+    background: rgba(255, 255, 255, 0.49);
     border-radius: 20px;
     padding: 30px;
     margin-bottom: 25px;
@@ -1244,21 +1242,22 @@ main {
 }
 
 .cosmetic-detail-header h2 {
-    color: black;
+    color: var(--main-pink);
     font-size: 28px;
     margin-bottom: 20px;
     padding-right: 0;
     text-align: left;
+    padding-right: 60px;
 }
 
 .cosmetic-detail-header p {
-    color: black;
+    color: var(--lime);
     font-size: 16px;
     margin-bottom: 10px;
 }
 
 .cosmetic-detail-header p strong {
-    color: black;
+    color: var(--main-pink);
 }
 
 #favorite-btn {
@@ -1285,11 +1284,11 @@ main {
 }
 
 .ingredients-section {
-    background: white;
+    background: rgba(255, 255, 255, 0.49);
     border-radius: 20px;
     padding: 30px;
     margin-bottom: 25px;
-    box-shadow: 0 4px 12px rgba(130, 162, 132, 0.25);
+    box-shadow: none;
 }
 
 .ingredients-section h3 {
@@ -1419,16 +1418,16 @@ main {
 @media (max-width: 768px) {
     .cosmetic-detail-header h2 {
         font-size: 22px;
-        padding-right: 0;
-        margin-bottom: 60px;
+        padding-right: 55px;
+        margin-bottom: 0;
     }
 
     #favorite-btn {
-        top: auto;
-        bottom: 20px;
+        top: 20px;
         right: 20px;
-        left: 20px;
-        width: calc(100% - 40px);
+        left: auto;
+        width: 40px;
+        bottom: auto;
     }
 
     .ingredients-section,
