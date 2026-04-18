@@ -217,8 +217,8 @@ class CosmeticViewSet(viewsets.ModelViewSet):
 
             similarity = (matching / len(original_ingredients)) * 100
 
-            # min 60% składników się pokrywa
-            if similarity >= 60:
+            # min 50% składników się pokrywa
+            if similarity >= 50:
                 dupes.append({
                     'cosmetic': cosmetic,
                     'similarity': round(similarity, 1),
