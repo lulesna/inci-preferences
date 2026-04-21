@@ -84,6 +84,13 @@
             </div>
 
             <div class="profile-section">
+                <h3>Insights from Your Favorites</h3>
+                <div id="favorites-insights">
+                    <p>Loading insights...</p>
+                </div>
+            </div>
+
+            <div class="profile-section">
                 <h3>Summary</h3>
                 <div id="summary" class="summary-box">
                     <div class="summary-item">
@@ -340,7 +347,71 @@
         }
         return cookieValue;
     }
-    
+
+    async function loadFavoritesInsights() {
+        try {
+            const response = await fetch('/api/cosmetics/analyze_favorites/');
+            const data = await response.json();
+
+            const container = document.getElementById('favorites-insights');
+
+            if (data.suggestions && data.suggestions.length > 0) {
+                let html = '<p style="color: var(--text); margin-bottom: 15px;">We noticed these ingredients appear frequently in your favorites:</p>';
+
+                data.suggestions.forEach(suggestion => {
+                    html += `
+                        <div class="insight-card">
+                            <div class="insight-info">
+                                <strong>${suggestion.ingredient_name}</strong>
+                                <p style="color: var(--text); font-size: 14px; margin: 5px 0;">
+                                    Appears in ${suggestion.count} of ${suggestion.total_favorites} favorites (${suggestion.percentage}%)
+                                </p>
+                            </div>
+                            <button class="add-preference-btn" onclick="addFromInsight(${suggestion.ingredient_id}, '${suggestion.ingredient_name}')">
+                                Add to Safe
+                            </button>
+                        </div>
+                    `;
+                });
+
+                container.innerHTML = html;
+            } else if (data.total_favorites < 3) {
+                container.innerHTML = '<p style="color: var(--text);">Add at least 3 products to favorites to discover your ingredient preferences! ⭐</p>';
+            } else {
+                container.innerHTML = '<p style="color: var(--text);">No common ingredients found in your favorites yet. Keep adding products you love!</p>';
+            }
+        } catch (error) {
+            document.getElementById('favorites-insights').innerHTML = '<p style="color: var(--text);">Unable to load insights.</p>';
+        }
+    }
+
+    async function addFromInsight(ingredientId, ingredientName) {
+        if (!confirm(`Add ${ingredientName} to your safe ingredients?`)) return;
+
+        try {
+            const response = await fetch('/api/preferences/set_ingredient_color/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    ingredient_id: ingredientId,
+                    color: 'GREEN'
+                })
+            });
+
+            if (response.ok) {
+                alert('Added to safe ingredients!');
+                loadFavoritesInsights();
+                loadUserPreferences();
+            }
+        } catch (error) {
+            alert('Error adding ingredient');
+        }
+    }
+
+    loadFavoritesInsights();
     loadIngredients();
     {% endif %}
     </script>

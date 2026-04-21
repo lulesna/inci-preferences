@@ -242,3 +242,61 @@ class CosmeticViewSet(viewsets.ModelViewSet):
             'original': CosmeticSerializer(original).data,
             'dupes': result
         })
+
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    def analyze_favorites(self, request):
+        try:
+            profile = request.user.profile
+        except:
+            return Response({'error': 'No profile found'}, status=400)
+
+        favorites = profile.favorite_cosmetics.all()
+
+        if favorites.count() < 3:
+            return Response({
+                'message': 'Add at least 3 favorites to get ingredient insights',
+                'suggestions': []
+            })
+
+        ingredient_counts = {}
+        total_favorites = favorites.count()
+
+        for cosmetic in favorites:
+            for ingredient in cosmetic.ingredients.all():
+                # pominięcie składników już oznaczone przez użytkownika
+                if (ingredient.id in profile.safe_ingredients.all().values_list('id', flat=True) or
+                        ingredient.id in profile.moderate_ingredients.all().values_list('id', flat=True) or
+                        ingredient.id in profile.unsafe_ingredients.all().values_list('id', flat=True)):
+                    continue
+
+                if ingredient.id not in ingredient_counts:
+                    ingredient_counts[ingredient.id] = {
+                        'ingredient': ingredient,
+                        'count': 0
+                    }
+                ingredient_counts[ingredient.id]['count'] += 1
+
+        # sortowanie po częstotliwości
+        sorted_ingredients = sorted(
+            ingredient_counts.values(),
+            key=lambda x: x['count'],
+            reverse=True
+        )
+
+        # top 5 składników które występują w min 50% ulubionych
+        suggestions = []
+        for item in sorted_ingredients[:10]:
+            percentage = (item['count'] / total_favorites) * 100
+            if percentage >= 50:
+                suggestions.append({
+                    'ingredient_id': item['ingredient'].id,
+                    'ingredient_name': item['ingredient'].inci_name,
+                    'count': item['count'],
+                    'percentage': round(percentage, 1),
+                    'total_favorites': total_favorites
+                })
+
+        return Response({
+            'total_favorites': total_favorites,
+            'suggestions': suggestions[:5]  # max 5 sugestii
+        })
