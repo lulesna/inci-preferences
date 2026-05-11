@@ -81,7 +81,7 @@ nav {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0 10px;
+    padding: 0 0;
 }
 
 nav h1 a {
@@ -109,15 +109,15 @@ nav h1 a:hover {
 nav ul {
     list-style: none;
     display: flex;
-    gap: 20px;
+    gap: 15px;
     align-items: center;
 }
 
 nav ul li a {
-    font-size: 18px;
+    font-size: 16.5px;
     color: var(--lime);
     text-decoration: none;
-    padding: 8px 10px;
+    padding: 8px 8px;
     transition: all 0.3s;
     border-radius: 8px;
     font-weight: 700;
@@ -1494,6 +1494,62 @@ main {
 }
 
 .add-preference-btn:hover {
-    background: var(--dark-green);
+    background: var(--accent-dark);
     transform: translateY(-2px);
+}
+
+.search-box {
+    max-width: 900px;
+    margin: 0 auto 20px;
+    display: flex;
+    gap: 10px;
+}
+
+.search-box input {
+    flex: 1;
+    padding: 12px 20px;
+    border: 2px solid var(--lime);
+    border-radius: 50px;
+    font-size: 16px;
+    font-family: 'KineksRound', sans-serif;
+    transition: all 0.3s;
+}
+
+.search-box input:focus {
+    outline: none;
+    border-color: var(--accent-dark);
+}
+
+.filter-group input[type="text"]:focus,
+.filter-group select:focus {
+    outline: none;
+    border-color: var(--lime);
+}
+
+.search-box button {
+    padding: 12px 30px;
+    background: var(--lime);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    font-weight: 600;
+    font-family: 'KineksRound', sans-serif;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.filters-section {
+    max-width: 900px;
+    margin: 0 auto 20px;
+    background: white;
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(130, 162, 132, 0.15);
+}
+
+.filter-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
 }

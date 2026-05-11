@@ -1,0 +1,662 @@
+{% extends "base.html" %}
+
+{% block title %}Scan Ingredients - INCI Preferences{% endblock %}
+
+{% block content %}
+    <section class="main-section">
+        <div class="scan-container">
+            <h2>Scan Ingredients from Photo</h2>
+            <p style="color: var(--text); text-align: center; margin-bottom: 30px;">
+                Upload a photo of product ingredients and get instant analysis
+            </p>
+
+            <div class="upload-section">
+                <div class="upload-box" id="upload-box">
+                    <input type="file" id="image-input" accept="image/*" style="display: none;" onchange="handleImageUpload(event)">
+                    <div class="upload-placeholder" onclick="document.getElementById('image-input').click()">
+                        <div class="upload-icon">📷</div>
+                        <p>Click to upload or drag & drop</p>
+                        <small>Supports JPG, PNG, HEIC</small>
+                    </div>
+                </div>
+
+                <div id="preview-section" style="display: none;">
+                    <img id="image-preview" style="max-width: 100%; border-radius: 12px; margin-bottom: 20px;">
+                    <div class="preview-actions">
+                        <button class="change-photo-btn" onclick="document.getElementById('image-input').click()">
+                            Change Photo
+                        </button>
+                        <button class="analyze-btn" onclick="analyzeImage()">
+                            Analyze Ingredients
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="processing-section" style="display: none;">
+                <div class="processing-box">
+                    <div class="spinner"></div>
+                    <p id="processing-text">Reading ingredients from image...</p>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="results-section" style="display: none;">
+                <div class="result-card">
+                    <h3>Recognized Text</h3>
+                    <div class="recognized-text" id="recognized-text"></div>
+                    <button class="edit-text-btn" onclick="toggleEditMode()">Edit Text</button>
+                </div>
+
+                {% if user.is_authenticated %}
+                <div class="result-card" id="analysis-card">
+                    <h3>Safety Analysis</h3>
+                    <div id="safety-summary"></div>
+                    <div id="ingredients-breakdown"></div>
+                </div>
+                {% else %}
+                <div class="result-card">
+                    <p style="text-align: center; color: var(--text);">
+                        <a href="{% url 'users:login' %}" style="color: var(--main-pink); font-weight: 600;">Log in</a> 
+                        to see personalized safety analysis
+                    </p>
+                </div>
+                {% endif %}
+
+                <div class="result-actions">
+                    <button class="scan-another-btn" onclick="resetScanner()">Scan Another Product</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js'></script>
+
+    <script>
+    let uploadedImage = null;
+    let recognizedIngredients = [];
+    let userPreferences = null;
+
+    {% if user.is_authenticated %}
+    async function loadUserPreferences() {
+        try {
+            const response = await fetch('/api/preferences/my_preferences/');
+            const data = await response.json();
+            userPreferences = {
+                safe: data.safe_ingredients.map(ing => ing.id),
+                moderate: data.moderate_ingredients.map(ing => ing.id),
+                unsafe: data.unsafe_ingredients.map(ing => ing.id),
+                safeNames: data.safe_ingredients.map(ing => ing.inci_name.toLowerCase()),
+                moderateNames: data.moderate_ingredients.map(ing => ing.inci_name.toLowerCase()),
+                unsafeNames: data.unsafe_ingredients.map(ing => ing.inci_name.toLowerCase())
+            };
+        } catch (error) {
+            console.error('Error loading preferences');
+        }
+    }
+
+    loadUserPreferences();
+    {% endif %}
+
+    function handleImageUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            uploadedImage = e.target.result;
+            document.getElementById('image-preview').src = uploadedImage;
+            document.querySelector('.upload-box').style.display = 'none';
+            document.getElementById('preview-section').style.display = 'block';
+            document.getElementById('results-section').style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+    }
+
+    const uploadBox = document.getElementById('upload-box');
+    
+    uploadBox.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadBox.style.borderColor = 'var(--lime)';
+        uploadBox.style.background = 'rgba(159, 213, 99, 0.1)';
+    });
+
+    uploadBox.addEventListener('dragleave', (e) => {
+        uploadBox.style.borderColor = '#e0e0e0';
+        uploadBox.style.background = 'white';
+    });
+
+    uploadBox.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadBox.style.borderColor = '#e0e0e0';
+        uploadBox.style.background = 'white';
+        
+        const file = e.dataTransfer.files[0];
+        if (file && file.type.startsWith('image/')) {
+            const fakeEvent = { target: { files: [file] } };
+            handleImageUpload(fakeEvent);
+        }
+    });
+
+    async function analyzeImage() {
+        if (!uploadedImage) return;
+
+        document.getElementById('preview-section').style.display = 'none';
+        document.getElementById('processing-section').style.display = 'block';
+        document.getElementById('results-section').style.display = 'none';
+
+        try {
+            const worker = await Tesseract.createWorker();
+            
+            await worker.loadLanguage('eng');
+            await worker.initialize('eng');
+            
+            document.getElementById('processing-text').textContent = 'Processing image...';
+            document.getElementById('progress-fill').style.width = '30%';
+            
+            const { data: { text } } = await worker.recognize(uploadedImage);
+            
+            document.getElementById('processing-text').textContent = 'Parsing ingredients...';
+            document.getElementById('progress-fill').style.width = '60%';
+            
+            await worker.terminate();
+
+            const cleanedText = cleanText(text);
+            parseIngredients(cleanedText);
+            
+            document.getElementById('processing-text').textContent = 'Analyzing safety...';
+            document.getElementById('progress-fill').style.width = '90%';
+            
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            document.getElementById('progress-fill').style.width = '100%';
+
+            setTimeout(() => {
+                document.getElementById('processing-section').style.display = 'none';
+                displayResults(cleanedText);
+            }, 300);
+            
+        } catch (error) {
+            console.error('OCR Error:', error);
+            alert('Error analyzing image. Please try again with a clearer photo.');
+            resetScanner();
+        }
+    }
+
+    function cleanText(text) {
+        let cleaned = text
+            .replace(/\n+/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+
+        const markers = ['ingredients:', 'ingredientes:', 'inci:', 'composition:'];
+        for (let marker of markers) {
+            const index = cleaned.toLowerCase().indexOf(marker);
+            if (index !== -1) {
+                cleaned = cleaned.substring(index + marker.length).trim();
+                break;
+            }
+        }
+        
+        return cleaned;
+    }
+
+    function parseIngredients(text) {
+        const parts = text.split(/[,،]\s*/);
+        recognizedIngredients = parts
+            .map(ing => ing.trim())
+            .filter(ing => ing.length > 2 && ing.length < 100)
+            .filter(ing => /^[A-Za-z\s\-\(\)0-9]+$/.test(ing));
+    }
+
+    async function displayResults(rawText) {
+        document.getElementById('recognized-text').innerHTML = `
+            <div class="text-display" id="text-display">${rawText}</div>
+            <textarea id="text-editor" style="display: none; width: 100%; min-height: 150px; padding: 15px; border: 2px solid var(--lime); border-radius: 12px; font-family: 'KineksRound', sans-serif;">${rawText}</textarea>
+        `;
+
+        {% if user.is_authenticated %}
+        if (!userPreferences) {
+            document.getElementById('analysis-card').innerHTML = `
+                <h3>Safety Analysis</h3>
+                <p style="text-align: center; color: var(--text);">
+                    <a href="/profile/" style="color: var(--main-pink); font-weight: 600;">Set up your preferences</a> 
+                    to get personalized analysis
+                </p>
+            `;
+        } else {
+            analyzeIngredients();
+        }
+        {% endif %}
+
+        document.getElementById('results-section').style.display = 'block';
+    }
+
+    {% if user.is_authenticated %}
+    function analyzeIngredients() {
+        let safeCount = 0;
+        let moderateCount = 0;
+        let unsafeCount = 0;
+        let unknownCount = 0;
+
+        const categorized = {
+            safe: [],
+            moderate: [],
+            unsafe: [],
+            unknown: []
+        };
+
+        recognizedIngredients.forEach(ing => {
+            const lowerIng = ing.toLowerCase();
+            
+            if (userPreferences.safeNames.some(safe => lowerIng.includes(safe) || safe.includes(lowerIng))) {
+                safeCount++;
+                categorized.safe.push(ing);
+            } else if (userPreferences.moderateNames.some(mod => lowerIng.includes(mod) || mod.includes(lowerIng))) {
+                moderateCount++;
+                categorized.moderate.push(ing);
+            } else if (userPreferences.unsafeNames.some(unsafe => lowerIng.includes(unsafe) || unsafe.includes(lowerIng))) {
+                unsafeCount++;
+                categorized.unsafe.push(ing);
+            } else {
+                unknownCount++;
+                categorized.unknown.push(ing);
+            }
+        });
+
+        let verdictClass = 'safe';
+        let verdictText = 'This product looks safe for you!';
+        let verdictIcon = '✅';
+
+        if (unsafeCount > 0) {
+            verdictClass = 'unsafe';
+            verdictText = `WARNING! Contains ${unsafeCount} unsafe ingredient${unsafeCount > 1 ? 's' : ''} for you`;
+            verdictIcon = '🚫';
+        } else if (moderateCount > 0) {
+            verdictClass = 'moderate';
+            verdictText = `CAUTION! Contains ${moderateCount} ingredient${moderateCount > 1 ? 's' : ''} to watch`;
+            verdictIcon = '⚠️';
+        }
+
+        document.getElementById('safety-summary').innerHTML = `
+            <div class="safety-verdict ${verdictClass}">
+                <div class="verdict-icon">${verdictIcon}</div>
+                <div class="verdict-text">${verdictText}</div>
+            </div>
+            <div class="safety-stats">
+                <div class="stat-item safe">
+                    <div class="stat-number">${safeCount}</div>
+                    <div class="stat-label">Safe</div>
+                </div>
+                <div class="stat-item moderate">
+                    <div class="stat-number">${moderateCount}</div>
+                    <div class="stat-label">Moderate</div>
+                </div>
+                <div class="stat-item unsafe">
+                    <div class="stat-number">${unsafeCount}</div>
+                    <div class="stat-label">Unsafe</div>
+                </div>
+                <div class="stat-item unknown">
+                    <div class="stat-number">${unknownCount}</div>
+                    <div class="stat-label">Unknown</div>
+                </div>
+            </div>
+        `;
+
+        let breakdownHTML = '<h4>Ingredients Breakdown:</h4>';
+        
+        if (categorized.unsafe.length > 0) {
+            breakdownHTML += `<div class="ingredient-category unsafe-category">
+                <h5>🚫 Unsafe for You (${categorized.unsafe.length})</h5>
+                <div class="ingredient-tags">
+                    ${categorized.unsafe.map(ing => `<span class="ingredient-tag unsafe">${ing}</span>`).join('')}
+                </div>
+            </div>`;
+        }
+        
+        if (categorized.moderate.length > 0) {
+            breakdownHTML += `<div class="ingredient-category moderate-category">
+                <h5>⚠️ Use with Caution (${categorized.moderate.length})</h5>
+                <div class="ingredient-tags">
+                    ${categorized.moderate.map(ing => `<span class="ingredient-tag moderate">${ing}</span>`).join('')}
+                </div>
+            </div>`;
+        }
+        
+        if (categorized.safe.length > 0) {
+            breakdownHTML += `<div class="ingredient-category safe-category">
+                <h5>✅ Safe for You (${categorized.safe.length})</h5>
+                <div class="ingredient-tags">
+                    ${categorized.safe.map(ing => `<span class="ingredient-tag safe">${ing}</span>`).join('')}
+                </div>
+            </div>`;
+        }
+        
+        if (categorized.unknown.length > 0) {
+            breakdownHTML += `<div class="ingredient-category unknown-category">
+                <h5>Unknown (${categorized.unknown.length})</h5>
+                <div class="ingredient-tags">
+                    ${categorized.unknown.map(ing => `<span class="ingredient-tag">${ing}</span>`).join('')}
+                </div>
+                <p style="font-size: 13px; color: var(--text); margin-top: 10px;">
+                    These ingredients are not in your preferences. <a href="/profile/" style="color: var(--main-pink);">Add them</a> for more accurate analysis.
+                </p>
+            </div>`;
+        }
+
+        document.getElementById('ingredients-breakdown').innerHTML = breakdownHTML;
+    }
+    {% endif %}
+
+    function toggleEditMode() {
+        const display = document.getElementById('text-display');
+        const editor = document.getElementById('text-editor');
+        const btn = document.querySelector('.edit-text-btn');
+        
+        if (display.style.display === 'none') {
+            const newText = editor.value;
+            display.innerHTML = newText;
+            display.style.display = 'block';
+            editor.style.display = 'none';
+            btn.textContent = 'Edit Text';
+            
+            parseIngredients(newText);
+            {% if user.is_authenticated %}
+            if (userPreferences) analyzeIngredients();
+            {% endif %}
+        } else {
+            display.style.display = 'none';
+            editor.style.display = 'block';
+            btn.textContent = 'Save & Re-analyze';
+        }
+    }
+
+    function resetScanner() {
+        uploadedImage = null;
+        recognizedIngredients = [];
+        document.querySelector('.upload-box').style.display = 'block';
+        document.getElementById('preview-section').style.display = 'none';
+        document.getElementById('processing-section').style.display = 'none';
+        document.getElementById('results-section').style.display = 'none';
+        document.getElementById('image-input').value = '';
+    }
+    </script>
+
+    <style>
+    .scan-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .upload-section {
+        margin-bottom: 30px;
+    }
+
+    .upload-box {
+        border: 3px dashed #e0e0e0;
+        border-radius: 16px;
+        padding: 60px 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s;
+        background: white;
+    }
+
+    .upload-box:hover {
+        border-color: var(--lime);
+        background: rgba(159, 213, 99, 0.05);
+    }
+
+    .upload-icon {
+        font-size: 64px;
+        margin-bottom: 20px;
+    }
+
+    .upload-placeholder p {
+        color: var(--dark-green);
+        font-weight: 600;
+        font-size: 18px;
+        margin-bottom: 5px;
+    }
+
+    .upload-placeholder small {
+        color: var(--text);
+    }
+
+    .preview-actions {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+    }
+
+    .change-photo-btn,
+    .analyze-btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 50px;
+        font-weight: 600;
+        font-family: 'KineksRound', sans-serif;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .change-photo-btn {
+        background: #e0e0e0;
+        color: var(--text);
+    }
+
+    .change-photo-btn:hover {
+        background: #d0d0d0;
+    }
+
+    .analyze-btn {
+        background: var(--lime);
+        color: white;
+    }
+
+    .analyze-btn:hover {
+        background: var(--dark-green);
+        transform: translateY(-2px);
+    }
+
+    .processing-box {
+        background: white;
+        border-radius: 16px;
+        padding: 40px;
+        text-align: center;
+    }
+
+    .spinner {
+        width: 60px;
+        height: 60px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid var(--lime);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 20px;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    #processing-text {
+        color: var(--dark-green);
+        font-weight: 600;
+        margin-bottom: 20px;
+    }
+
+    .progress-bar {
+        width: 100%;
+        height: 8px;
+        background: #f0f0f0;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: var(--lime);
+        width: 0%;
+        transition: width 0.3s ease;
+    }
+
+    .result-card {
+        background: white;
+        border-radius: 16px;
+        padding: 25px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 8px rgba(130, 162, 132, 0.15);
+    }
+
+    .result-card h3 {
+        color: var(--main-pink);
+        margin-bottom: 20px;
+    }
+
+    .recognized-text {
+        background: #f9f9f9;
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 15px;
+        line-height: 1.8;
+        color: var(--text);
+    }
+
+    .edit-text-btn {
+        padding: 8px 16px;
+        background: var(--lime);
+        color: white;
+        border: none;
+        border-radius: 50px;
+        font-weight: 600;
+        font-family: 'KineksRound', sans-serif;
+        cursor: pointer;
+        transition: all 0.3s;
+        font-size: 13px;
+    }
+
+    .edit-text-btn:hover {
+        background: var(--dark-green);
+    }
+
+    .safety-verdict {
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .safety-verdict.safe {
+        background: rgba(113, 221, 153, 0.2);
+        border: 2px solid var(--accent-green);
+    }
+
+    .safety-verdict.moderate {
+        background: rgba(240, 173, 78, 0.2);
+        border: 2px solid #f0ad4e;
+    }
+
+    .safety-verdict.unsafe {
+        background: rgba(197, 78, 163, 0.2);
+        border: 2px solid var(--accent-dark);
+    }
+
+    .verdict-icon {
+        font-size: 32px;
+    }
+
+    .verdict-text {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--dark-green);
+    }
+
+    .safety-stats {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+
+    .stat-item {
+        text-align: center;
+        padding: 15px;
+        border-radius: 12px;
+        background: #f9f9f9;
+    }
+
+    .stat-item.safe {
+        border: 2px solid var(--accent-green);
+    }
+
+    .stat-item.moderate {
+        border: 2px solid #f0ad4e;
+    }
+
+    .stat-item.unsafe {
+        border: 2px solid var(--accent-dark);
+    }
+
+    .stat-item.unknown {
+        border: 2px solid #ccc;
+    }
+
+    .stat-number {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--dark-green);
+    }
+
+    .stat-label {
+        font-size: 13px;
+        color: var(--text);
+        margin-top: 5px;
+    }
+
+    .ingredient-category {
+        margin-bottom: 20px;
+    }
+
+    .ingredient-category h5 {
+        color: var(--dark-green);
+        margin-bottom: 10px;
+    }
+
+    .ingredient-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .scan-another-btn {
+        width: 100%;
+        padding: 15px;
+        background: var(--main-pink);
+        color: white;
+        border: none;
+        border-radius: 50px;
+        font-weight: 600;
+        font-family: 'KineksRound', sans-serif;
+        cursor: pointer;
+        transition: all 0.3s;
+        font-size: 16px;
+    }
+
+    .scan-another-btn:hover {
+        background: var(--accent-dark);
+        transform: translateY(-2px);
+    }
+
+    @media (max-width: 768px) {
+        .safety-stats {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+    </style>
+{% endblock %}

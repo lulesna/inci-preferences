@@ -5,103 +5,525 @@
 {% block content %}
     <section class="main-section">
         <h2>Search for cosmetics</h2>
-
-        <form id="search-form" class="search-page-form">
-            <div>
-                <label for="search-query">Search by name or brand:</label>
-                <input type="text" id="search-query" name="q" placeholder="Enter product name or brand..." value="{{ request.GET.q }}" required>
+            <!-- Główne wyszukiwanie -->
+            <div class="search-box">
+                <input type="text" id="search-query" placeholder="Search by product name or brand..." />
+                <button id="search-btn" onclick="performSearch()">Search</button>
             </div>
 
-            <div>
-                <label for="category-filter">Filter by category:</label>
-                <select id="category-filter" name="category">
-                    <option value="">All Categories</option>
-                    <option value="FACE">Skincare</option>
-                    <option value="MAKEUP">Makeup</option>
-                    <option value="BODY">Body</option>
-                </select>
+            <!-- Zaawansowane filtry -->
+            <div class="filters-section">
+                <button class="toggle-filters-btn" onclick="toggleFilters()">
+                    <span id="filter-icon">▼</span> Advanced Filters
+                </button>
+
+                <div id="filters-panel" style="display: none;">
+                    <!-- Kategoria główna -->
+                    <div class="filter-group">
+                        <label>Category:</label>
+                        <div class="filter-buttons">
+                            <button class="filter-btn" data-filter="category" data-value="">All</button>
+                            <button class="filter-btn" data-filter="category" data-value="FACE">Face</button>
+                            <button class="filter-btn" data-filter="category" data-value="MAKEUP">Makeup</button>
+                            <button class="filter-btn" data-filter="category" data-value="BODY">Body</button>
+                            <button class="filter-btn" data-filter="category" data-value="HANDS">Hands</button>
+                        </div>
+                    </div>
+
+                    <!-- Podkategoria (dynamicznie aktualizowana) -->
+                    <div class="filter-group" id="subcategory-group" style="display: none;">
+                        <label>Subcategory:</label>
+                        <div class="filter-buttons" id="subcategory-buttons"></div>
+                    </div>
+
+                    <!-- Typ produktu (dynamicznie aktualizowany) -->
+                    <div class="filter-group" id="product-type-group" style="display: none;">
+                        <label>Product Type:</label>
+                        <div class="filter-buttons" id="product-type-buttons"></div>
+                    </div>
+
+                    {% if user.is_authenticated %}
+                    <!-- Filtr bezpieczeństwa -->
+                    <div class="filter-group">
+                        <label>Safety Level:</label>
+                        <div class="filter-buttons">
+                            <button class="filter-btn" data-filter="safety" data-value="">All</button>
+                            <button class="filter-btn safe" data-filter="safety" data-value="safe">✅ Safe Only</button>
+                            <button class="filter-btn moderate" data-filter="safety" data-value="moderate">⚠️ Moderate & Safe</button>
+                        </div>
+                    </div>
+
+                    <!-- Filtr składników -->
+                    <div class="filter-group">
+                        <label>Must Contain Ingredient:</label>
+                        <input type="text" id="ingredient-filter" placeholder="Start typing ingredient name..." />
+                        <div id="ingredient-suggestions"></div>
+                        <div id="selected-ingredients"></div>
+                    </div>
+
+                    <!-- Filtr wykluczonych składników -->
+                    <div class="filter-group">
+                        <label>Must NOT Contain:</label>
+                        <input type="text" id="exclude-ingredient-filter" placeholder="Start typing ingredient name..." />
+                        <div id="exclude-ingredient-suggestions"></div>
+                        <div id="excluded-ingredients"></div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Sortowanie -->
+                    <div class="filter-group">
+                        <label>Sort By:</label>
+                        <select id="sort-by">
+                            <option value="name">Name (A-Z)</option>
+                            <option value="name-desc">Name (Z-A)</option>
+                            <option value="brand">Brand (A-Z)</option>
+                            {% if user.is_authenticated %}
+                            <option value="safety">Safety (Best First)</option>
+                            <option value="ingredients">Most Safe Ingredients</option>
+                            {% endif %}
+                        </select>
+                    </div>
+
+                    <!-- Przyciski akcji -->
+                    <div class="filter-actions">
+                        <button class="clear-filters-btn" onclick="clearFilters()">Clear All Filters</button>
+                        <button class="apply-filters-btn" onclick="performSearch()">Apply Filters</button>
+                    </div>
+                </div>
             </div>
 
-            <button type="submit">Search</button>
-        </form>
+        <!-- Aktywne filtry (chips) -->
+        <div id="active-filters" style="margin: 20px 0;"></div>
 
+        <!-- Wyniki -->
         <div id="search-results">
+            <p style="text-align: center; color: var(--text);">Use the search box or filters to find cosmetics</p>
         </div>
     </section>
 
     <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const queryFromUrl = urlParams.get('q');
+    let allIngredients = [];
+    let selectedIngredients = [];
+    let excludedIngredients = [];
+    let userPreferences = null;
 
-    if (queryFromUrl) {
-        document.getElementById('search-query').value = queryFromUrl;
-        performSearch(queryFromUrl);
+    const filters = {
+        query: '',
+        category: '',
+        subcategory: '',
+        productType: '',
+        safety: '',
+        sortBy: 'name'
+    };
+
+    const subcategoryMap = {
+        'FACE': ['Cleanser', 'Moisturizer', 'Serum', 'Essence', 'Sunscreen'],
+        'MAKEUP': ['Eyes', 'Face', 'Lips', 'Brows'],
+        'BODY': [],
+        'HANDS': []
+    };
+
+    const productTypeMap = {
+        'Eyes': ['Mascara', 'Eyeshadow', 'Eyeliner'],
+        'Face': ['Foundation', 'Concealer', 'Powder', 'Blush', 'Bronzer', 'Highlighter'],
+        'Lips': ['Lipstick', 'Lip Gloss'],
+        'Brows': ['Brow Pencil']
+    };
+
+    function formatCategory(text) {
+        if (!text) return '';
+        return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
     }
 
-    document.getElementById('search-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        const query = document.getElementById('search-query').value;
-        const category = document.getElementById('category-filter').value;
-
-        performSearch(query, category);
-    });
-
-    async function displayCosmeticsWithSafety(cosmetics, containerId) {
-        const container = document.getElementById(containerId);
-
-        if (cosmetics.length === 0) {
-            container.innerHTML = '<p style="text-align: center; color: var(--text);">No cosmetics found.</p>';
-            return;
-        }
-
-        {% if user.is_authenticated %}
-        let userPreferences = null;
+    async function loadIngredients() {
         try {
-            const prefResponse = await fetch('/api/preferences/my_preferences/');
-            const prefData = await prefResponse.json();
+            const response = await fetch('/api/ingredients/');
+            allIngredients = await response.json();
+        } catch (error) {
+            console.error('Error loading ingredients');
+        }
+    }
+
+    {% if user.is_authenticated %}
+    async function loadUserPreferences() {
+        try {
+            const response = await fetch('/api/preferences/my_preferences/');
+            const data = await response.json();
             userPreferences = {
-                safe: prefData.safe_ingredients.map(ing => ing.id),
-                moderate: prefData.moderate_ingredients.map(ing => ing.id),
-                unsafe: prefData.unsafe_ingredients.map(ing => ing.id)
+                safe: data.safe_ingredients.map(ing => ing.id),
+                moderate: data.moderate_ingredients.map(ing => ing.id),
+                unsafe: data.unsafe_ingredients.map(ing => ing.id)
             };
         } catch (error) {
             userPreferences = null;
         }
+    }
 
-        function getSafetyClass(cosmetic) {
-            if (!userPreferences) return '';
+    function getSafetyClass(cosmetic) {
+        if (!userPreferences) return '';
 
-            const hasUnsafe = cosmetic.ingredients.some(ing =>
-                userPreferences.unsafe.includes(ing.id)
-            );
+        const hasUnsafe = cosmetic.ingredients.some(ing =>
+            userPreferences.unsafe.includes(ing.id)
+        );
+        if (hasUnsafe) return 'unsafe';
 
-            if (hasUnsafe) return 'unsafe';
+        const hasModerate = cosmetic.ingredients.some(ing =>
+            userPreferences.moderate.includes(ing.id)
+        );
+        if (hasModerate) return 'moderate';
 
-            const hasModerate = cosmetic.ingredients.some(ing =>
-                userPreferences.moderate.includes(ing.id)
-            );
+        return 'safe';
+    }
 
-            if (hasModerate) return 'moderate';
+    function getSafeIngredientCount(cosmetic) {
+        if (!userPreferences) return 0;
+        return cosmetic.ingredients.filter(ing =>
+            userPreferences.safe.includes(ing.id)
+        ).length;
+    }
+    {% endif %}
 
-            return 'safe';
+    function toggleFilters() {
+        const panel = document.getElementById('filters-panel');
+        const icon = document.getElementById('filter-icon');
+
+        if (panel.style.display === 'none') {
+            panel.style.display = 'block';
+            icon.textContent = '▲';
+        } else {
+            panel.style.display = 'none';
+            icon.textContent = '▼';
+        }
+    }
+
+    // Obsługa kliknięć w przyciski filtrów
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('filter-btn')) {
+            const filterType = e.target.dataset.filter;
+            const value = e.target.dataset.value;
+
+            // Usuń active z innych przycisków w tej grupie
+            const group = e.target.parentElement;
+            group.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+
+            // Dodaj active do klikniętego
+            e.target.classList.add('active');
+
+            // Zaktualizuj filtr
+            if (filterType === 'category') {
+                filters.category = value;
+                filters.subcategory = '';
+                filters.productType = '';
+                updateSubcategoryButtons(value);
+            } else if (filterType === 'subcategory') {
+                filters.subcategory = value;
+                filters.productType = '';
+                updateProductTypeButtons(value);
+            } else if (filterType === 'productType') {
+                filters.productType = value;
+            } else if (filterType === 'safety') {
+                filters.safety = value;
+            }
+
+            updateActiveFilters();
+        }
+    });
+
+    function updateSubcategoryButtons(category) {
+        const group = document.getElementById('subcategory-group');
+        const buttonsContainer = document.getElementById('subcategory-buttons');
+
+        if (!category || !subcategoryMap[category] || subcategoryMap[category].length === 0) {
+            group.style.display = 'none';
+            return;
         }
 
-        function getSafetyBadge(safetyClass) {
-            if (safetyClass === 'unsafe') {
-                return '<span class="safety-badge">🚫</span>';
-            } else if (safetyClass === 'moderate') {
-                return '<span class="safety-badge">⚠️</span>';
-            } else if (safetyClass === 'safe') {
-                return '<span class="safety-badge">✅</span>';
+        group.style.display = 'block';
+        buttonsContainer.innerHTML = '<button class="filter-btn active" data-filter="subcategory" data-value="">All</button>';
+
+        subcategoryMap[category].forEach(sub => {
+            buttonsContainer.innerHTML += `<button class="filter-btn" data-filter="subcategory" data-value="${sub}">${sub}</button>`;
+        });
+
+        // Ukryj product type
+        document.getElementById('product-type-group').style.display = 'none';
+    }
+
+    function updateProductTypeButtons(subcategory) {
+        const group = document.getElementById('product-type-group');
+        const buttonsContainer = document.getElementById('product-type-buttons');
+
+        if (!subcategory || !productTypeMap[subcategory] || productTypeMap[subcategory].length === 0) {
+            group.style.display = 'none';
+            return;
+        }
+
+        group.style.display = 'block';
+        buttonsContainer.innerHTML = '<button class="filter-btn active" data-filter="productType" data-value="">All</button>';
+
+        productTypeMap[subcategory].forEach(type => {
+            buttonsContainer.innerHTML += `<button class="filter-btn" data-filter="productType" data-value="${type}">${type}</button>`;
+        });
+    }
+
+    // Autocomplete dla składników
+    document.getElementById('ingredient-filter')?.addEventListener('input', function(e) {
+        const searchTerm = e.target.value.toLowerCase();
+
+        if (searchTerm.length < 2) {
+            document.getElementById('ingredient-suggestions').innerHTML = '';
+            return;
+        }
+
+        const matches = allIngredients.filter(ing =>
+            ing.inci_name.toLowerCase().includes(searchTerm) &&
+            !selectedIngredients.includes(ing.id)
+        ).slice(0, 10);
+
+        let html = '<div class="suggestions-list">';
+        matches.forEach(ing => {
+            html += `<div class="suggestion-item" onclick="addIngredientFilter(${ing.id}, '${ing.inci_name}')">${ing.inci_name}</div>`;
+        });
+        html += '</div>';
+
+        document.getElementById('ingredient-suggestions').innerHTML = html;
+    });
+
+    document.getElementById('exclude-ingredient-filter')?.addEventListener('input', function(e) {
+        const searchTerm = e.target.value.toLowerCase();
+
+        if (searchTerm.length < 2) {
+            document.getElementById('exclude-ingredient-suggestions').innerHTML = '';
+            return;
+        }
+
+        const matches = allIngredients.filter(ing =>
+            ing.inci_name.toLowerCase().includes(searchTerm) &&
+            !excludedIngredients.includes(ing.id)
+        ).slice(0, 10);
+
+        let html = '<div class="suggestions-list">';
+        matches.forEach(ing => {
+            html += `<div class="suggestion-item" onclick="addExcludeFilter(${ing.id}, '${ing.inci_name}')">${ing.inci_name}</div>`;
+        });
+        html += '</div>';
+
+        document.getElementById('exclude-ingredient-suggestions').innerHTML = html;
+    });
+
+    function addIngredientFilter(id, name) {
+        selectedIngredients.push(id);
+        document.getElementById('ingredient-filter').value = '';
+        document.getElementById('ingredient-suggestions').innerHTML = '';
+        updateSelectedIngredients();
+        updateActiveFilters();
+    }
+
+    function addExcludeFilter(id, name) {
+        excludedIngredients.push(id);
+        document.getElementById('exclude-ingredient-filter').value = '';
+        document.getElementById('exclude-ingredient-suggestions').innerHTML = '';
+        updateExcludedIngredients();
+        updateActiveFilters();
+    }
+
+    function updateSelectedIngredients() {
+        const container = document.getElementById('selected-ingredients');
+        let html = '';
+
+        selectedIngredients.forEach(id => {
+            const ing = allIngredients.find(i => i.id === id);
+            if (ing) {
+                html += `<span class="ingredient-chip">${ing.inci_name} <span onclick="removeIngredientFilter(${id})">×</span></span>`;
             }
+        });
+
+        container.innerHTML = html;
+    }
+
+    function updateExcludedIngredients() {
+        const container = document.getElementById('excluded-ingredients');
+        let html = '';
+
+        excludedIngredients.forEach(id => {
+            const ing = allIngredients.find(i => i.id === id);
+            if (ing) {
+                html += `<span class="ingredient-chip exclude">${ing.inci_name} <span onclick="removeExcludeFilter(${id})">×</span></span>`;
+            }
+        });
+
+        container.innerHTML = html;
+    }
+
+    function removeIngredientFilter(id) {
+        selectedIngredients = selectedIngredients.filter(i => i !== id);
+        updateSelectedIngredients();
+        updateActiveFilters();
+        performSearch();
+    }
+
+    function removeExcludeFilter(id) {
+        excludedIngredients = excludedIngredients.filter(i => i !== id);
+        updateExcludedIngredients();
+        updateActiveFilters();
+        performSearch();
+    }
+
+    function updateActiveFilters() {
+        const container = document.getElementById('active-filters');
+        let chips = [];
+
+        if (filters.query) chips.push(`Search: "${filters.query}"`);
+        if (filters.category) chips.push(`Category: ${formatCategory(filters.category)}`);
+        if (filters.subcategory) chips.push(`Subcategory: ${filters.subcategory}`);
+        if (filters.productType) chips.push(`Type: ${filters.productType}`);
+        if (filters.safety) chips.push(`Safety: ${filters.safety}`);
+        if (selectedIngredients.length > 0) chips.push(`Contains: ${selectedIngredients.length} ingredient(s)`);
+        if (excludedIngredients.length > 0) chips.push(`Excludes: ${excludedIngredients.length} ingredient(s)`);
+
+        if (chips.length === 0) {
+            container.innerHTML = '';
+            return;
+        }
+
+        let html = '<div class="active-filters-chips">';
+        chips.forEach(chip => {
+            html += `<span class="filter-chip">${chip}</span>`;
+        });
+        html += '</div>';
+
+        container.innerHTML = html;
+    }
+
+    function clearFilters() {
+        filters.query = '';
+        filters.category = '';
+        filters.subcategory = '';
+        filters.productType = '';
+        filters.safety = '';
+        filters.sortBy = 'name';
+        selectedIngredients = [];
+        excludedIngredients = [];
+
+        document.getElementById('search-query').value = '';
+        document.getElementById('sort-by').value = 'name';
+
+        if (document.getElementById('ingredient-filter')) {
+            document.getElementById('ingredient-filter').value = '';
+            document.getElementById('exclude-ingredient-filter').value = '';
+        }
+
+        // Resetuj przyciski
+        document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.filter-btn[data-value=""]').forEach(btn => btn.classList.add('active'));
+
+        // Ukryj dynamiczne grupy
+        document.getElementById('subcategory-group').style.display = 'none';
+        document.getElementById('product-type-group').style.display = 'none';
+
+        updateSelectedIngredients();
+        updateExcludedIngredients();
+        updateActiveFilters();
+
+        document.getElementById('search-results').innerHTML = '<p style="text-align: center; color: var(--text);">Use the search box or filters to find cosmetics</p>';
+    }
+
+    async function performSearch() {
+        filters.query = document.getElementById('search-query').value;
+        filters.sortBy = document.getElementById('sort-by').value;
+
+        const resultsDiv = document.getElementById('search-results');
+        resultsDiv.innerHTML = '<p>Searching...</p>';
+
+        try {
+            // Buduj URL z filtrami
+            let url = '/api/cosmetics/?';
+            const params = [];
+
+            if (filters.query) params.push(`search=${encodeURIComponent(filters.query)}`);
+            if (filters.category) params.push(`main_category=${filters.category}`);
+            if (filters.subcategory) params.push(`subcategory=${filters.subcategory}`);
+
+            url += params.join('&');
+
+            const response = await fetch(url);
+            let cosmetics = await response.json();
+
+            // Filtrowanie po product_type (client-side bo API nie ma tego filtra)
+            if (filters.productType) {
+                cosmetics = cosmetics.filter(c => c.product_type === filters.productType);
+            }
+
+            // Filtrowanie po składnikach (must contain)
+            if (selectedIngredients.length > 0) {
+                cosmetics = cosmetics.filter(c => {
+                    const cosmeticIngredients = c.ingredients.map(ing => ing.id);
+                    return selectedIngredients.every(id => cosmeticIngredients.includes(id));
+                });
+            }
+
+            // Filtrowanie po wykluczonych składnikach
+            if (excludedIngredients.length > 0) {
+                cosmetics = cosmetics.filter(c => {
+                    const cosmeticIngredients = c.ingredients.map(ing => ing.id);
+                    return !excludedIngredients.some(id => cosmeticIngredients.includes(id));
+                });
+            }
+
+            {% if user.is_authenticated %}
+            // Filtrowanie po safety
+            if (filters.safety === 'safe') {
+                cosmetics = cosmetics.filter(c => getSafetyClass(c) === 'safe');
+            } else if (filters.safety === 'moderate') {
+                cosmetics = cosmetics.filter(c => {
+                    const safety = getSafetyClass(c);
+                    return safety === 'safe' || safety === 'moderate';
+                });
+            }
+
+            // Sortowanie
+            if (filters.sortBy === 'safety') {
+                cosmetics.sort((a, b) => {
+                    const orderMap = { 'safe': 0, 'moderate': 1, 'unsafe': 2 };
+                    return orderMap[getSafetyClass(a)] - orderMap[getSafetyClass(b)];
+                });
+            } else if (filters.sortBy === 'ingredients') {
+                cosmetics.sort((a, b) => getSafeIngredientCount(b) - getSafeIngredientCount(a));
+            }
+            {% endif %}
+
+            if (filters.sortBy === 'name') {
+                cosmetics.sort((a, b) => a.name.localeCompare(b.name));
+            } else if (filters.sortBy === 'name-desc') {
+                cosmetics.sort((a, b) => b.name.localeCompare(a.name));
+            } else if (filters.sortBy === 'brand') {
+                cosmetics.sort((a, b) => a.brand.localeCompare(b.brand));
+            }
+
+            if (cosmetics.length === 0) {
+                resultsDiv.innerHTML = '<p style="text-align: center; color: var(--text); font-size: 16px;">No cosmetics found. Try adjusting your filters.</p>';
+                return;
+            }
+
+            resultsDiv.innerHTML = `<h3>Found ${cosmetics.length} product${cosmetics.length !== 1 ? 's' : ''}</h3><div id="cosmetics-container"></div>`;
+            await displayCosmeticsWithSafety(cosmetics, 'cosmetics-container');
+
+        } catch (error) {
+            resultsDiv.innerHTML = '<p style="text-align: center; color: var(--accent-dark);">Error searching cosmetics. Please try again.</p>';
+        }
+    }
+
+    async function displayCosmeticsWithSafety(cosmetics, containerId) {
+        const container = document.getElementById(containerId);
+
+        {% if user.is_authenticated %}
+        function getSafetyBadge(safetyClass) {
+            if (safetyClass === 'unsafe') return '<span class="safety-badge">🚫</span>';
+            if (safetyClass === 'moderate') return '<span class="safety-badge">⚠️</span>';
+            if (safetyClass === 'safe') return '<span class="safety-badge">✅</span>';
             return '';
         }
         {% endif %}
-
-        function formatCategory(category) {
-            return category.charAt(0) + category.slice(1).toLowerCase();
-        }
 
         let html = '<div class="cosmetics-grid">';
 
@@ -114,7 +536,7 @@
             const safetyBadge = '';
             {% endif %}
 
-            const displayType = cosmetic.product_type || cosmetic.subcategory || '';
+            const displayType = formatCategory(cosmetic.product_type || cosmetic.subcategory || '');
             const displayCategory = formatCategory(cosmetic.main_category);
 
             html += `
@@ -136,57 +558,286 @@
         container.innerHTML = html;
     }
 
-    async function performSearch(query, category = '') {
-        const resultsDiv = document.getElementById('search-results');
-        resultsDiv.innerHTML = '<p>Searching...</p>';
-
-        try {
-            let url = `/api/cosmetics/?search=${encodeURIComponent(query)}`;
-            if (category) {
-                url += `&main_category=${category}`;
-            }
-
-            const response = await fetch(url);
-            const cosmetics = await response.json();
-
-            if (cosmetics.length === 0) {
-                resultsDiv.innerHTML = '<p style="text-align: center; color: var(--text); font-size: 16px;">No cosmetics found matching your search.</p>';
-                return;
-            }
-
-            resultsDiv.innerHTML = '<h3>Search Results (' + cosmetics.length + '):</h3><div id="cosmetics-container"></div>';
-            await displayCosmeticsWithSafety(cosmetics, 'cosmetics-container');
-
-        } catch (error) {
-            resultsDiv.innerHTML = '<p style="text-align: center; color: var(--accent-dark);">Error searching cosmetics. Please try again.</p>';
+    // Search on Enter
+    document.getElementById('search-query').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            performSearch();
         }
-    }
+    });
 
-    async function viewQuickDetails(cosmeticId) {
-        const detailsDiv = document.getElementById('details-' + cosmeticId);
-        
-        if (detailsDiv.style.display === 'block') {
-            detailsDiv.style.display = 'none';
-            return;
+    document.getElementById('sort-by').addEventListener('change', function() {
+        if (filters.query || filters.category || selectedIngredients.length > 0) {
+            performSearch();
         }
-        
-        detailsDiv.innerHTML = '<p>Loading ingredients...</p>';
-        detailsDiv.style.display = 'block';
-        
-        try {
-            const response = await fetch(`/api/cosmetics/${cosmeticId}/`);
-            const cosmetic = await response.json();
-            
-            let html = '<h4>Ingredients:</h4><ul>';
-            cosmetic.ingredients.forEach(ing => {
-                html += `<li>${ing.inci_name}${ing.purpose ? ' - ' + ing.purpose : ''}</li>`;
-            });
-            html += '</ul>';
-            
-            detailsDiv.innerHTML = html;
-        } catch (error) {
-            detailsDiv.innerHTML = '<p>Error loading details</p>';
-        }
-    }
+    });
+
+    // Initialize
+    loadIngredients();
+    {% if user.is_authenticated %}
+    loadUserPreferences();
+    {% endif %}
+
+    // Ustaw pierwszy przycisk jako active
+    document.querySelectorAll('.filter-btn[data-value=""]').forEach(btn => btn.classList.add('active'));
     </script>
+
+    <style>
+
+    :root {
+        --main-green: #C1CFA1;
+        --lime: #9fd563;
+        --main-pink: #df96b4;
+        --light-pink: #EDE8DC;
+        --dark-mint: rgba(55, 126, 110, 0.97);
+        --accent-pink: #d878c5;
+        --accent-mint: #bfefe9;
+        --accent-dark: #d64386;
+        --accent-green: #71dd99;
+        --text: #000000;
+        --gradient-pink: linear-gradient(135deg, var(--main-pink) 0%, var(--light-pink) 100%);
+    }
+
+    .search-container {
+        max-width: 900px;
+        margin: 0 auto 30px;
+    }
+
+    .search-box {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+
+    .search-box input {
+        flex: 1;
+        padding: 12px 20px;
+        border: 2px solid var(--lime);
+        border-radius: 50px;
+        font-size: 16px;
+        font-family: 'KineksRound', sans-serif;
+    }
+
+    .search-box button {
+        padding: 12px 30px;
+        background: var(--lime);
+        color: white;
+        border: none;
+        border-radius: 50px;
+        font-weight: 600;
+        font-family: 'KineksRound', sans-serif;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .search-box button:hover {
+        background: var(--dark-green);
+        transform: translateY(-2px);
+    }
+
+    .filters-section {
+        background: white;
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(130, 162, 132, 0.15);
+    }
+
+    .toggle-filters-btn {
+        width: 100%;
+        padding: 12px;
+        background: var(--lime);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-weight: 600;
+        font-family: 'KineksRound', sans-serif;
+        cursor: pointer;
+        font-size: 16px;
+        transition: all 0.3s;
+    }
+
+    .toggle-filters-btn:hover {
+        background: var(--dark-green);
+    }
+
+    #filters-panel {
+        padding-top: 20px;
+    }
+
+    .filter-group {
+        margin-bottom: 20px;
+    }
+
+    .filter-group label {
+        display: block;
+        font-weight: 600;
+        color: var(--dark-green);
+        margin-bottom: 10px;
+        font-size: 14px;
+    }
+
+    .filter-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .filter-btn {
+        padding: 8px 16px;
+        border: 2px solid var(--lime);
+        background: white;
+        border-radius: 50px;
+        font-family: 'KineksRound', sans-serif;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        font-size: 14px;
+        color: var(--dark-green);
+    }
+
+    .filter-btn:hover {
+        background: rgba(159, 213, 99, 0.1);
+    }
+
+    .filter-btn.active {
+        background: var(--lime);
+        color: white;
+    }
+
+    .filter-btn.safe {
+        border-color: var(--accent-green);
+        color: #2d8659;
+    }
+
+    .filter-btn.safe.active {
+        background: var(--accent-green);
+        color: white;
+    }
+
+    .filter-btn.moderate {
+        border-color: #f0ad4e;
+        color: #d89736;
+    }
+
+    .filter-btn.moderate.active {
+        background: #f0ad4e;
+        color: white;
+    }
+
+    .filter-group input[type="text"],
+    .filter-group select {
+        width: 100%;
+        padding: 10px 15px;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        font-family: 'KineksRound', sans-serif;
+        font-size: 14px;
+    }
+
+    .suggestions-list {
+        background: white;
+        border: 2px solid var(--lime);
+        border-radius: 8px;
+        margin-top: 5px;
+        max-height: 200px;
+        overflow-y: auto;
+    }
+
+    .suggestion-item {
+        padding: 10px 15px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .suggestion-item:hover {
+        background: rgba(159, 213, 99, 0.1);
+    }
+
+    .ingredient-chip {
+        display: inline-block;
+        padding: 6px 12px;
+        background: var(--lime);
+        color: white;
+        border-radius: 50px;
+        margin: 5px 5px 0 0;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .ingredient-chip.exclude {
+        background: var(--accent-dark);
+    }
+
+    .ingredient-chip span {
+        cursor: pointer;
+        margin-left: 8px;
+        font-weight: 700;
+    }
+
+    .filter-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 20px;
+    }
+
+    .clear-filters-btn,
+    .apply-filters-btn {
+        flex: 1;
+        padding: 12px;
+        border: none;
+        border-radius: 12px;
+        font-weight: 600;
+        font-family: 'KineksRound', sans-serif;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .clear-filters-btn {
+        background: #e0e0e0;
+        color: var(--text);
+    }
+
+    .clear-filters-btn:hover {
+        background: #d0d0d0;
+    }
+
+    .apply-filters-btn {
+        background: var(--main-pink);
+        color: white;
+    }
+
+    .apply-filters-btn:hover {
+        background: var(--accent-dark);
+        transform: translateY(-2px);
+    }
+
+    .active-filters-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .filter-chip {
+        padding: 6px 12px;
+        background: rgba(159, 213, 99, 0.2);
+        border: 2px solid var(--lime);
+        color: var(--dark-green);
+        border-radius: 50px;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    @media (max-width: 768px) {
+        .filter-buttons {
+            flex-direction: column;
+        }
+
+        .filter-btn {
+            width: 100%;
+        }
+
+        .filter-actions {
+            flex-direction: column;
+        }
+    }
+    </style>
 {% endblock %}
