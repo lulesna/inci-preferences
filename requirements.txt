@@ -1,5 +1,9 @@
-Django>=4.2,<5.0
-djangorestframework>=3.14.0
-psycopg2-binary>=2.9.0
-python-decouple>=3.8
-django-filter>=23.0
+asgiref==3.10.0
+dj-database-url==3.0.1
+Django==6.0b1
+django-filter==25.2
+djangorestframework==3.16.1
+psycopg2-binary==2.9.11
+python-decouple==3.8
+sqlparse==0.5.3
+tzdata==2025.2
