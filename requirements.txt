@@ -1,7 +1,7 @@
 asgiref==3.10.0
 dj-database-url==3.0.1
-Django==5.1.15
-django-filter==24.3
+Django==6.0b1
+django-filter==25.2
 djangorestframework==3.16.1
 psycopg2-binary==2.9.11
 python-decouple==3.8
