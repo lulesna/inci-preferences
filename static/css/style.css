@@ -449,8 +449,12 @@ main {
 
 @media (max-width: 768px) {
 
-   .hamburger {
+    .hamburger {
         display: flex;
+    }
+
+    header {
+    margin: 5px 5px;
     }
 
     nav {
