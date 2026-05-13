@@ -1179,14 +1179,18 @@ main {
 @media (max-width: 768px) {
 
     .insight-card {
-    flex-direction: column;
-    align-items: flex-start;
-}
+        flex-direction: column;
+        align-items: flex-start;
+    }
 
-.add-preference-btn {
-    align-self: flex-end;
-    margin-top: 8px;
-}
+    .profile-container {
+        max-width: 100%;
+        padding: 20px 15px;
+    }
+    .add-preference-btn {
+        align-self: flex-end;
+        margin-top: 8px;
+    }
     .profile-section {
         padding: 20px;
     }
