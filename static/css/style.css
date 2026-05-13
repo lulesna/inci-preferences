@@ -1443,6 +1443,17 @@ main {
         width: 40px;
         bottom: auto;
     }
+    header.scrolled nav h1 {
+    display: none;
+}
+
+header.scrolled nav {
+    gap: 0;
+}
+
+header.scrolled {
+    padding: 6px 0;
+}
 
     .ingredients-section,
     .safety-analysis-section,
