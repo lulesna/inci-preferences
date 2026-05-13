@@ -1282,7 +1282,7 @@ main {
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s;
-    color: white;
+    color: var(--accent-pink);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1290,6 +1290,11 @@ main {
 
 #favorite-btn:hover {
     border: 2px var(--lime) solid;
+}
+
+#favorite-btn.favorited {
+    background-color: var(--lime);
+    color: white;
 }
 
 .ingredients-section {

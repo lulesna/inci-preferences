@@ -218,12 +218,12 @@
         const btn = document.getElementById('favorite-btn');
         if (btn) {
             if (isFavorite) {
-                btn.textContent = '☆';
-                btn.style.backgroundColor = 'var(--main-pink)';
+                btn.textContent = '★';
+                btn.classList.add('favorited');
                 btn.title = 'Remove from favorites';
             } else {
                 btn.textContent = '☆';
-                btn.style.backgroundColor = 'var(--lime)';
+                btn.classList.remove('favorited');
                 btn.title = 'Add to favorites';
             }
         }

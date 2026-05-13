@@ -2,6 +2,10 @@
 
 {% block title %}Search - INCI Preferences{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="/static/css/search.css">
+{% endblock %}
+
 {% block content %}
     <section class="main-section">
         <h2>Search for cosmetics</h2>
@@ -11,14 +15,12 @@
                 <button id="search-btn" onclick="performSearch()">Search</button>
             </div>
 
-            <!-- Zaawansowane filtry -->
             <div class="filters-section">
                 <button class="toggle-filters-btn" onclick="toggleFilters()">
                     <span id="filter-icon">▼</span> Advanced Filters
                 </button>
 
                 <div id="filters-panel" style="display: none;">
-                    <!-- Kategoria główna -->
                     <div class="filter-group">
                         <label>Category:</label>
                         <div class="filter-buttons">
@@ -30,20 +32,18 @@
                         </div>
                     </div>
 
-                    <!-- Podkategoria (dynamicznie aktualizowana) -->
                     <div class="filter-group" id="subcategory-group" style="display: none;">
                         <label>Subcategory:</label>
                         <div class="filter-buttons" id="subcategory-buttons"></div>
                     </div>
 
-                    <!-- Typ produktu (dynamicznie aktualizowany) -->
                     <div class="filter-group" id="product-type-group" style="display: none;">
                         <label>Product Type:</label>
                         <div class="filter-buttons" id="product-type-buttons"></div>
                     </div>
 
                     {% if user.is_authenticated %}
-                    <!-- Filtr bezpieczeństwa -->
+
                     <div class="filter-group">
                         <label>Safety Level:</label>
                         <div class="filter-buttons">
@@ -53,7 +53,6 @@
                         </div>
                     </div>
 
-                    <!-- Filtr składników -->
                     <div class="filter-group">
                         <label>Must Contain Ingredient:</label>
                         <input type="text" id="ingredient-filter" placeholder="Start typing ingredient name..." />
@@ -61,7 +60,6 @@
                         <div id="selected-ingredients"></div>
                     </div>
 
-                    <!-- Filtr wykluczonych składników -->
                     <div class="filter-group">
                         <label>Must NOT Contain:</label>
                         <input type="text" id="exclude-ingredient-filter" placeholder="Start typing ingredient name..." />
@@ -70,7 +68,6 @@
                     </div>
                     {% endif %}
 
-                    <!-- Sortowanie -->
                     <div class="filter-group">
                         <label>Sort By:</label>
                         <select id="sort-by">
@@ -84,7 +81,6 @@
                         </select>
                     </div>
 
-                    <!-- Przyciski akcji -->
                     <div class="filter-actions">
                         <button class="clear-filters-btn" onclick="clearFilters()">Clear All Filters</button>
                         <button class="apply-filters-btn" onclick="performSearch()">Apply Filters</button>
@@ -92,10 +88,8 @@
                 </div>
             </div>
 
-        <!-- Aktywne filtry (chips) -->
         <div id="active-filters" style="margin: 20px 0;"></div>
 
-        <!-- Wyniki -->
         <div id="search-results">
             <p style="text-align: center; color: var(--text);">Use the search box or filters to find cosmetics</p>
         </div>
@@ -196,20 +190,16 @@
         }
     }
 
-    // Obsługa kliknięć w przyciski filtrów
     document.addEventListener('click', function(e) {
         if (e.target.classList.contains('filter-btn')) {
             const filterType = e.target.dataset.filter;
             const value = e.target.dataset.value;
 
-            // Usuń active z innych przycisków w tej grupie
             const group = e.target.parentElement;
             group.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
 
-            // Dodaj active do klikniętego
             e.target.classList.add('active');
 
-            // Zaktualizuj filtr
             if (filterType === 'category') {
                 filters.category = value;
                 filters.subcategory = '';
@@ -245,7 +235,6 @@
             buttonsContainer.innerHTML += `<button class="filter-btn" data-filter="subcategory" data-value="${sub}">${sub}</button>`;
         });
 
-        // Ukryj product type
         document.getElementById('product-type-group').style.display = 'none';
     }
 
@@ -266,7 +255,6 @@
         });
     }
 
-    // Autocomplete dla składników
     document.getElementById('ingredient-filter')?.addEventListener('input', function(e) {
         const searchTerm = e.target.value.toLowerCase();
 
@@ -413,11 +401,9 @@
             document.getElementById('exclude-ingredient-filter').value = '';
         }
 
-        // Resetuj przyciski
         document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
         document.querySelectorAll('.filter-btn[data-value=""]').forEach(btn => btn.classList.add('active'));
 
-        // Ukryj dynamiczne grupy
         document.getElementById('subcategory-group').style.display = 'none';
         document.getElementById('product-type-group').style.display = 'none';
 
@@ -436,7 +422,6 @@
         resultsDiv.innerHTML = '<p>Searching...</p>';
 
         try {
-            // Buduj URL z filtrami
             let url = '/api/cosmetics/?';
             const params = [];
 
@@ -449,12 +434,10 @@
             const response = await fetch(url);
             let cosmetics = await response.json();
 
-            // Filtrowanie po product_type (client-side bo API nie ma tego filtra)
             if (filters.productType) {
                 cosmetics = cosmetics.filter(c => c.product_type === filters.productType);
             }
 
-            // Filtrowanie po składnikach (must contain)
             if (selectedIngredients.length > 0) {
                 cosmetics = cosmetics.filter(c => {
                     const cosmeticIngredients = c.ingredients.map(ing => ing.id);
@@ -462,7 +445,6 @@
                 });
             }
 
-            // Filtrowanie po wykluczonych składnikach
             if (excludedIngredients.length > 0) {
                 cosmetics = cosmetics.filter(c => {
                     const cosmeticIngredients = c.ingredients.map(ing => ing.id);
@@ -471,7 +453,6 @@
             }
 
             {% if user.is_authenticated %}
-            // Filtrowanie po safety
             if (filters.safety === 'safe') {
                 cosmetics = cosmetics.filter(c => getSafetyClass(c) === 'safe');
             } else if (filters.safety === 'moderate') {
@@ -481,7 +462,6 @@
                 });
             }
 
-            // Sortowanie
             if (filters.sortBy === 'safety') {
                 cosmetics.sort((a, b) => {
                     const orderMap = { 'safe': 0, 'moderate': 1, 'unsafe': 2 };
@@ -558,7 +538,6 @@
         container.innerHTML = html;
     }
 
-    // Search on Enter
     document.getElementById('search-query').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
             performSearch();
@@ -571,7 +550,6 @@
         }
     });
 
-    // Initialize
     loadIngredients();
     {% if user.is_authenticated %}
     loadUserPreferences();
@@ -581,263 +559,4 @@
     document.querySelectorAll('.filter-btn[data-value=""]').forEach(btn => btn.classList.add('active'));
     </script>
 
-    <style>
-
-    :root {
-        --main-green: #C1CFA1;
-        --lime: #9fd563;
-        --main-pink: #df96b4;
-        --light-pink: #EDE8DC;
-        --dark-mint: rgba(55, 126, 110, 0.97);
-        --accent-pink: #d878c5;
-        --accent-mint: #bfefe9;
-        --accent-dark: #d64386;
-        --accent-green: #71dd99;
-        --text: #000000;
-        --gradient-pink: linear-gradient(135deg, var(--main-pink) 0%, var(--light-pink) 100%);
-    }
-
-    .search-container {
-        max-width: 900px;
-        margin: 0 auto 30px;
-    }
-
-    .search-box {
-        display: flex;
-        gap: 10px;
-        margin-bottom: 20px;
-    }
-
-    .search-box input {
-        flex: 1;
-        padding: 12px 20px;
-        border: 2px solid var(--lime);
-        border-radius: 50px;
-        font-size: 16px;
-        font-family: 'KineksRound', sans-serif;
-    }
-
-    .search-box button {
-        padding: 12px 30px;
-        background: var(--lime);
-        color: white;
-        border: none;
-        border-radius: 50px;
-        font-weight: 600;
-        font-family: 'KineksRound', sans-serif;
-        cursor: pointer;
-        transition: all 0.3s;
-    }
-
-    .search-box button:hover {
-        background: var(--dark-green);
-        transform: translateY(-2px);
-    }
-
-    .filters-section {
-        background: white;
-        border-radius: 16px;
-        padding: 20px;
-        box-shadow: 0 2px 8px rgba(130, 162, 132, 0.15);
-    }
-
-    .toggle-filters-btn {
-        width: 100%;
-        padding: 12px;
-        background: var(--lime);
-        color: white;
-        border: none;
-        border-radius: 12px;
-        font-weight: 600;
-        font-family: 'KineksRound', sans-serif;
-        cursor: pointer;
-        font-size: 16px;
-        transition: all 0.3s;
-    }
-
-    .toggle-filters-btn:hover {
-        background: var(--dark-green);
-    }
-
-    #filters-panel {
-        padding-top: 20px;
-    }
-
-    .filter-group {
-        margin-bottom: 20px;
-    }
-
-    .filter-group label {
-        display: block;
-        font-weight: 600;
-        color: var(--dark-green);
-        margin-bottom: 10px;
-        font-size: 14px;
-    }
-
-    .filter-buttons {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-    }
-
-    .filter-btn {
-        padding: 8px 16px;
-        border: 2px solid var(--lime);
-        background: white;
-        border-radius: 50px;
-        font-family: 'KineksRound', sans-serif;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s;
-        font-size: 14px;
-        color: var(--dark-green);
-    }
-
-    .filter-btn:hover {
-        background: rgba(159, 213, 99, 0.1);
-    }
-
-    .filter-btn.active {
-        background: var(--lime);
-        color: white;
-    }
-
-    .filter-btn.safe {
-        border-color: var(--accent-green);
-        color: #2d8659;
-    }
-
-    .filter-btn.safe.active {
-        background: var(--accent-green);
-        color: white;
-    }
-
-    .filter-btn.moderate {
-        border-color: #f0ad4e;
-        color: #d89736;
-    }
-
-    .filter-btn.moderate.active {
-        background: #f0ad4e;
-        color: white;
-    }
-
-    .filter-group input[type="text"],
-    .filter-group select {
-        width: 100%;
-        padding: 10px 15px;
-        border: 2px solid #e0e0e0;
-        border-radius: 8px;
-        font-family: 'KineksRound', sans-serif;
-        font-size: 14px;
-    }
-
-    .suggestions-list {
-        background: white;
-        border: 2px solid var(--lime);
-        border-radius: 8px;
-        margin-top: 5px;
-        max-height: 200px;
-        overflow-y: auto;
-    }
-
-    .suggestion-item {
-        padding: 10px 15px;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-
-    .suggestion-item:hover {
-        background: rgba(159, 213, 99, 0.1);
-    }
-
-    .ingredient-chip {
-        display: inline-block;
-        padding: 6px 12px;
-        background: var(--lime);
-        color: white;
-        border-radius: 50px;
-        margin: 5px 5px 0 0;
-        font-size: 13px;
-        font-weight: 600;
-    }
-
-    .ingredient-chip.exclude {
-        background: var(--accent-dark);
-    }
-
-    .ingredient-chip span {
-        cursor: pointer;
-        margin-left: 8px;
-        font-weight: 700;
-    }
-
-    .filter-actions {
-        display: flex;
-        gap: 10px;
-        margin-top: 20px;
-    }
-
-    .clear-filters-btn,
-    .apply-filters-btn {
-        flex: 1;
-        padding: 12px;
-        border: none;
-        border-radius: 12px;
-        font-weight: 600;
-        font-family: 'KineksRound', sans-serif;
-        cursor: pointer;
-        transition: all 0.3s;
-    }
-
-    .clear-filters-btn {
-        background: #e0e0e0;
-        color: var(--text);
-    }
-
-    .clear-filters-btn:hover {
-        background: #d0d0d0;
-    }
-
-    .apply-filters-btn {
-        background: var(--main-pink);
-        color: white;
-    }
-
-    .apply-filters-btn:hover {
-        background: var(--accent-dark);
-        transform: translateY(-2px);
-    }
-
-    .active-filters-chips {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-    }
-
-    .filter-chip {
-        padding: 6px 12px;
-        background: rgba(159, 213, 99, 0.2);
-        border: 2px solid var(--lime);
-        color: var(--dark-green);
-        border-radius: 50px;
-        font-size: 13px;
-        font-weight: 600;
-    }
-
-    @media (max-width: 768px) {
-        .filter-buttons {
-            flex-direction: column;
-        }
-
-        .filter-btn {
-            width: 100%;
-        }
-
-        .filter-actions {
-            flex-direction: column;
-        }
-    }
-    </style>
 {% endblock %}
