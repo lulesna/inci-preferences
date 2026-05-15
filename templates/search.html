@@ -96,6 +96,9 @@
     </section>
 
     <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialQuery = urlParams.get('q') || '';
+
     let allIngredients = [];
     let selectedIngredients = [];
     let excludedIngredients = [];
@@ -556,6 +559,13 @@
     {% endif %}
 
     document.querySelectorAll('.filter-btn[data-value=""]').forEach(btn => btn.classList.add('active'));
+
+    if (initialQuery) {
+        document.getElementById('search-query').value = initialQuery;
+        setTimeout(() => {
+            performSearch();
+        }, 500);
+    }
     </script>
 
 {% endblock %}
