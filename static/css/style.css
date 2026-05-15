@@ -480,6 +480,7 @@ main {
         padding: 10px 12px;
         font-size: 15px;
         border-radius: 10px;
+        white-space: nowrap;
     }
 
     nav ul li a:hover {
@@ -1252,9 +1253,9 @@ main {
     }
 
      .cosmetic-result-card {
-        aspect-ratio: unset;  /* Usuń wymuszony aspect-ratio */
-        min-height: auto;     /* Usuń minimalną wysokość */
-        height: auto;         /* Pozwól na automatyczną wysokość */
+        aspect-ratio: unset;
+        min-height: auto;
+        height: auto;
         padding: 20px;
     }
 

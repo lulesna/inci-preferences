@@ -30,10 +30,10 @@
             <li><a href="{% url 'categories' %}">Categories</a></li>
 
             {% if user.is_authenticated %}
-                <li><a href="{% url 'addcosmetic' %}">Add cosmetic</a></li>
-                <li><a href="{% url 'favorites' %}">My Favorites</a></li>
-                <li><a href="/scan/">Scan Photo</a></li>
-                <li><a href="{% url 'profile' %}">My Profile</a></li>
+                <li><a href="{% url 'addcosmetic' %}">Add</a></li>
+                <li><a href="/scan/">Scan</a></li>
+                <li><a href="{% url 'favorites' %}">Favorites</a></li>
+                <li><a href="{% url 'profile' %}">Profile</a></li>
                 <li><a href="{% url 'users:logout' %}" class="logout-btn">Logout</a></li>
             {% else %}
                 <li><a href="{% url 'users:login' %}" class="login-btn">Login</a></li>

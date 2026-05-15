@@ -190,8 +190,8 @@
                 document.getElementById('product-type-container').style.display = 'none';
 
                 setTimeout(() => {
-                    window.location.href = '/categories/';
-                }, 2000);
+                    window.location.href = '/cosmetic/' + data.id + '/';
+                }, 1000);
             } else {
                 const error = await response.json();
                 resultDiv.innerHTML = '<p style="color: var(--accent-dark); font-weight: 700;">Error: ' + JSON.stringify(error) + '</p>';

@@ -98,15 +98,44 @@
         container.innerHTML = html;
     }
 
+    let allCosmetics = [];
+    let visibleCount = 18;
+    const perLoad = 18;
+
     async function loadCosmetics() {
         try {
-            const response = await fetch('/api/cosmetics/?main_category=BODY');
-            const cosmetics = await response.json();
-
-            await displayCosmeticsWithSafety(cosmetics, 'cosmetics-list');
+            const response = await fetch('/api/cosmetics/?main_category=FACE');
+            allCosmetics = await response.json();
+            visibleCount = perLoad;
+            showCosmetics();
         } catch (error) {
             document.getElementById('cosmetics-list').innerHTML = '<p>Error loading cosmetics</p>';
         }
+    }
+
+    function showCosmetics() {
+        const toShow = allCosmetics.slice(0, visibleCount);
+        displayCosmeticsWithSafety(toShow, 'cosmetics-list');
+
+        let existing = document.getElementById('load-more-container');
+        if (existing) existing.remove();
+
+        if (visibleCount < allCosmetics.length) {
+            const remaining = allCosmetics.length - visibleCount;
+            const html = `
+                <div id="load-more-container" class="load-more-container">
+                    <button class="load-more-btn" onclick="loadMore()">
+                        Show more
+                    </button>
+                </div>
+            `;
+            document.getElementById('cosmetics-list').insertAdjacentHTML('afterend', html);
+        }
+    }
+
+    function loadMore() {
+        visibleCount += perLoad;
+        showCosmetics();
     }
 
     loadCosmetics();

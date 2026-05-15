@@ -386,30 +386,50 @@
     }
 
     async function addFromInsight(ingredientId, ingredientName) {
-        if (!confirm(`Add ${ingredientName} to your safe ingredients?`)) return;
+    const buttons = document.querySelectorAll('.add-preference-btn');
+    let clickedBtn = null;
+    buttons.forEach(btn => {
+        if (btn.getAttribute('onclick').includes(ingredientId)) {
+            clickedBtn = btn;
+        }
+    });
 
-        try {
-            const response = await fetch('/api/preferences/set_ingredient_color/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken')
-                },
-                body: JSON.stringify({
-                    ingredient_id: ingredientId,
-                    color: 'GREEN'
-                })
-            });
+    if (clickedBtn) {
+        clickedBtn.textContent = 'Adding...';
+        clickedBtn.disabled = true;
+        clickedBtn.style.background = '#ccc';
+        clickedBtn.style.cursor = 'default';
+    }
 
-            if (response.ok) {
-                alert('Added to safe ingredients!');
-                loadFavoritesInsights();
-                loadUserPreferences();
+    try {
+        const response = await fetch('/api/preferences/set_ingredient_color/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                ingredient_id: ingredientId,
+                color: 'GREEN'
+            })
+        });
+
+        if (response.ok) {
+            if (clickedBtn) {
+                clickedBtn.textContent = '✅ Added';
             }
-        } catch (error) {
-            alert('Error adding ingredient');
+            loadUserPreferences();
+            setTimeout(() => loadFavoritesInsights(), 1000);
+        }
+    } catch (error) {
+        if (clickedBtn) {
+            clickedBtn.textContent = 'Add to Safe';
+            clickedBtn.disabled = false;
+            clickedBtn.style.background = '';
+            clickedBtn.style.cursor = '';
         }
     }
+}
 
     loadFavoritesInsights();
     loadIngredients();
