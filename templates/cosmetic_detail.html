@@ -98,7 +98,6 @@
 
             if (response.ok) {
                 closeIngredientModal();
-                // Odśwież preferencje i kosmetyk
                 await loadUserPreferences();
                 await loadCosmeticDetails();
             } else {
@@ -184,7 +183,7 @@
                         transition: all 0.3s;
                     " onmouseover="this.style.transform='translateY(-2px)'"
                        onmouseout="this.style.transform='translateY(0)'">
-                        🔍 Find Similar Products
+                        Find Similar Products
                     </a>
                 </div>
             `;
