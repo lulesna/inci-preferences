@@ -1,27 +1,94 @@
-# Analizator Składów Kosmetyków (Seminarium licencjackie)
-**Autorki:** Łucja Leśna i Oliwia Natzke
+# Analizator Składów Kosmetyków - INCI Preferences
 
-**Opis projektu:** Aplikacja webowa pozwalająca analizować składy kosmetyków zwracając szczególną uwagę na preferencje użytkownika (preferencje, alergie, nietolerancje...). W odróżnieniu od wielu funkcjonujących już analizatorów składów kosmetyków, aplikacja nie określa, czy składnik jest zły czy dobry dla użytkownika, tylko użytkownik sam musi zaznaczyć, które składniki akceptuje, których woli unikać, a których absolutnie nie toleruje.
+Aplikacja webowa do analizy składów kosmetyków oparta na indywidualnych preferencjach użytkownika. W przeciwieństwie do popularnych analizatorów składów, które klasyfikują substancje w sposób uniwersalny, INCI Preferences pozwala każdemu użytkownikowi samodzielnie określić, które składniki toleruje, a których powinien unikać.
 
-**Aktualne funkcjonalności aplikacji:**
-- rejestracja i logowanie (unikalny login + hasło)
-- wyszukiwanie kosmetyku po nazwie lub marce
-- zaawansowane filtrowanie
-- przeglądanie kategorii kosmetyków
-- edycja profilu: zmiana loginu, zmiana hasła, usunięcie konta, dodanie/zmiania/usunięcie preferencji odnośnie składników
-- wyświetlanie kosmetyku z podstawowymi informacjami i pełnym składem INCI
-- szybkie ustawianie preferencji składników przez kliknięcie w składnik na stronie szczegółów produktu
-- zakładka z ulubionymi kosmetykami
-- analiza ulubionych kosmetyków - automatyczne wykrywanie często występujących składników i sugerowanie dodania ich do bezpiecznych (min 50% w min 3 ulubionych)
-- podświetlanie kosmetyku na dany kolor w zależności od preferencji użytkownika: 
-  - na zielono - nie ma żadnych składników pomarańczowych ani czerwonych
-  - na pomarańczowo - znajduje się 1 lub więcej składników pomarańczowych, ale nie ma składników czerwonych
-  - na czerwono - znajduje się przynajmniej 1 składnik czerwony
-- podświetlanie składnika na dany kolor w zależności od preferencji użytkownika: 
-  - na zielono - składnik, który użytkownik na pewno toleruje i być może preferuje
-  - na pomarańczowo - składnik, którego użytkownik wolałby uniknąć
-  - na czerwono - składnik, którego użytkownik nie toleruje, np. ma uczulenie na niego
-- system rekomendacji - top 10 produktów bez składników żółtych/czerwonych, sortowane po liczbie zielonych składników
-- wyszukiwanie zamienników - algorytm podobieństwa składów z progiem 40%, wyświetlanie procentu podobieństwa
-- dodawanie kosmetyku - wystarczy skopiować informacje z dowolnego sklepu internetowego
-- skanowanie składu ze zdjęcia - z analizą składników i możliwością edycji rozpoznanego tekstu
+Projekt powstał w ramach seminarium licencjackiego.
+
+## Motywacja za projektem
+
+Skóra każdego człowieka reaguje inaczej na te same składniki kosmetyczne. Osoba z atopowym zapaleniem skóry może źle tolerować substancje powszechnie uznawane za bezpieczne, podczas gdy inne osoby nie mają z nimi żadnych problemów. Standardowe analizatory składów oceniają substancje w sposób uogólniony, co nie odpowiada rzeczywistym potrzebom osób z wrażliwą skórą, alergiami czy chorobami dermatologicznymi.
+
+INCI Preferences rozwiązuje ten problem, umożliwiając tworzenie spersonalizowanych profili preferencji, które są następnie wykorzystywane do oceny bezpieczeństwa produktów i generowania rekomendacji.
+
+## Funkcjonalności
+
+### System kont użytkowników
+- Rejestracja i logowanie (unikalny login + hasło)
+- Zarządzanie profilem: zmiana loginu, hasła, usuwanie konta
+
+### Zarządzanie preferencjami składników
+- Trójpoziomowa klasyfikacja składników (bezpieczne / umiarkowane / niebezpieczne)
+- Szybkie ustawianie preferencji przez kliknięcie w składnik na stronie produktu
+- Analiza ulubionych kosmetyków - automatyczne wykrywanie często występujących składników z sugestiami dodania ich do preferencji
+
+### Przeglądanie i wyszukiwanie
+- Wyszukiwanie kosmetyków po nazwie lub marce
+- Zaawansowane filtrowanie (kaskadowe kategorie, składniki must-contain/must-not-contain, sortowanie, filtrowanie po bezpieczeństwie)
+- Hierarchiczna nawigacja po kategoriach produktów
+- Wyświetlanie pełnego składu INCI z kolorowymi tagami zgodnie z preferencjami
+
+### System oceny bezpieczeństwa
+Kosmetyki są automatycznie oznaczane kolorem na podstawie preferencji użytkownika:
+- **Zielony** - produkt nie zawiera składników umiarkowanych ani niebezpiecznych
+- **Pomarańczowy** - produkt zawiera co najmniej jeden składnik umiarkowany
+- **Czerwony** - produkt zawiera co najmniej jeden składnik niebezpieczny
+
+### Rekomendacje i wyszukiwanie zamienników
+- Spersonalizowany system rekomendacji - top 10 produktów bez składników niebezpiecznych i umiarkowanych
+- Wyszukiwanie zamienników (dupes) - algorytm porównywania składów z progiem podobieństwa 40%
+
+### Dodatkowe funkcje
+- Ulubione kosmetyki z dedykowaną zakładką
+- Dodawanie nowych kosmetyków przez wklejenie danych ze sklepu internetowego
+- Skanowanie składu ze zdjęcia (OCR) z możliwością edycji rozpoznanego tekstu i pełną analizą bezpieczeństwa
+
+## Technologie
+
+### Backend
+- **Python 3.12**
+- **Django 6.0** - framework webowy
+- **Django REST Framework** - budowa RESTful API
+- **PostgreSQL** - relacyjna baza danych
+- **Gunicorn** - production-ready WSGI HTTP Server
+- **Whitenoise** - serwowanie plików statycznych w produkcji
+- **psycopg2** - PostgreSQL adapter dla Pythona
+- **python-decouple** - zarządzanie zmiennymi środowiskowymi
+- **django-filter** - zaawansowane filtrowanie w API
+
+### Frontend
+- **HTML5** i **CSS3** - struktura i stylowanie (CSS Grid, Flexbox, Custom Properties)
+- **Vanilla JavaScript** - bez frameworków dla lepszej wydajności
+- **Tesseract.js** - biblioteka OCR do skanowania składów ze zdjęć
+
+### Infrastruktura
+- **Supabase** - hosting bazy PostgreSQL z connection poolingiem
+- **Railway** - platforma hostingowa dla aplikacji
+- **Git & GitHub** - kontrola wersji i CI/CD
+
+### Bezpieczeństwo
+- Session-based authentication
+- CSRF Protection
+- Hashowanie haseł algorytmem PBKDF2 z SHA256
+- Zmienne środowiskowe dla danych wrażliwych
+
+## Struktura projektu
+
+Aplikacja została podzielona na cztery moduły Django zgodnie z zasadą Single Responsibility Principle:
+
+- **ingredients** - zarządzanie składnikami INCI
+- **cosmetics** - zarządzanie produktami kosmetycznymi
+- **preferences** - preferencje użytkowników i ulubione produkty
+- **users** - rejestracja, logowanie, zarządzanie kontem
+
+## Demo
+
+Aplikacja dostępna online: [incipreferences.app](https://incipreferences.app/)
+
+## Autorki
+
+- **Łucja Leśna** - [GitHub](https://github.com/lulesna)
+- **Oliwia Natzke** - [GitHub](https://github.com/onatzke)
+
+## Licencja
+
+Projekt akademicki. Wszelkie prawa zastrzeżone.
