@@ -26,10 +26,10 @@ RUN SECRET_KEY="dummy-key-for-build" \
     DB_PORT="5432" \
     USE_POSTGRES=False \
     ALLOWED_HOSTS="localhost" \
-    python manage.py collectstatic --noinput \
+    python manage.py collectstatic --noinput
 
 RUN groupadd -r appuser && useradd -r -g appuser appuser \
-    && chown -R appuser:appuser /app \
+    && chown -R appuser:appuser /app
 
 USER appuser
 
