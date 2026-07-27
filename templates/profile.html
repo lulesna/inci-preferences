@@ -30,7 +30,7 @@
                         {% csrf_token %}
                         <div>
                             <label for="username">New Username:</label>
-                            <input type="text" name="username" id="username" value="{{ user.username }}" required>
+                            <input type="text" name="username" id="username" value="{{ user.username }}" required maxlength="150">
                         </div>
                         <button type="submit">Update Username</button>
                         <button type="button" onclick="toggleEditAccount()">Cancel</button>
@@ -64,7 +64,7 @@
 
                 <div class="ingredient-search-box">
                     <label for="ingredient-input">Search for an ingredient:</label>
-                    <input type="text" id="ingredient-input" placeholder="Start typing ingredient name..." autocomplete="off">
+                    <input type="text" id="ingredient-input" placeholder="Start typing ingredient name..." autocomplete="off" maxlength="100">
                     <div id="suggestions"></div>
                 </div>
 
@@ -88,7 +88,6 @@
                 <div id="favorites-insights">
                     <p>Loading insights...</p>
                 </div>
-            </div>
             </div>
 
             <div class="profile-section">
@@ -120,6 +119,13 @@
 
     <script>
     {% if user.is_authenticated %}
+    function escapeHtml(text) {
+        if (text === null || text === undefined) return '';
+        const div = document.createElement('div');
+        div.textContent = String(text);
+        return div.innerHTML;
+    }
+
     let allIngredients = [];
     let selectedIngredient = null;
     let userPreferences = {
@@ -158,9 +164,11 @@
 
     document.getElementById('ingredient-input').addEventListener('input', function(e) {
         const searchTerm = e.target.value.toLowerCase();
+        const suggestionsContainer = document.getElementById('suggestions');
 
         if (searchTerm.length < 2) {
-            document.getElementById('suggestions').style.display = 'none';
+            suggestionsContainer.style.display = 'none';
+            suggestionsContainer.innerHTML = '';
             return;
         }
 
@@ -169,19 +177,31 @@
         ).slice(0, 10);
 
         if (matches.length === 0) {
-            document.getElementById('suggestions').style.display = 'none';
+            suggestionsContainer.style.display = 'none';
+            suggestionsContainer.innerHTML = '';
             return;
         }
 
-        let html = '';
+        suggestionsContainer.innerHTML = '';
+
         matches.forEach(ing => {
-            html += `<div onclick="selectIngredient(${ing.id})">
-                <strong>${ing.inci_name}</strong>${ing.purpose ? ' - ' + ing.purpose : ''}
-            </div>`;
+            const suggestion = document.createElement('div');
+
+            const strong = document.createElement('strong');
+            strong.textContent = ing.inci_name;
+            suggestion.appendChild(strong);
+
+            if (ing.purpose) {
+                suggestion.appendChild(document.createTextNode(' - ' + ing.purpose));
+            }
+
+            const ingredientId = typeof ing.id === 'number' ? ing.id : 0;
+            suggestion.onclick = () => selectIngredient(ingredientId);
+
+            suggestionsContainer.appendChild(suggestion);
         });
 
-        document.getElementById('suggestions').innerHTML = html;
-        document.getElementById('suggestions').style.display = 'block';
+        suggestionsContainer.style.display = 'block';
     });
 
     function selectIngredient(ingredientId) {
@@ -246,55 +266,79 @@
     }
 
     function updateSummary() {
-        const html = `
-            <div class="summary-item">
-                <strong>${userPreferences.safe.length}</strong>
-                <span>Safe ingredients</span>
-            </div>
-            <div class="summary-item">
-                <strong>${userPreferences.moderate.length}</strong>
-                <span>Moderate ingredients</span>
-            </div>
-            <div class="summary-item">
-                <strong>${userPreferences.unsafe.length}</strong>
-                <span>Unsafe ingredients</span>
-            </div>
-        `;
-        document.getElementById('summary').innerHTML = html;
+        const summaryContainer = document.getElementById('summary');
+        summaryContainer.innerHTML = '';
+
+        const categories = [
+            { label: 'Safe ingredients', count: userPreferences.safe.length },
+            { label: 'Moderate ingredients', count: userPreferences.moderate.length },
+            { label: 'Unsafe ingredients', count: userPreferences.unsafe.length }
+        ];
+
+        categories.forEach(cat => {
+            const item = document.createElement('div');
+            item.className = 'summary-item';
+
+            const strong = document.createElement('strong');
+            strong.textContent = cat.count;
+            item.appendChild(strong);
+
+            const span = document.createElement('span');
+            span.textContent = cat.label;
+            item.appendChild(span);
+
+            summaryContainer.appendChild(item);
+        });
     }
 
     function displayMyPreferences() {
-        let html = '';
+        const container = document.getElementById('my-preferences');
+        container.innerHTML = '';
 
-        if (userPreferences.safe.length > 0) {
-            html += '<h4 style="color: var(--accent-green);">Safe Ingredients</h4><ul class="safe-list">';
-            userPreferences.safe.forEach(ing => {
-                html += `<li>${ing.inci_name} <button onclick="removePreference(${ing.id})">Remove</button></li>`;
+        const createPreferenceSection = (title, ingredients, listClass, headerColor) => {
+            if (ingredients.length === 0) return null;
+
+            const h4 = document.createElement('h4');
+            h4.style.color = headerColor;
+            h4.textContent = title;
+
+            const ul = document.createElement('ul');
+            ul.className = listClass;
+
+            ingredients.forEach(ing => {
+                const li = document.createElement('li');
+                li.textContent = ing.inci_name + ' ';
+
+                const ingredientId = typeof ing.id === 'number' ? ing.id : 0;
+                const btn = document.createElement('button');
+                btn.textContent = 'Remove';
+                btn.onclick = () => removePreference(ingredientId);
+
+                li.appendChild(btn);
+                ul.appendChild(li);
             });
-            html += '</ul>';
-        }
 
-        if (userPreferences.moderate.length > 0) {
-            html += '<h4 style="color: rgba(181,131,60,0.67);">Moderate Ingredients</h4><ul class="moderate-list">';
-            userPreferences.moderate.forEach(ing => {
-                html += `<li>${ing.inci_name} <button onclick="removePreference(${ing.id})">Remove</button></li>`;
-            });
-            html += '</ul>';
-        }
+            const fragment = document.createDocumentFragment();
+            fragment.appendChild(h4);
+            fragment.appendChild(ul);
+            return fragment;
+        };
 
-        if (userPreferences.unsafe.length > 0) {
-            html += '<h4 style="color: var(--accent-dark);">Unsafe Ingredients</h4><ul class="unsafe-list">';
-            userPreferences.unsafe.forEach(ing => {
-                html += `<li>${ing.inci_name} <button onclick="removePreference(${ing.id})">Remove</button></li>`;
-            });
-            html += '</ul>';
-        }
+        const safeSection = createPreferenceSection('Safe Ingredients', userPreferences.safe, 'safe-list', 'var(--accent-green)');
+        if (safeSection) container.appendChild(safeSection);
 
-        if (html === '') {
-            html = '<p class="no-preferences-message">No preferences set yet. Start by searching for an ingredient above.</p>';
-        }
+        const moderateSection = createPreferenceSection('Moderate Ingredients', userPreferences.moderate, 'moderate-list', 'rgba(181,131,60,0.67)');
+        if (moderateSection) container.appendChild(moderateSection);
 
-        document.getElementById('my-preferences').innerHTML = html;
+        const unsafeSection = createPreferenceSection('Unsafe Ingredients', userPreferences.unsafe, 'unsafe-list', 'var(--accent-dark)');
+        if (unsafeSection) container.appendChild(unsafeSection);
+
+        if (container.children.length === 0) {
+            const p = document.createElement('p');
+            p.className = 'no-preferences-message';
+            p.textContent = 'No preferences set yet. Start by searching for an ingredient above.';
+            container.appendChild(p);
+        }
     }
 
     async function removePreference(ingredientId) {
@@ -355,82 +399,114 @@
             const data = await response.json();
 
             const container = document.getElementById('favorites-insights');
+            container.innerHTML = '';
 
             if (data.suggestions && data.suggestions.length > 0) {
-                let html = '<p style="color: var(--text); margin-bottom: 15px;">We noticed these ingredients appear frequently in your favorites:</p>';
+                const intro = document.createElement('p');
+                intro.style.color = 'var(--text)';
+                intro.style.marginBottom = '15px';
+                intro.textContent = 'We noticed these ingredients appear frequently in your favorites:';
+                container.appendChild(intro);
 
                 data.suggestions.forEach(suggestion => {
-                    html += `
-                        <div class="insight-card">
-                            <div class="insight-info">
-                                <strong>${suggestion.ingredient_name}</strong>
-                                <p style="color: var(--text); font-size: 14px; margin: 5px 0;">
-                                    Appears in ${suggestion.count} of ${suggestion.total_favorites} favorites (${suggestion.percentage}%)
-                                </p>
-                            </div>
-                            <button class="add-preference-btn" onclick="addFromInsight(${suggestion.ingredient_id}, '${suggestion.ingredient_name}')">
-                                Add to Safe
-                            </button>
-                        </div>
-                    `;
-                });
+                    const card = document.createElement('div');
+                    card.className = 'insight-card';
 
-                container.innerHTML = html;
+                    const info = document.createElement('div');
+                    info.className = 'insight-info';
+
+                    const strong = document.createElement('strong');
+                    strong.textContent = suggestion.ingredient_name;
+                    info.appendChild(strong);
+
+                    const p = document.createElement('p');
+                    p.style.color = 'var(--text)';
+                    p.style.fontSize = '14px';
+                    p.style.margin = '5px 0';
+                    const count = typeof suggestion.count === 'number' ? suggestion.count : 0;
+                    const total = typeof suggestion.total_favorites === 'number' ? suggestion.total_favorites : 0;
+                    const percentage = typeof suggestion.percentage === 'number' ? suggestion.percentage : 0;
+                    p.textContent = `Appears in ${count} of ${total} favorites (${percentage}%)`;
+                    info.appendChild(p);
+
+                    card.appendChild(info);
+
+                    const btn = document.createElement('button');
+                    btn.className = 'add-preference-btn';
+                    btn.textContent = 'Add to Safe';
+                    const ingredientId = typeof suggestion.ingredient_id === 'number' ? suggestion.ingredient_id : 0;
+                    btn.dataset.ingredientId = ingredientId;
+                    btn.onclick = () => addFromInsight(ingredientId);
+
+                    card.appendChild(btn);
+                    container.appendChild(card);
+                });
             } else if (data.total_favorites < 3) {
-                container.innerHTML = '<p style="color: var(--text);">Add at least 3 products to favorites to discover your ingredient preferences! ⭐</p>';
+                const p = document.createElement('p');
+                p.style.color = 'var(--text)';
+                p.textContent = 'Add at least 3 products to favorites to discover your ingredient preferences!';
+                container.appendChild(p);
             } else {
-                container.innerHTML = '<p style="color: var(--text);">No common ingredients found in your favorites yet. Keep adding products you love!</p>';
+                const p = document.createElement('p');
+                p.style.color = 'var(--text)';
+                p.textContent = 'No common ingredients found in your favorites yet. Keep adding products you love!';
+                container.appendChild(p);
             }
         } catch (error) {
-            document.getElementById('favorites-insights').innerHTML = '<p style="color: var(--text);">Unable to load insights.</p>';
+            const container = document.getElementById('favorites-insights');
+            container.innerHTML = '';
+            const p = document.createElement('p');
+            p.style.color = 'var(--text)';
+            p.textContent = 'Unable to load insights.';
+            container.appendChild(p);
         }
     }
 
-    async function addFromInsight(ingredientId, ingredientName) {
-    const buttons = document.querySelectorAll('.add-preference-btn');
-    let clickedBtn = null;
-    buttons.forEach(btn => {
-        if (btn.getAttribute('onclick').includes(ingredientId)) {
-            clickedBtn = btn;
-        }
-    });
-
-    if (clickedBtn) {
-        clickedBtn.textContent = 'Adding...';
-        clickedBtn.disabled = true;
-        clickedBtn.style.background = '#ccc';
-        clickedBtn.style.cursor = 'default';
-    }
-
-    try {
-        const response = await fetch('/api/preferences/set_ingredient_color/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCookie('csrftoken')
-            },
-            body: JSON.stringify({
-                ingredient_id: ingredientId,
-                color: 'GREEN'
-            })
+    async function addFromInsight(ingredientId) {
+        const buttons = document.querySelectorAll('.add-preference-btn');
+        let clickedBtn = null;
+        buttons.forEach(btn => {
+            if (parseInt(btn.dataset.ingredientId) === ingredientId) {
+                clickedBtn = btn;
+            }
         });
 
-        if (response.ok) {
-            if (clickedBtn) {
-                clickedBtn.textContent = '✅ Added';
-            }
-            loadUserPreferences();
-            setTimeout(() => loadFavoritesInsights(), 1000);
-        }
-    } catch (error) {
         if (clickedBtn) {
-            clickedBtn.textContent = 'Add to Safe';
-            clickedBtn.disabled = false;
-            clickedBtn.style.background = '';
-            clickedBtn.style.cursor = '';
+            clickedBtn.textContent = 'Adding...';
+            clickedBtn.disabled = true;
+            clickedBtn.style.background = '#ccc';
+            clickedBtn.style.cursor = 'default';
+        }
+
+        try {
+            const response = await fetch('/api/preferences/set_ingredient_color/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    ingredient_id: ingredientId,
+                    color: 'GREEN'
+                })
+            });
+
+            if (response.ok) {
+                if (clickedBtn) {
+                    clickedBtn.textContent = 'Added';
+                }
+                loadUserPreferences();
+                setTimeout(() => loadFavoritesInsights(), 1000);
+            }
+        } catch (error) {
+            if (clickedBtn) {
+                clickedBtn.textContent = 'Add to Safe';
+                clickedBtn.disabled = false;
+                clickedBtn.style.background = '';
+                clickedBtn.style.cursor = '';
+            }
         }
     }
-}
 
     loadFavoritesInsights();
     loadIngredients();

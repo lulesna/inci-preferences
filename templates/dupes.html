@@ -16,7 +16,15 @@
 </section>
 
 <script>
-const cosmeticId = new URLSearchParams(window.location.search).get('id');
+function escapeHtml(text) {
+    if (text === null || text === undefined) return '';
+    const div = document.createElement('div');
+    div.textContent = String(text);
+    return div.innerHTML;
+}
+
+const rawCosmeticId = new URLSearchParams(window.location.search).get('id');
+const cosmeticId = /^\d+$/.test(rawCosmeticId) ? rawCosmeticId : null;
 
 function formatCategory(text) {
     if (!text) return '';
@@ -25,30 +33,44 @@ function formatCategory(text) {
 
 async function loadDupes() {
     try {
-        const response = await fetch(`/api/cosmetics/${cosmeticId}/find_dupes/`);
+        const response = await fetch(`/api/cosmetics/${encodeURIComponent(cosmeticId)}/find_dupes/`);
         const data = await response.json();
-        
+
         const original = data.original;
-        document.getElementById('original-product').innerHTML = `
+        const originalIngredientsCount = Array.isArray(original.ingredients) ? original.ingredients.length : 0;
+
+        const originalContainer = document.getElementById('original-product');
+        originalContainer.innerHTML = `
             <div class="cosmetic-detail-header">
-                <h3>${original.name}</h3>
-                <p><strong>Brand:</strong> ${original.brand}</p>
-                <p><strong>Ingredients:</strong> ${original.ingredients.length}</p>
+                <h3>${escapeHtml(original.name)}</h3>
+                <p><strong>Brand:</strong> ${escapeHtml(original.brand)}</p>
+                <p><strong>Ingredients:</strong> ${originalIngredientsCount}</p>
             </div>
         `;
-        
+
         const container = document.getElementById('dupes-results');
-        
+
         if (data.dupes.length === 0) {
-            container.innerHTML = '<p style="text-align: center; color: var(--text);">No similar products found.</p>';
+            container.innerHTML = '';
+            const p = document.createElement('p');
+            p.style.textAlign = 'center';
+            p.style.color = 'var(--text)';
+            p.textContent = 'No similar products found.';
+            container.appendChild(p);
             return;
         }
-        
+
         let html = `<h3 style="color: var(--lime); margin-bottom: 20px;">Found ${data.dupes.length} Similar Products</h3><div class="cosmetics-grid">`;
-        
+
         data.dupes.forEach(dupe => {
-            const displayType = formatCategory(dupe.product_type || dupe.subcategory || '');
-            
+            const escapedName = escapeHtml(dupe.name);
+            const escapedBrand = escapeHtml(dupe.brand);
+            const displayType = escapeHtml(formatCategory(dupe.product_type || dupe.subcategory || ''));
+
+            const dupeId = typeof dupe.id === 'number' ? dupe.id : 0;
+            const similarityScore = typeof dupe.similarity_score === 'number' ? dupe.similarity_score : 0;
+            const matchingCount = typeof dupe.matching_ingredients_count === 'number' ? dupe.matching_ingredients_count : 0;
+
             html += `
                 <div class="cosmetic-result-card safe">
                     <div class="similarity-badge" style="
@@ -62,29 +84,39 @@ async function loadDupes() {
                         font-size: 12px;
                         font-weight: 700;
                     ">
-                        ${dupe.similarity_score}% match
+                        ${similarityScore}% match
                     </div>
                     <div class="card-content">
-                        <h3 style="padding-right: 90px;">${dupe.name}</h3>
-                        <p><strong>Brand:</strong> ${dupe.brand}</p>
+                        <h3 style="padding-right: 90px;">${escapedName}</h3>
+                        <p><strong>Brand:</strong> ${escapedBrand}</p>
                         ${displayType ? `<p><strong>Type:</strong> ${displayType}</p>` : ''}
-                        <p><strong>Matching:</strong> ${dupe.matching_ingredients_count}/${original.ingredients.length}</p>
+                        <p><strong>Matching:</strong> ${matchingCount}/${originalIngredientsCount}</p>
                     </div>
-                    <a href="/cosmetic/${dupe.id}/">View Details</a>
+                    <a href="/cosmetic/${dupeId}/">View Details</a>
                 </div>
             `;
         });
-        
+
         html += '</div>';
         container.innerHTML = html;
-        
+
     } catch (error) {
-        document.getElementById('dupes-results').innerHTML = '<p>Error loading dupes.</p>';
+        const container = document.getElementById('dupes-results');
+        container.innerHTML = '';
+        const p = document.createElement('p');
+        p.textContent = 'Error loading dupes.';
+        container.appendChild(p);
     }
 }
 
 if (cosmeticId) {
     loadDupes();
+} else {
+    const container = document.getElementById('original-product');
+    container.innerHTML = '';
+    const p = document.createElement('p');
+    p.textContent = 'Invalid product ID.';
+    container.appendChild(p);
 }
 </script>
 {% endblock %}

@@ -1,11 +1,12 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import login, authenticate, logout
-from django.contrib.auth.forms import UserCreationForm
 from django.contrib import messages
 from django.contrib.auth.models import User
 from django import forms
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import update_session_auth_hash
+from django.shortcuts import redirect
+from django.views.decorators.http import require_POST
 
 
 class CustomUserCreationForm(forms.ModelForm):
@@ -78,26 +79,18 @@ def logout_view(request):
 
 
 @login_required
+@require_POST
 def change_password(request):
-    if request.method == 'POST':
-        old_password = request.POST.get('old_password')
-        new_password1 = request.POST.get('new_password1')
-        new_password2 = request.POST.get('new_password2')
+    form = PasswordChangeForm(user=request.user, data=request.POST)
 
-        user = request.user
-
-        if not user.check_password(old_password):
-            messages.error(request, 'Old password is incorrect.')
-            return redirect('profile')
-
-        if new_password1 != new_password2:
-            messages.error(request, 'New passwords do not match.')
-            return redirect('profile')
-
-        user.set_password(new_password1)
-        user.save()
+    if form.is_valid():
+        user = form.save()
         update_session_auth_hash(request, user)
         messages.success(request, 'Password changed successfully!')
+    else:
+        for field, errors in form.errors.items():
+            for error in errors:
+                messages.error(request, error)
 
     return redirect('profile')
 

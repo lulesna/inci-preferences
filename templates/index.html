@@ -13,6 +13,7 @@
                     class="search-input"
                     placeholder="Search here..."
                     required
+                    maxlength="200"
                 >
                 <button type="submit" class="search-btn">
                     <span>Search</span>
@@ -41,6 +42,13 @@
     </section>
 
     <script>
+    function escapeHtml(text) {
+        if (text === null || text === undefined) return '';
+        const div = document.createElement('div');
+        div.textContent = String(text);
+        return div.innerHTML;
+    }
+
     function formatCategory(text) {
         if (!text) return '';
         return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
@@ -52,28 +60,48 @@
             const data = await response.json();
 
             const container = document.getElementById('recommendations-list');
+            container.innerHTML = '';
 
             if (data.recommendations.length === 0) {
-                container.innerHTML = '<p style="text-align: center; color: var(--text);">No recommendations yet. <a href="/profile/" style="color: var(--main-pink);">Set your ingredient preferences</a> to get personalized recommendations!</p>';
+                const p = document.createElement('p');
+                p.style.textAlign = 'center';
+                p.style.color = 'var(--text)';
+
+                p.appendChild(document.createTextNode('No recommendations yet. '));
+
+                const link = document.createElement('a');
+                link.href = '/profile/';
+                link.style.color = 'var(--main-pink)';
+                link.textContent = 'Set your ingredient preferences';
+                p.appendChild(link);
+
+                p.appendChild(document.createTextNode(' to get personalized recommendations!'));
+
+                container.appendChild(p);
                 return;
             }
 
             let html = '<div class="cosmetics-grid">';
 
             data.recommendations.forEach(cosmetic => {
-                const displayType = formatCategory(cosmetic.product_type || cosmetic.subcategory || '');
-                const displayCategory = formatCategory(cosmetic.main_category);
+                const escapedName = escapeHtml(cosmetic.name);
+                const escapedBrand = escapeHtml(cosmetic.brand);
+                const displayType = escapeHtml(formatCategory(cosmetic.product_type || cosmetic.subcategory || ''));
+                const displayCategory = escapeHtml(formatCategory(cosmetic.main_category));
+
+                const cosmeticId = typeof cosmetic.id === 'number' ? cosmetic.id : 0;
+                const safeCount = typeof cosmetic.safe_ingredients_count === 'number' ? cosmetic.safe_ingredients_count : 0;
 
                 html += `
                     <div class="cosmetic-result-card safe">
                         <div class="card-content">
-                            <h3>${cosmetic.name}</h3>
-                            <p><strong>Brand:</strong> ${cosmetic.brand}</p>
+                            <h3>${escapedName}</h3>
+                            <p><strong>Brand:</strong> ${escapedBrand}</p>
                             <p><strong>Category:</strong> ${displayCategory}</p>
                             ${displayType ? `<p><strong>Type:</strong> ${displayType}</p>` : ''}
-                            <p><strong>Safe ingredients:</strong> ${cosmetic.safe_ingredients_count}</p>
+                            <p><strong>Safe ingredients:</strong> ${safeCount}</p>
                         </div>
-                        <a href="/cosmetic/${cosmetic.id}/">View Details</a>
+                        <a href="/cosmetic/${cosmeticId}/">View Details</a>
                     </div>
                 `;
             });
@@ -82,7 +110,13 @@
             container.innerHTML = html;
 
         } catch (error) {
-            document.getElementById('recommendations-list').innerHTML = '<p style="text-align: center; color: var(--text);">Error loading recommendations.</p>';
+            const container = document.getElementById('recommendations-list');
+            container.innerHTML = '';
+            const p = document.createElement('p');
+            p.style.textAlign = 'center';
+            p.style.color = 'var(--text)';
+            p.textContent = 'Error loading recommendations.';
+            container.appendChild(p);
         }
     }
 

@@ -63,7 +63,7 @@
                 {% else %}
                 <div class="result-card">
                     <p style="text-align: center; color: var(--text);">
-                        <a href="{% url 'users:login' %}" style="color: var(--main-pink); font-weight: 600;">Log in</a> 
+                        <a href="{% url 'users:login' %}" style="color: var(--main-pink); font-weight: 600;">Log in</a>
                         to see personalized safety analysis
                     </p>
                 </div>
@@ -79,6 +79,13 @@
     <script src='https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js'></script>
 
     <script>
+    function escapeHtml(text) {
+        if (text === null || text === undefined) return '';
+        const div = document.createElement('div');
+        div.textContent = String(text);
+        return div.innerHTML;
+    }
+
     let uploadedImage = null;
     let recognizedIngredients = [];
     let userPreferences = null;
@@ -108,6 +115,16 @@
         const file = event.target.files[0];
         if (!file) return;
 
+        if (file.size > 10 * 1024 * 1024) {
+            alert('File is too large. Maximum size is 10MB.');
+            return;
+        }
+
+        if (!file.type.startsWith('image/')) {
+            alert('Please upload an image file.');
+            return;
+        }
+
         const reader = new FileReader();
         reader.onload = function(e) {
             uploadedImage = e.target.result;
@@ -120,7 +137,7 @@
     }
 
     const uploadBox = document.getElementById('upload-box');
-    
+
     uploadBox.addEventListener('dragover', (e) => {
         e.preventDefault();
         uploadBox.style.borderColor = 'var(--lime)';
@@ -136,7 +153,7 @@
         e.preventDefault();
         uploadBox.style.borderColor = '#e0e0e0';
         uploadBox.style.background = 'white';
-        
+
         const file = e.dataTransfer.files[0];
         if (file && file.type.startsWith('image/')) {
             const fakeEvent = { target: { files: [file] } };
@@ -153,35 +170,35 @@
 
         try {
             const worker = await Tesseract.createWorker();
-            
+
             await worker.loadLanguage('eng');
             await worker.initialize('eng');
-            
+
             document.getElementById('processing-text').textContent = 'Processing image...';
             document.getElementById('progress-fill').style.width = '30%';
-            
+
             const { data: { text } } = await worker.recognize(uploadedImage);
-            
+
             document.getElementById('processing-text').textContent = 'Parsing ingredients...';
             document.getElementById('progress-fill').style.width = '60%';
-            
+
             await worker.terminate();
 
             const cleanedText = cleanText(text);
             parseIngredients(cleanedText);
-            
+
             document.getElementById('processing-text').textContent = 'Analyzing safety...';
             document.getElementById('progress-fill').style.width = '90%';
-            
+
             await new Promise(resolve => setTimeout(resolve, 500));
-            
+
             document.getElementById('progress-fill').style.width = '100%';
 
             setTimeout(() => {
                 document.getElementById('processing-section').style.display = 'none';
                 displayResults(cleanedText);
             }, 300);
-            
+
         } catch (error) {
             console.error('OCR Error:', error);
             alert('Error analyzing image. Please try again with a clearer photo.');
@@ -190,7 +207,7 @@
     }
 
     function cleanText(text) {
-        let cleaned = text
+        let cleaned = String(text || '')
             .replace(/\n+/g, ' ')
             .replace(/\s+/g, ' ')
             .trim();
@@ -203,12 +220,16 @@
                 break;
             }
         }
-        
+
+        if (cleaned.length > 10000) {
+            cleaned = cleaned.substring(0, 10000);
+        }
+
         return cleaned;
     }
 
     function parseIngredients(text) {
-        const parts = text.split(/[,،]\s*/);
+        const parts = String(text || '').split(/[,،]\s*/);
         recognizedIngredients = parts
             .map(ing => ing.trim())
             .filter(ing => ing.length > 2 && ing.length < 100)
@@ -216,20 +237,49 @@
     }
 
     async function displayResults(rawText) {
-        document.getElementById('recognized-text').innerHTML = `
-            <div class="text-display" id="text-display">${rawText}</div>
-            <textarea id="text-editor" style="display: none; width: 100%; min-height: 150px; padding: 15px; border: 2px solid var(--lime); border-radius: 12px; font-family: 'KineksRound', sans-serif;">${rawText}</textarea>
-        `;
+        const recognizedTextContainer = document.getElementById('recognized-text');
+        recognizedTextContainer.innerHTML = '';
+
+        const textDisplay = document.createElement('div');
+        textDisplay.className = 'text-display';
+        textDisplay.id = 'text-display';
+        textDisplay.textContent = rawText;
+        recognizedTextContainer.appendChild(textDisplay);
+
+        const textEditor = document.createElement('textarea');
+        textEditor.id = 'text-editor';
+        textEditor.style.display = 'none';
+        textEditor.style.width = '100%';
+        textEditor.style.minHeight = '150px';
+        textEditor.style.padding = '15px';
+        textEditor.style.border = '2px solid var(--lime)';
+        textEditor.style.borderRadius = '12px';
+        textEditor.style.fontFamily = "'KineksRound', sans-serif";
+        textEditor.value = rawText;
+        recognizedTextContainer.appendChild(textEditor);
 
         {% if user.is_authenticated %}
         if (!userPreferences) {
-            document.getElementById('analysis-card').innerHTML = `
-                <h3>Safety Analysis</h3>
-                <p style="text-align: center; color: var(--text);">
-                    <a href="/profile/" style="color: var(--main-pink); font-weight: 600;">Set up your preferences</a> 
-                    to get personalized analysis
-                </p>
-            `;
+            const analysisCard = document.getElementById('analysis-card');
+            analysisCard.innerHTML = '';
+
+            const h3 = document.createElement('h3');
+            h3.textContent = 'Safety Analysis';
+            analysisCard.appendChild(h3);
+
+            const p = document.createElement('p');
+            p.style.textAlign = 'center';
+            p.style.color = 'var(--text)';
+
+            const link = document.createElement('a');
+            link.href = '/profile/';
+            link.style.color = 'var(--main-pink)';
+            link.style.fontWeight = '600';
+            link.textContent = 'Set up your preferences';
+
+            p.appendChild(link);
+            p.appendChild(document.createTextNode(' to get personalized analysis'));
+            analysisCard.appendChild(p);
         } else {
             analyzeIngredients();
         }
@@ -254,7 +304,7 @@
 
         recognizedIngredients.forEach(ing => {
             const lowerIng = ing.toLowerCase();
-            
+
             if (userPreferences.safeNames.some(safe => lowerIng.includes(safe) || safe.includes(lowerIng))) {
                 safeCount++;
                 categorized.safe.push(ing);
@@ -284,73 +334,114 @@
             verdictIcon = '⚠️';
         }
 
-        document.getElementById('safety-summary').innerHTML = `
-            <div class="safety-verdict ${verdictClass}">
-                <div class="verdict-icon">${verdictIcon}</div>
-                <div class="verdict-text">${verdictText}</div>
-            </div>
-            <div class="safety-stats">
-                <div class="stat-item safe">
-                    <div class="stat-number">${safeCount}</div>
-                    <div class="stat-label">Safe</div>
-                </div>
-                <div class="stat-item moderate">
-                    <div class="stat-number">${moderateCount}</div>
-                    <div class="stat-label">Moderate</div>
-                </div>
-                <div class="stat-item unsafe">
-                    <div class="stat-number">${unsafeCount}</div>
-                    <div class="stat-label">Unsafe</div>
-                </div>
-                <div class="stat-item unknown">
-                    <div class="stat-number">${unknownCount}</div>
-                    <div class="stat-label">Unknown</div>
-                </div>
-            </div>
-        `;
+        const safetySummary = document.getElementById('safety-summary');
+        safetySummary.innerHTML = '';
 
-        let breakdownHTML = '<h4>Ingredients Breakdown:</h4>';
-        
-        if (categorized.unsafe.length > 0) {
-            breakdownHTML += `<div class="ingredient-category unsafe-category">
-                <h5>🚫 Unsafe (${categorized.unsafe.length})</h5>
-                <div class="ingredient-tags">
-                    ${categorized.unsafe.map(ing => `<span class="ingredient-tag unsafe">${ing}</span>`).join('')}
-                </div>
-            </div>`;
-        }
-        
-        if (categorized.moderate.length > 0) {
-            breakdownHTML += `<div class="ingredient-category moderate-category">
-                <h5>⚠️ Moderate (${categorized.moderate.length})</h5>
-                <div class="ingredient-tags">
-                    ${categorized.moderate.map(ing => `<span class="ingredient-tag moderate">${ing}</span>`).join('')}
-                </div>
-            </div>`;
-        }
-        
-        if (categorized.safe.length > 0) {
-            breakdownHTML += `<div class="ingredient-category safe-category">
-                <h5>✅ Safe (${categorized.safe.length})</h5>
-                <div class="ingredient-tags">
-                    ${categorized.safe.map(ing => `<span class="ingredient-tag safe">${ing}</span>`).join('')}
-                </div>
-            </div>`;
-        }
-        
+        const verdict = document.createElement('div');
+        verdict.className = `safety-verdict ${verdictClass}`;
+
+        const iconDiv = document.createElement('div');
+        iconDiv.className = 'verdict-icon';
+        iconDiv.textContent = verdictIcon;
+
+        const textDiv = document.createElement('div');
+        textDiv.className = 'verdict-text';
+        textDiv.textContent = verdictText;
+
+        verdict.appendChild(iconDiv);
+        verdict.appendChild(textDiv);
+        safetySummary.appendChild(verdict);
+
+        const stats = document.createElement('div');
+        stats.className = 'safety-stats';
+
+        const statsData = [
+            { className: 'safe', number: safeCount, label: 'Safe' },
+            { className: 'moderate', number: moderateCount, label: 'Moderate' },
+            { className: 'unsafe', number: unsafeCount, label: 'Unsafe' },
+            { className: 'unknown', number: unknownCount, label: 'Unknown' }
+        ];
+
+        statsData.forEach(stat => {
+            const item = document.createElement('div');
+            item.className = `stat-item ${stat.className}`;
+
+            const num = document.createElement('div');
+            num.className = 'stat-number';
+            num.textContent = stat.number;
+
+            const label = document.createElement('div');
+            label.className = 'stat-label';
+            label.textContent = stat.label;
+
+            item.appendChild(num);
+            item.appendChild(label);
+            stats.appendChild(item);
+        });
+
+        safetySummary.appendChild(stats);
+
+        const breakdown = document.getElementById('ingredients-breakdown');
+        breakdown.innerHTML = '';
+
+        const h4 = document.createElement('h4');
+        h4.textContent = 'Ingredients Breakdown:';
+        breakdown.appendChild(h4);
+
+        const createIngredientCategory = (title, ingredients, categoryClass, tagClass) => {
+            if (ingredients.length === 0) return null;
+
+            const category = document.createElement('div');
+            category.className = `ingredient-category ${categoryClass}`;
+
+            const h5 = document.createElement('h5');
+            h5.textContent = `${title} (${ingredients.length})`;
+            category.appendChild(h5);
+
+            const tags = document.createElement('div');
+            tags.className = 'ingredient-tags';
+
+            ingredients.forEach(ing => {
+                const tag = document.createElement('span');
+                tag.className = `ingredient-tag ${tagClass}`;
+                tag.textContent = ing;
+                tags.appendChild(tag);
+            });
+
+            category.appendChild(tags);
+            return category;
+        };
+
+        const unsafeCategory = createIngredientCategory('🚫 Unsafe', categorized.unsafe, 'unsafe-category', 'unsafe');
+        if (unsafeCategory) breakdown.appendChild(unsafeCategory);
+
+        const moderateCategory = createIngredientCategory('⚠️ Moderate', categorized.moderate, 'moderate-category', 'moderate');
+        if (moderateCategory) breakdown.appendChild(moderateCategory);
+
+        const safeCategory = createIngredientCategory('✅ Safe', categorized.safe, 'safe-category', 'safe');
+        if (safeCategory) breakdown.appendChild(safeCategory);
+
         if (categorized.unknown.length > 0) {
-            breakdownHTML += `<div class="ingredient-category unknown-category">
-                <h5>Unknown (${categorized.unknown.length})</h5>
-                <div class="ingredient-tags">
-                    ${categorized.unknown.map(ing => `<span class="ingredient-tag">${ing}</span>`).join('')}
-                </div>
-                <p style="font-size: 13px; color: var(--text); margin-top: 10px;">
-                    These ingredients are not in your preferences. <a href="/profile/" style="color: var(--main-pink);">Add them</a> for more accurate analysis.
-                </p>
-            </div>`;
-        }
+            const unknownCategory = createIngredientCategory('Unknown', categorized.unknown, 'unknown-category', '');
 
-        document.getElementById('ingredients-breakdown').innerHTML = breakdownHTML;
+            const p = document.createElement('p');
+            p.style.fontSize = '13px';
+            p.style.color = 'var(--text)';
+            p.style.marginTop = '10px';
+
+            p.appendChild(document.createTextNode('These ingredients are not in your preferences. '));
+
+            const link = document.createElement('a');
+            link.href = '/profile/';
+            link.style.color = 'var(--main-pink)';
+            link.textContent = 'Add them';
+            p.appendChild(link);
+
+            p.appendChild(document.createTextNode(' for more accurate analysis.'));
+            unknownCategory.appendChild(p);
+
+            breakdown.appendChild(unknownCategory);
+        }
     }
     {% endif %}
 
@@ -358,14 +449,14 @@
         const display = document.getElementById('text-display');
         const editor = document.getElementById('text-editor');
         const btn = document.querySelector('.edit-text-btn');
-        
+
         if (display.style.display === 'none') {
             const newText = editor.value;
-            display.innerHTML = newText;
+            display.textContent = newText;
             display.style.display = 'block';
             editor.style.display = 'none';
             btn.textContent = 'Edit Text';
-            
+
             parseIngredients(newText);
             {% if user.is_authenticated %}
             if (userPreferences) analyzeIngredients();

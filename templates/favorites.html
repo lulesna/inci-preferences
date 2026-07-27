@@ -17,12 +17,22 @@
 
     <script>
     {% if user.is_authenticated %}
+    function escapeHtml(text) {
+        if (text === null || text === undefined) return '';
+        const div = document.createElement('div');
+        div.textContent = String(text);
+        return div.innerHTML;
+    }
 
     async function displayCosmeticsWithSafety(cosmetics, containerId) {
         const container = document.getElementById(containerId);
 
         if (cosmetics.length === 0) {
-            container.innerHTML = '<p class="no-preferences-message">You have no favorite cosmetics yet. Add some from cosmetic pages!</p>';
+            container.innerHTML = '';
+            const p = document.createElement('p');
+            p.className = 'no-preferences-message';
+            p.textContent = 'You have no favorite cosmetics yet. Add some from cosmetic pages!';
+            container.appendChild(p);
             return;
         }
 
@@ -69,29 +79,35 @@
         }
 
         function formatCategory(category) {
+            if (!category) return '';
             return category.charAt(0) + category.slice(1).toLowerCase();
         }
 
         let html = '<div class="cosmetics-grid">';
 
         cosmetics.forEach(cosmetic => {
-            const safetyClass = getSafetyClass(cosmetic);
-            const safetyBadge = getSafetyBadge(safetyClass);
+            const cardSafetyClass = getSafetyClass(cosmetic);
+            const cardBadge = getSafetyBadge(cardSafetyClass);
 
-            const displayType = cosmetic.product_type || cosmetic.subcategory || '';
-            const displayCategory = formatCategory(cosmetic.main_category);
+            const escapedName = escapeHtml(cosmetic.name);
+            const escapedBrand = escapeHtml(cosmetic.brand);
+            const displayType = escapeHtml(formatCategory(cosmetic.product_type || cosmetic.subcategory || ''));
+            const displayCategory = escapeHtml(formatCategory(cosmetic.main_category));
+
+            const cosmeticId = typeof cosmetic.id === 'number' ? cosmetic.id : 0;
+            const ingredientsCount = Array.isArray(cosmetic.ingredients) ? cosmetic.ingredients.length : 0;
 
             html += `
-                <div class="cosmetic-result-card ${safetyClass}">
-                    ${safetyBadge}
+                <div class="cosmetic-result-card ${cardSafetyClass}">
+                    ${cardBadge}
                     <div class="card-content">
-                        <h3>${cosmetic.name}</h3>
-                        <p><strong>Brand:</strong> ${cosmetic.brand}</p>
+                        <h3>${escapedName}</h3>
+                        <p><strong>Brand:</strong> ${escapedBrand}</p>
                         <p><strong>Category:</strong> ${displayCategory}</p>
                         ${displayType ? `<p><strong>Type:</strong> ${displayType}</p>` : ''}
-                        <p><strong>Ingredients:</strong> ${cosmetic.ingredients.length}</p>
+                        <p><strong>Ingredients:</strong> ${ingredientsCount}</p>
                     </div>
-                    <a href="/cosmetic/${cosmetic.id}/">View Details</a>
+                    <a href="/cosmetic/${cosmeticId}/">View Details</a>
                 </div>
             `;
         });
@@ -107,7 +123,11 @@
 
             await displayCosmeticsWithSafety(favorites, 'favorites-list');
         } catch (error) {
-            document.getElementById('favorites-list').innerHTML = '<p>Error loading favorites.</p>';
+            const container = document.getElementById('favorites-list');
+            container.innerHTML = '';
+            const p = document.createElement('p');
+            p.textContent = 'Error loading favorites.';
+            container.appendChild(p);
         }
     }
     

@@ -23,12 +23,12 @@
                 <form id="add-cosmetic-form">
                     <div>
                         <label for="name">Product Name:</label>
-                        <input type="text" id="name" name="name" required placeholder="Full Product Name">
+                        <input type="text" id="name" name="name" required placeholder="Full Product Name" maxlength="100">
                     </div>
 
                     <div>
                         <label for="brand">Brand:</label>
-                        <input type="text" id="brand" name="brand" required placeholder="Brand">
+                        <input type="text" id="brand" name="brand" required placeholder="Brand" maxlength="100">
                     </div>
 
                     <div>
@@ -57,7 +57,7 @@
 
                     <div>
                         <label for="ingredients_text">Paste Ingredients List:</label>
-                        <textarea id="ingredients_text" name="ingredients_text" rows="6" placeholder="Paste full INCI list here (comma-separated)&#10;Example: Aqua, Glycerin, Niacinamide, Panthenol" required></textarea>
+                        <textarea id="ingredients_text" name="ingredients_text" rows="6" placeholder="Paste full INCI list here (comma-separated)&#10;Example: Aqua, Glycerin, Niacinamide, Panthenol" required maxlength="5000"></textarea>
                     </div>
 
                     <button type="submit">Add Cosmetic</button>
@@ -70,6 +70,14 @@
 
     <script>
     {% if user.is_authenticated %}
+
+    function escapeHtml(text) {
+        if (text === null || text === undefined) return '';
+        const div = document.createElement('div');
+        div.textContent = String(text);
+        return div.innerHTML;
+    }
+
     const subcategories = {
         'FACE': [
             {value: 'CLEANSER', label: 'Cleanser'},
@@ -119,10 +127,15 @@
         const subcategorySelect = document.getElementById('subcategory');
         const productTypeContainer = document.getElementById('product-type-container');
 
-        subcategorySelect.innerHTML = '<option value="">Select subcategory</option>';
+        subcategorySelect.innerHTML = '';
+        const defaultOption = document.createElement('option');
+        defaultOption.value = '';
+        defaultOption.textContent = 'Select subcategory';
+        subcategorySelect.appendChild(defaultOption);
+
         productTypeContainer.style.display = 'none';
 
-        if (mainCategory && subcategories[mainCategory].length > 0) {
+        if (mainCategory && subcategories[mainCategory] && subcategories[mainCategory].length > 0) {
             subcategoryContainer.style.display = 'block';
 
             subcategories[mainCategory].forEach(sub => {
@@ -141,7 +154,11 @@
         const productTypeContainer = document.getElementById('product-type-container');
         const productTypeSelect = document.getElementById('product_type');
 
-        productTypeSelect.innerHTML = '<option value="">Select product type</option>';
+        productTypeSelect.innerHTML = '';
+        const defaultOption = document.createElement('option');
+        defaultOption.value = '';
+        defaultOption.textContent = 'Select product type';
+        productTypeSelect.appendChild(defaultOption);
 
         if (subcategory && productTypes[subcategory]) {
             productTypeContainer.style.display = 'block';
@@ -149,7 +166,7 @@
             productTypes[subcategory].forEach(type => {
                 const option = document.createElement('option');
                 option.value = type.value;
-                option.textContent = type.label;
+                option.textContent = type.label;  // textContent jest bezpieczne
                 productTypeSelect.appendChild(option);
             });
         } else {
@@ -161,16 +178,24 @@
         e.preventDefault();
 
         const resultDiv = document.getElementById('result-message');
-        resultDiv.innerHTML = '<p style="color: var(--text);">Adding cosmetic...</p>';
+
+        resultDiv.textContent = 'Adding cosmetic...';
+        resultDiv.style.color = 'var(--text)';
 
         const formData = {
-            name: document.getElementById('name').value,
-            brand: document.getElementById('brand').value,
+            name: document.getElementById('name').value.trim(),
+            brand: document.getElementById('brand').value.trim(),
             main_category: document.getElementById('main_category').value,
             subcategory: document.getElementById('subcategory').value || '',
             product_type: document.getElementById('product_type').value || '',
-            ingredients_text: document.getElementById('ingredients_text').value
+            ingredients_text: document.getElementById('ingredients_text').value.trim()
         };
+
+        if (!formData.name || !formData.brand || !formData.main_category || !formData.ingredients_text) {
+            resultDiv.textContent = 'Please fill in all required fields.';
+            resultDiv.style.color = 'var(--accent-dark)';
+            return;
+        }
 
         try {
             const response = await fetch('/api/cosmetics/', {
@@ -184,20 +209,46 @@
 
             if (response.ok) {
                 const data = await response.json();
-                resultDiv.innerHTML = '<p style="color: var(--accent-green); font-weight: 700;">Cosmetic added successfully!</p>';
+
+                resultDiv.textContent = 'Cosmetic added successfully!';
+                resultDiv.style.color = 'var(--accent-green)';
+                resultDiv.style.fontWeight = '700';
+
                 document.getElementById('add-cosmetic-form').reset();
                 document.getElementById('subcategory-container').style.display = 'none';
                 document.getElementById('product-type-container').style.display = 'none';
 
-                setTimeout(() => {
-                    window.location.href = '/cosmetic/' + data.id + '/';
-                }, 1000);
+                if (typeof data.id === 'number' && data.id > 0) {
+                    setTimeout(() => {
+                        window.location.href = '/cosmetic/' + encodeURIComponent(data.id) + '/';
+                    }, 1000);
+                }
             } else {
                 const error = await response.json();
-                resultDiv.innerHTML = '<p style="color: var(--accent-dark); font-weight: 700;">Error: ' + JSON.stringify(error) + '</p>';
+
+                let errorMessage = 'Error adding cosmetic. ';
+
+                if (typeof error === 'object' && error !== null) {
+                    const errorMessages = [];
+                    for (const [field, messages] of Object.entries(error)) {
+                        const fieldMessages = Array.isArray(messages) ? messages : [messages];
+                        fieldMessages.forEach(msg => {
+                            errorMessages.push(`${field}: ${msg}`);
+                        });
+                    }
+                    errorMessage += errorMessages.join(', ');
+                } else {
+                    errorMessage += 'Please try again.';
+                }
+
+                resultDiv.textContent = errorMessage;
+                resultDiv.style.color = 'var(--accent-dark)';
+                resultDiv.style.fontWeight = '700';
             }
         } catch (error) {
-            resultDiv.innerHTML = '<p style="color: var(--accent-dark); font-weight: 700;">Error adding cosmetic. Please try again.</p>';
+            resultDiv.textContent = 'Error adding cosmetic. Please try again.';
+            resultDiv.style.color = 'var(--accent-dark)';
+            resultDiv.style.fontWeight = '700';
         }
     });
 

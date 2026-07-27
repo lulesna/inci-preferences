@@ -10,7 +10,7 @@
     <section class="main-section">
         <h2>Search for cosmetics</h2>
             <div class="search-box">
-                <input type="text" id="search-query" placeholder="Search by product name or brand..." />
+                <input type="text" id="search-query" placeholder="Search by product name or brand..." maxlength="200" />
                 <button id="search-btn" onclick="performSearch()">Search</button>
             </div>
 
@@ -54,14 +54,14 @@
 
                     <div class="filter-group">
                         <label>Must Contain Ingredient:</label>
-                        <input type="text" id="ingredient-filter" placeholder="Start typing ingredient name..." />
+                        <input type="text" id="ingredient-filter" placeholder="Start typing ingredient name..." maxlength="100" />
                         <div id="ingredient-suggestions"></div>
                         <div id="selected-ingredients"></div>
                     </div>
 
                     <div class="filter-group">
                         <label>Must NOT Contain:</label>
-                        <input type="text" id="exclude-ingredient-filter" placeholder="Start typing ingredient name..." />
+                        <input type="text" id="exclude-ingredient-filter" placeholder="Start typing ingredient name..." maxlength="100" />
                         <div id="exclude-ingredient-suggestions"></div>
                         <div id="excluded-ingredients"></div>
                     </div>
@@ -95,6 +95,13 @@
     </section>
 
     <script>
+    function escapeHtml(text) {
+        if (text === null || text === undefined) return '';
+        const div = document.createElement('div');
+        div.textContent = String(text);
+        return div.innerHTML;
+    }
+
     const urlParams = new URLSearchParams(window.location.search);
     const initialQuery = urlParams.get('q') || '';
 
@@ -231,10 +238,22 @@
         }
 
         group.style.display = 'block';
-        buttonsContainer.innerHTML = '<button class="filter-btn active" data-filter="subcategory" data-value="">All</button>';
+        buttonsContainer.innerHTML = '';
+
+        const allBtn = document.createElement('button');
+        allBtn.className = 'filter-btn active';
+        allBtn.dataset.filter = 'subcategory';
+        allBtn.dataset.value = '';
+        allBtn.textContent = 'All';
+        buttonsContainer.appendChild(allBtn);
 
         subcategoryMap[category].forEach(sub => {
-            buttonsContainer.innerHTML += `<button class="filter-btn" data-filter="subcategory" data-value="${sub}">${sub}</button>`;
+            const btn = document.createElement('button');
+            btn.className = 'filter-btn';
+            btn.dataset.filter = 'subcategory';
+            btn.dataset.value = sub;
+            btn.textContent = sub;
+            buttonsContainer.appendChild(btn);
         });
 
         document.getElementById('product-type-group').style.display = 'none';
@@ -250,18 +269,31 @@
         }
 
         group.style.display = 'block';
-        buttonsContainer.innerHTML = '<button class="filter-btn active" data-filter="productType" data-value="">All</button>';
+        buttonsContainer.innerHTML = '';
+
+        const allBtn = document.createElement('button');
+        allBtn.className = 'filter-btn active';
+        allBtn.dataset.filter = 'productType';
+        allBtn.dataset.value = '';
+        allBtn.textContent = 'All';
+        buttonsContainer.appendChild(allBtn);
 
         productTypeMap[subcategory].forEach(type => {
-            buttonsContainer.innerHTML += `<button class="filter-btn" data-filter="productType" data-value="${type}">${type}</button>`;
+            const btn = document.createElement('button');
+            btn.className = 'filter-btn';
+            btn.dataset.filter = 'productType';
+            btn.dataset.value = type;
+            btn.textContent = type;
+            buttonsContainer.appendChild(btn);
         });
     }
 
     document.getElementById('ingredient-filter')?.addEventListener('input', function(e) {
         const searchTerm = e.target.value.toLowerCase();
+        const suggestionsContainer = document.getElementById('ingredient-suggestions');
 
         if (searchTerm.length < 2) {
-            document.getElementById('ingredient-suggestions').innerHTML = '';
+            suggestionsContainer.innerHTML = '';
             return;
         }
 
@@ -270,20 +302,30 @@
             !selectedIngredients.includes(ing.id)
         ).slice(0, 10);
 
-        let html = '<div class="suggestions-list">';
-        matches.forEach(ing => {
-            html += `<div class="suggestion-item" onclick="addIngredientFilter(${ing.id}, '${ing.inci_name}')">${ing.inci_name}</div>`;
-        });
-        html += '</div>';
+        suggestionsContainer.innerHTML = '';
 
-        document.getElementById('ingredient-suggestions').innerHTML = html;
+        if (matches.length > 0) {
+            const listDiv = document.createElement('div');
+            listDiv.className = 'suggestions-list';
+
+            matches.forEach(ing => {
+                const item = document.createElement('div');
+                item.className = 'suggestion-item';
+                item.textContent = ing.inci_name;
+                item.onclick = () => addIngredientFilter(ing.id, ing.inci_name);
+                listDiv.appendChild(item);
+            });
+
+            suggestionsContainer.appendChild(listDiv);
+        }
     });
 
     document.getElementById('exclude-ingredient-filter')?.addEventListener('input', function(e) {
         const searchTerm = e.target.value.toLowerCase();
+        const suggestionsContainer = document.getElementById('exclude-ingredient-suggestions');
 
         if (searchTerm.length < 2) {
-            document.getElementById('exclude-ingredient-suggestions').innerHTML = '';
+            suggestionsContainer.innerHTML = '';
             return;
         }
 
@@ -292,13 +334,22 @@
             !excludedIngredients.includes(ing.id)
         ).slice(0, 10);
 
-        let html = '<div class="suggestions-list">';
-        matches.forEach(ing => {
-            html += `<div class="suggestion-item" onclick="addExcludeFilter(${ing.id}, '${ing.inci_name}')">${ing.inci_name}</div>`;
-        });
-        html += '</div>';
+        suggestionsContainer.innerHTML = '';
 
-        document.getElementById('exclude-ingredient-suggestions').innerHTML = html;
+        if (matches.length > 0) {
+            const listDiv = document.createElement('div');
+            listDiv.className = 'suggestions-list';
+
+            matches.forEach(ing => {
+                const item = document.createElement('div');
+                item.className = 'suggestion-item';
+                item.textContent = ing.inci_name;
+                item.onclick = () => addExcludeFilter(ing.id, ing.inci_name);
+                listDiv.appendChild(item);
+            });
+
+            suggestionsContainer.appendChild(listDiv);
+        }
     });
 
     function addIngredientFilter(id, name) {
@@ -319,30 +370,46 @@
 
     function updateSelectedIngredients() {
         const container = document.getElementById('selected-ingredients');
-        let html = '';
+        container.innerHTML = '';
 
         selectedIngredients.forEach(id => {
             const ing = allIngredients.find(i => i.id === id);
             if (ing) {
-                html += `<span class="ingredient-chip">${ing.inci_name} <span onclick="removeIngredientFilter(${id})">×</span></span>`;
+                const chip = document.createElement('span');
+                chip.className = 'ingredient-chip';
+                chip.textContent = ing.inci_name + ' ';
+
+                const closeBtn = document.createElement('span');
+                closeBtn.textContent = '×';
+                closeBtn.style.cursor = 'pointer';
+                closeBtn.onclick = () => removeIngredientFilter(id);
+
+                chip.appendChild(closeBtn);
+                container.appendChild(chip);
             }
         });
-
-        container.innerHTML = html;
     }
 
     function updateExcludedIngredients() {
         const container = document.getElementById('excluded-ingredients');
-        let html = '';
+        container.innerHTML = '';
 
         excludedIngredients.forEach(id => {
             const ing = allIngredients.find(i => i.id === id);
             if (ing) {
-                html += `<span class="ingredient-chip exclude">${ing.inci_name} <span onclick="removeExcludeFilter(${id})">×</span></span>`;
+                const chip = document.createElement('span');
+                chip.className = 'ingredient-chip exclude';
+                chip.textContent = ing.inci_name + ' ';  // BEZPIECZNE
+
+                const closeBtn = document.createElement('span');
+                closeBtn.textContent = '×';
+                closeBtn.style.cursor = 'pointer';
+                closeBtn.onclick = () => removeExcludeFilter(id);
+
+                chip.appendChild(closeBtn);
+                container.appendChild(chip);
             }
         });
-
-        container.innerHTML = html;
     }
 
     function removeIngredientFilter(id) {
@@ -361,6 +428,8 @@
 
     function updateActiveFilters() {
         const container = document.getElementById('active-filters');
+        container.innerHTML = '';
+
         let chips = [];
 
         if (filters.query) chips.push(`Search: "${filters.query}"`);
@@ -372,17 +441,20 @@
         if (excludedIngredients.length > 0) chips.push(`Excludes: ${excludedIngredients.length} ingredient(s)`);
 
         if (chips.length === 0) {
-            container.innerHTML = '';
             return;
         }
 
-        let html = '<div class="active-filters-chips">';
-        chips.forEach(chip => {
-            html += `<span class="filter-chip">${chip}</span>`;
-        });
-        html += '</div>';
+        const chipsDiv = document.createElement('div');
+        chipsDiv.className = 'active-filters-chips';
 
-        container.innerHTML = html;
+        chips.forEach(chip => {
+            const chipSpan = document.createElement('span');
+            chipSpan.className = 'filter-chip';
+            chipSpan.textContent = chip;
+            chipsDiv.appendChild(chipSpan);
+        });
+
+        container.appendChild(chipsDiv);
     }
 
     function clearFilters() {
@@ -413,23 +485,32 @@
         updateExcludedIngredients();
         updateActiveFilters();
 
-        document.getElementById('search-results').innerHTML = '<p style="text-align: center; color: var(--text);">Use the search box or filters to find cosmetics</p>';
+        const resultsDiv = document.getElementById('search-results');
+        resultsDiv.innerHTML = '';
+        const p = document.createElement('p');
+        p.style.textAlign = 'center';
+        p.style.color = 'var(--text)';
+        p.textContent = 'Use the search box or filters to find cosmetics';
+        resultsDiv.appendChild(p);
     }
 
     async function performSearch() {
-        filters.query = document.getElementById('search-query').value;
+        filters.query = document.getElementById('search-query').value.trim();
         filters.sortBy = document.getElementById('sort-by').value;
 
         const resultsDiv = document.getElementById('search-results');
-        resultsDiv.innerHTML = '<p>Searching...</p>';
+        resultsDiv.innerHTML = '';
+        const loadingP = document.createElement('p');
+        loadingP.textContent = 'Searching...';
+        resultsDiv.appendChild(loadingP);
 
         try {
             let url = '/api/cosmetics/?';
             const params = [];
 
             if (filters.query) params.push(`search=${encodeURIComponent(filters.query)}`);
-            if (filters.category) params.push(`main_category=${filters.category}`);
-            if (filters.subcategory) params.push(`subcategory=${filters.subcategory}`);
+            if (filters.category) params.push(`main_category=${encodeURIComponent(filters.category)}`);
+            if (filters.subcategory) params.push(`subcategory=${encodeURIComponent(filters.subcategory)}`);
 
             url += params.join('&');
 
@@ -482,16 +563,35 @@
                 cosmetics.sort((a, b) => a.brand.localeCompare(b.brand));
             }
 
+            resultsDiv.innerHTML = '';
+
             if (cosmetics.length === 0) {
-                resultsDiv.innerHTML = '<p style="text-align: center; color: var(--text); font-size: 16px;">No cosmetics found. Try adjusting your filters.</p>';
+                const p = document.createElement('p');
+                p.style.textAlign = 'center';
+                p.style.color = 'var(--text)';
+                p.style.fontSize = '16px';
+                p.textContent = 'No cosmetics found. Try adjusting your filters.';
+                resultsDiv.appendChild(p);
                 return;
             }
 
-            resultsDiv.innerHTML = `<h3>Found ${cosmetics.length} product${cosmetics.length !== 1 ? 's' : ''}</h3><div id="cosmetics-container"></div>`;
+            const heading = document.createElement('h3');
+            heading.textContent = `Found ${cosmetics.length} product${cosmetics.length !== 1 ? 's' : ''}`;
+            resultsDiv.appendChild(heading);
+
+            const cosmeticsContainer = document.createElement('div');
+            cosmeticsContainer.id = 'cosmetics-container';
+            resultsDiv.appendChild(cosmeticsContainer);
+
             await displayCosmeticsWithSafety(cosmetics, 'cosmetics-container');
 
         } catch (error) {
-            resultsDiv.innerHTML = '<p style="text-align: center; color: var(--accent-dark);">Error searching cosmetics. Please try again.</p>';
+            resultsDiv.innerHTML = '';
+            const p = document.createElement('p');
+            p.style.textAlign = 'center';
+            p.style.color = 'var(--accent-dark)';
+            p.textContent = 'Error searching cosmetics. Please try again.';
+            resultsDiv.appendChild(p);
         }
     }
 
@@ -510,28 +610,33 @@
         let html = '<div class="cosmetics-grid">';
 
         cosmetics.forEach(cosmetic => {
+            let cardSafetyClass = '';
+            let cardBadge = '';
+
             {% if user.is_authenticated %}
-            const safetyClass = getSafetyClass(cosmetic);
-            const safetyBadge = getSafetyBadge(safetyClass);
-            {% else %}
-            const safetyClass = '';
-            const safetyBadge = '';
+            cardSafetyClass = getSafetyClass(cosmetic);
+            cardBadge = getSafetyBadge(cardSafetyClass);
             {% endif %}
 
-            const displayType = formatCategory(cosmetic.product_type || cosmetic.subcategory || '');
-            const displayCategory = formatCategory(cosmetic.main_category);
+            const escapedName = escapeHtml(cosmetic.name);
+            const escapedBrand = escapeHtml(cosmetic.brand);
+            const displayType = escapeHtml(formatCategory(cosmetic.product_type || cosmetic.subcategory || ''));
+            const displayCategory = escapeHtml(formatCategory(cosmetic.main_category));
+
+            const cosmeticId = typeof cosmetic.id === 'number' ? cosmetic.id : 0;
+            const ingredientsCount = Array.isArray(cosmetic.ingredients) ? cosmetic.ingredients.length : 0;
 
             html += `
-                <div class="cosmetic-result-card ${safetyClass}">
-                    ${safetyBadge}
+                <div class="cosmetic-result-card ${cardSafetyClass}">
+                    ${cardBadge}
                     <div class="card-content">
-                        <h3>${cosmetic.name}</h3>
-                        <p><strong>Brand:</strong> ${cosmetic.brand}</p>
+                        <h3>${escapedName}</h3>
+                        <p><strong>Brand:</strong> ${escapedBrand}</p>
                         <p><strong>Category:</strong> ${displayCategory}</p>
                         ${displayType ? `<p><strong>Type:</strong> ${displayType}</p>` : ''}
-                        <p><strong>Ingredients:</strong> ${cosmetic.ingredients.length}</p>
+                        <p><strong>Ingredients:</strong> ${ingredientsCount}</p>
                     </div>
-                    <a href="/cosmetic/${cosmetic.id}/">View Details</a>
+                    <a href="/cosmetic/${cosmeticId}/">View Details</a>
                 </div>
             `;
         });
