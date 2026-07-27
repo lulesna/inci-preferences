@@ -28,7 +28,7 @@ RUN SECRET_KEY="dummy-key-for-build" \
     ALLOWED_HOSTS="localhost" \
     python manage.py collectstatic --noinput
 
-RUN groupadd -r appuser && useradd -r -g appuser appuser \
+RUN groupadd -r appuser && useradd -r -m -g appuser appuser \
     && chown -R appuser:appuser /app
 
 USER appuser
