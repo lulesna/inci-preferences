@@ -1,4 +1,7 @@
 # Analizator Składów Kosmetyków - INCI Preferences
+   ![CI/CD Pipeline](https://github.com/lulesna/analizator-skladow-kosmetykow/actions/workflows/ci.yml/badge.svg)
+   ![Docker](https://img.shields.io/badge/docker-ready-blue)
+   ![Kubernetes](https://img.shields.io/badge/kubernetes-yes-blue)
 
 Aplikacja webowa do analizy składów kosmetyków oparta na indywidualnych preferencjach użytkownika. W przeciwieństwie do popularnych analizatorów składów, które klasyfikują substancje w sposób uniwersalny, INCI Preferences pozwala każdemu użytkownikowi samodzielnie określić, które składniki toleruje, a których powinien unikać.
 
