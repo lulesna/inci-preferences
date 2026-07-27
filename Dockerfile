@@ -16,7 +16,16 @@ RUN pip install --no-cache-dir --upgrade pip \
 
 COPY . .
 
-RUN SECRET_KEY="dummy-key-for-build" DEBUG=False python manage.py collectstatic --noinput
+RUN SECRET_KEY="dummy-key-for-build" \
+    DEBUG=False \
+    DB_NAME="dummy" \
+    DB_USER="dummy" \
+    DB_PASSWORD="dummy" \
+    DB_HOST="localhost" \
+    DB_PORT="5432" \
+    USE_POSTGRES=False \
+    ALLOWED_HOSTS="localhost" \
+    python manage.py collectstatic --noinput
 
 EXPOSE 8000
 
