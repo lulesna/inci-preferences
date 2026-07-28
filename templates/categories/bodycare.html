@@ -17,11 +17,23 @@
     </section>
 
     <script>
+    function escapeHtml(text) {
+        if (text === null || text === undefined) return '';
+        const div = document.createElement('div');
+        div.textContent = String(text);
+        return div.innerHTML;
+    }
+
     async function displayCosmeticsWithSafety(cosmetics, containerId) {
         const container = document.getElementById(containerId);
 
         if (cosmetics.length === 0) {
-            container.innerHTML = '<p style="text-align: center; color: var(--text);">No cosmetics found.</p>';
+            container.innerHTML = '';
+            const p = document.createElement('p');
+            p.style.textAlign = 'center';
+            p.style.color = 'var(--text)';
+            p.textContent = 'No cosmetics found.';
+            container.appendChild(p);
             return;
         }
 
@@ -72,24 +84,29 @@
         let html = '<div class="cosmetics-grid">';
 
         cosmetics.forEach(cosmetic => {
+            let cardSafetyClass = '';
+            let cardBadge = '';
+
             {% if user.is_authenticated %}
-            const safetyClass = getSafetyClass(cosmetic);
-            const safetyBadge = getSafetyBadge(safetyClass);
-            {% else %}
-            const safetyClass = '';
-            const safetyBadge = '';
+            cardSafetyClass = getSafetyClass(cosmetic);
+            cardBadge = getSafetyBadge(cardSafetyClass);
             {% endif %}
 
-            const displayType = cosmetic.product_type || cosmetic.subcategory || cosmetic.main_category;
+            const escapedName = escapeHtml(cosmetic.name);
+            const escapedBrand = escapeHtml(cosmetic.brand);
+            const displayType = escapeHtml(cosmetic.product_type || cosmetic.subcategory || cosmetic.main_category);
+
+            const cosmeticId = typeof cosmetic.id === 'number' ? cosmetic.id : 0;
+            const ingredientsCount = Array.isArray(cosmetic.ingredients) ? cosmetic.ingredients.length : 0;
 
             html += `
-                <div class="cosmetic-result-card ${safetyClass}">
-                    ${safetyBadge}
-                    <h3>${cosmetic.name}</h3>
-                    <p><strong>Brand:</strong> ${cosmetic.brand}</p>
+                <div class="cosmetic-result-card ${cardSafetyClass}">
+                    ${cardBadge}
+                    <h3>${escapedName}</h3>
+                    <p><strong>Brand:</strong> ${escapedBrand}</p>
                     ${displayType ? `<p><strong>Type:</strong> ${displayType}</p>` : ''}
-                    <p><strong>Ingredients:</strong> ${cosmetic.ingredients.length}</p>
-                    <a href="/cosmetic/${cosmetic.id}/">View Details</a>
+                    <p><strong>Ingredients:</strong> ${ingredientsCount}</p>
+                    <a href="/cosmetic/${cosmeticId}/">View Details</a>
                 </div>
             `;
         });
@@ -104,12 +121,16 @@
 
     async function loadCosmetics() {
         try {
-            const response = await fetch('/api/cosmetics/?main_category=FACE');
+            const response = await fetch('/api/cosmetics/?main_category=BODY');
             allCosmetics = await response.json();
             visibleCount = perLoad;
             showCosmetics();
         } catch (error) {
-            document.getElementById('cosmetics-list').innerHTML = '<p>Error loading cosmetics</p>';
+            const container = document.getElementById('cosmetics-list');
+            container.innerHTML = '';
+            const p = document.createElement('p');
+            p.textContent = 'Error loading cosmetics';
+            container.appendChild(p);
         }
     }
 
@@ -121,15 +142,19 @@
         if (existing) existing.remove();
 
         if (visibleCount < allCosmetics.length) {
-            const remaining = allCosmetics.length - visibleCount;
-            const html = `
-                <div id="load-more-container" class="load-more-container">
-                    <button class="load-more-btn" onclick="loadMore()">
-                        Show more
-                    </button>
-                </div>
-            `;
-            document.getElementById('cosmetics-list').insertAdjacentHTML('afterend', html);
+            const cosmeticsList = document.getElementById('cosmetics-list');
+
+            const loadMoreContainer = document.createElement('div');
+            loadMoreContainer.id = 'load-more-container';
+            loadMoreContainer.className = 'load-more-container';
+
+            const btn = document.createElement('button');
+            btn.className = 'load-more-btn';
+            btn.textContent = 'Show more';
+            btn.onclick = loadMore;
+
+            loadMoreContainer.appendChild(btn);
+            cosmeticsList.insertAdjacentElement('afterend', loadMoreContainer);
         }
     }
 
