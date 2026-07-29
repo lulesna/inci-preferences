@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}Privacy Policy - INCI Preferences{% endblock %}
+
+{% block content %}
+<section class="main-section">
+    <div style="max-width: 800px; margin: 0 auto; padding: 20px;">
+        <h1>Privacy Policy</h1>
+        <p><em>Last updated: July 29, 2026</em></p>
+
+        <h2>1. Joint Data Controllers</h2>
+        <p>
+            The joint controllers of personal data processed within the INCI Preferences service
+            (hereinafter: "Service"), available at
+            <a href="https://incipreferences.app">incipreferences.app</a>, are:
+        </p>
+        <ul>
+            <li><strong>Łucja Leśna</strong></li>
+            <li><strong>Oliwia Natzke</strong></li>
+        </ul>
+        <p>
+            The joint controllers jointly determine the purposes and means of processing personal data
+            and share responsibility for ensuring compliance with the General Data Protection Regulation (GDPR).
+        </p>
+        <p>
+            <strong>Contact regarding privacy matters:</strong><br>
+            Email: <a href="mailto:kontakt@incipreferences.app">kontakt@incipreferences.app</a>
+        </p>
+
+        <h2>2. Scope of Processed Data</h2>
+        <p>The Service processes the following personal data:</p>
+        <ul>
+            <li><strong>Username</strong> - provided during registration</li>
+            <li><strong>Password</strong> - stored in encrypted form (PBKDF2 + SHA256 algorithm)</li>
+            <li><strong>Cosmetic preferences</strong> - list of ingredients marked as safe, moderate, or unsafe</li>
+            <li><strong>Favorite cosmetics list</strong></li>
+            <li><strong>Technical session data</strong> - session cookies enabling login functionality</li>
+        </ul>
+
+        <h2>3. Purpose of Data Processing</h2>
+        <p>Personal data is processed exclusively for the following purposes:</p>
+        <ul>
+            <li>Providing the cosmetic ingredient analysis service</li>
+            <li>Ensuring the functionality of personalized recommendations</li>
+            <li>Enabling login and account management</li>
+            <li>Ensuring the security of the Service</li>
+        </ul>
+
+        <h2>4. Legal Basis for Processing</h2>
+        <p>
+            Data is processed based on Article 6(1)(b) of the GDPR
+            (performance of a contract for the provision of electronic services)
+            and Article 6(1)(a) of the GDPR (user consent expressed during registration).
+        </p>
+
+        <h2>5. Data Retention Period</h2>
+        <p>
+            Personal data is stored for the duration of Service account usage.
+            Upon account deletion, all personal data is permanently removed from the database.
+        </p>
+
+        <h2>6. User Rights</h2>
+        <p>In relation to the processing of personal data, you have the right to:</p>
+        <ul>
+            <li>Access your personal data</li>
+            <li>Rectify (correct) your personal data</li>
+            <li>Erase your data (by deleting your account in your profile)</li>
+            <li>Restrict the processing of your data</li>
+            <li>Data portability</li>
+            <li>Object to processing</li>
+            <li>Withdraw consent to data processing</li>
+            <li>Lodge a complaint with the President of the Personal Data Protection Office (or your local supervisory authority)</li>
+        </ul>
+        <p>
+            To exercise the above rights, please contact us at:
+            <a href="mailto:kontakt@incipreferences.app">kontakt@incipreferences.app</a>
+        </p>
+
+        <h2>7. Cookies and Tracking Technologies</h2>
+        <p>The Service uses <strong>only essential technical cookies</strong>:</p>
+        <ul>
+            <li><strong>sessionid</strong> - identifier for the logged-in user session (Django)</li>
+            <li><strong>csrftoken</strong> - CSRF attack protection token</li>
+        </ul>
+        <p>
+            The Service <strong>does not use</strong> marketing, analytical, or advertising cookies.
+            We do not employ Google Analytics or any other tracking tools.
+        </p>
+
+        <h2>8. Data Recipients</h2>
+        <p>Personal data is not shared with third parties, except for:</p>
+        <ul>
+            <li><strong>Hosting provider (Railway.app)</strong> - technical data necessary for Service operation</li>
+            <li><strong>Database provider (Supabase)</strong> - storage of application data</li>
+            <li><strong>Cloudflare</strong> - CDN and DDoS attack protection</li>
+        </ul>
+        <p>
+            The listed entities are obliged to maintain confidentiality and process data
+            solely for the purpose of providing services to the Service.
+        </p>
+
+        <h2>9. Data Transfer Outside the EEA</h2>
+        <p>
+            Personal data is stored on servers located within the European Union.
+            In case of potential data transfer outside the EEA, it is carried out in accordance
+            with GDPR requirements (standard contractual clauses).
+        </p>
+
+        <h2>10. Data Security</h2>
+        <p>
+            To protect personal data, we implement the following measures:
+        </p>
+        <ul>
+            <li>Encrypted connections (HTTPS/TLS)</li>
+            <li>Password hashing with PBKDF2 and SHA256 algorithm</li>
+            <li>Protection against CSRF and XSS attacks</li>
+            <li>Content Security Policy (CSP)</li>
+            <li>Regular security updates</li>
+            <li>Data minimization principle</li>
+        </ul>
+
+        <h2>11. Data Entered by Users</h2>
+        <p>
+            Users may add information about cosmetics to the Service (name, brand, ingredients).
+            This data <strong>is not considered personal data</strong> and is publicly available
+            in the Service. We kindly ask users not to include any personal information in these fields.
+        </p>
+
+        <h2>12. Limitation of Liability</h2>
+        <p>
+            The Service is <strong>informational and educational in nature</strong>.
+            Cosmetic ingredient analyses and recommendations do not constitute medical or dermatological advice.
+            In case of skin problems or allergies, please consult a dermatologist.
+        </p>
+
+        <h2>13. Changes to the Privacy Policy</h2>
+        <p>
+            We reserve the right to make changes to this Privacy Policy.
+            Users will be informed of significant changes through announcements on the Service.
+        </p>
+
+        <h2>14. Contact</h2>
+        <p>
+            For matters concerning personal data protection and this Privacy Policy,
+            please contact us:
+        </p>
+        <ul>
+            <li>Email: <a href="mailto:kontakt@incipreferences.app">kontakt@incipreferences.app</a></li>
+            <li>Service address: <a href="https://incipreferences.app">https://incipreferences.app</a></li>
+        </ul>
+    </div>
+</section>
+{% endblock %}

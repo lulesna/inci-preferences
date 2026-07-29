@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}Polityka Prywatności - INCI Preferences{% endblock %}
+
+{% block content %}
+<section class="main-section">
+    <div style="max-width: 800px; margin: 0 auto; padding: 20px;">
+        <h1>Polityka Prywatności</h1>
+        <p><em>Ostatnia aktualizacja: 29 lipca 2026</em></p>
+
+        <h2>1. Administrator danych</h2>
+        <p>
+            Administratorem danych osobowych przetwarzanych w serwisie INCI Preferences
+            (dalej: "Serwis"), dostępnym pod adresem
+            <a href="https://incipreferences.app">incipreferences.app</a>, są:
+        </p>
+        <ul>
+            <li><strong>Łucja Leśna</strong></li>
+            <li><strong>Oliwia Natzke</strong></li>
+        </ul>
+        <p>
+            Współadministratorzy wspólnie ustalają cele i sposoby przetwarzania danych osobowych
+            oraz ponoszą wspólną odpowiedzialność za zapewnienie zgodności z RODO.
+        </p>
+        <p>
+            <strong>Kontakt w sprawach dotyczących prywatności:</strong><br>
+            Email: <a href="mailto:kontakt@incipreferences.app">kontakt@incipreferences.app</a>
+        </p>
+
+        <h2>2. Zakres przetwarzanych danych</h2>
+        <p>Serwis przetwarza następujące dane osobowe:</p>
+        <ul>
+            <li><strong>Nazwa użytkownika (login)</strong> - podawana przy rejestracji</li>
+            <li><strong>Hasło</strong> - przechowywane w formie zaszyfrowanej (algorytm PBKDF2 + SHA256)</li>
+            <li><strong>Preferencje kosmetyczne</strong> - lista składników oznaczonych jako bezpieczne, umiarkowane lub niebezpieczne</li>
+            <li><strong>Lista ulubionych kosmetyków</strong></li>
+            <li><strong>Dane techniczne sesji</strong> - cookies sesyjne umożliwiające zalogowanie</li>
+        </ul>
+
+        <h2>3. Cel przetwarzania danych</h2>
+        <p>Dane osobowe są przetwarzane wyłącznie w celu:</p>
+        <ul>
+            <li>Świadczenia usługi analizy składów kosmetyków</li>
+            <li>Zapewnienia funkcjonalności personalizowanych rekomendacji</li>
+            <li>Umożliwienia logowania i zarządzania kontem</li>
+            <li>Zapewnienia bezpieczeństwa Serwisu</li>
+        </ul>
+
+        <h2>4. Podstawa prawna przetwarzania</h2>
+        <p>
+            Dane są przetwarzane na podstawie art. 6 ust. 1 lit. b RODO 
+            (wykonanie umowy o świadczenie usług drogą elektroniczną) oraz art. 6 ust. 1 lit. a RODO 
+            (zgoda użytkownika wyrażona podczas rejestracji).
+        </p>
+
+        <h2>5. Okres przechowywania danych</h2>
+        <p>
+            Dane osobowe są przechowywane przez czas korzystania z konta w Serwisie. 
+            W przypadku usunięcia konta wszystkie dane osobowe są trwale usuwane z bazy danych.
+        </p>
+
+        <h2>6. Prawa użytkownika</h2>
+        <p>W związku z przetwarzaniem danych osobowych przysługuje Ci prawo do:</p>
+        <ul>
+            <li>Dostępu do swoich danych osobowych</li>
+            <li>Sprostowania (poprawienia) danych osobowych</li>
+            <li>Usunięcia swoich danych (poprzez usunięcie konta w profilu)</li>
+            <li>Ograniczenia przetwarzania danych</li>
+            <li>Przenoszenia danych</li>
+            <li>Wniesienia sprzeciwu wobec przetwarzania</li>
+            <li>Cofnięcia zgody na przetwarzanie danych</li>
+            <li>Wniesienia skargi do Prezesa Urzędu Ochrony Danych Osobowych</li>
+        </ul>
+        <p>
+            W celu realizacji powyższych praw prosimy o kontakt na adres: 
+            <a href="mailto:lesna.lucja@gmail.com">lesna.lucja@gmail.com</a>
+        </p>
+
+        <h2>7. Cookies i technologie śledzące</h2>
+        <p>Serwis wykorzystuje wyłącznie <strong>niezbędne cookies techniczne</strong>:</p>
+        <ul>
+            <li><strong>sessionid</strong> - identyfikator sesji zalogowanego użytkownika (Django)</li>
+            <li><strong>csrftoken</strong> - token ochrony przed atakami CSRF</li>
+        </ul>
+        <p>
+            Serwis <strong>nie wykorzystuje</strong> cookies marketingowych, analitycznych ani 
+            reklamowych. Nie stosujemy Google Analytics ani innych narzędzi śledzących.
+        </p>
+
+        <h2>8. Odbiorcy danych</h2>
+        <p>Dane osobowe nie są udostępniane podmiotom trzecim, z wyjątkiem:</p>
+        <ul>
+            <li><strong>Dostawca hostingu (Railway.app)</strong> - dane techniczne niezbędne do działania Serwisu</li>
+            <li><strong>Dostawca bazy danych (Supabase)</strong> - przechowywanie danych aplikacji</li>
+            <li><strong>Cloudflare</strong> - CDN i ochrona przed atakami DDoS</li>
+        </ul>
+        <p>
+            Wymienione podmioty są zobowiązane do zachowania poufności i przetwarzają dane 
+            wyłącznie w celu świadczenia usług na rzecz Serwisu.
+        </p>
+
+        <h2>9. Przekazywanie danych poza EOG</h2>
+        <p>
+            Dane osobowe są przechowywane na serwerach zlokalizowanych w Unii Europejskiej. 
+            W przypadku ewentualnego przekazania danych poza EOG odbywa się to zgodnie 
+            z wymogami RODO (standardowe klauzule umowne).
+        </p>
+
+        <h2>10. Bezpieczeństwo danych</h2>
+        <p>
+            W celu ochrony danych osobowych stosujemy następujące środki:
+        </p>
+        <ul>
+            <li>Szyfrowanie połączenia (HTTPS/TLS)</li>
+            <li>Hashowanie haseł algorytmem PBKDF2 z SHA256</li>
+            <li>Ochrona przed atakami CSRF i XSS</li>
+            <li>Content Security Policy (CSP)</li>
+            <li>Regularne aktualizacje zabezpieczeń</li>
+            <li>Zasada minimalizacji danych</li>
+        </ul>
+
+        <h2>11. Dane wprowadzane przez użytkowników</h2>
+        <p>
+            Użytkownicy mogą dodawać do Serwisu informacje o kosmetykach (nazwa, marka, skład). 
+            Te dane <strong>nie są uznawane za dane osobowe</strong> i są dostępne publicznie 
+            w Serwisie. Prosimy o niedodawanie w tych polach żadnych danych osobowych.
+        </p>
+
+        <h2>12. Ograniczenia odpowiedzialności</h2>
+        <p>
+            Serwis ma charakter <strong>informacyjno-edukacyjny</strong>. Analizy składów kosmetyków 
+            oraz rekomendacje nie stanowią porady medycznej ani dermatologicznej. 
+            W przypadku problemów skórnych lub alergii należy skonsultować się z lekarzem dermatologiem.
+        </p>
+
+        <h2>13. Zmiany w Polityce Prywatności</h2>
+        <p>
+            Zastrzegamy sobie prawo do zmian w niniejszej Polityce Prywatności. 
+            O istotnych zmianach użytkownicy zostaną poinformowani poprzez ogłoszenie w Serwisie.
+        </p>
+
+        <h2>14. Kontakt</h2>
+        <p>
+            W sprawach dotyczących ochrony danych osobowych oraz niniejszej Polityki Prywatności 
+            prosimy o kontakt:
+        </p>
+        <ul>
+            <li>Email: <a href="mailto:kontakt@incipreferences.app">kontakt@incipreferences.app</a></li>
+            <li>Adres serwisu: <a href="https://incipreferences.app">https://incipreferences.app</a></li>
+        </ul>
+    </div>
+</section>
+{% endblock %}
