@@ -1,6 +1,7 @@
 from pathlib import Path
 from decouple import config
 import os
+import sys
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -12,6 +13,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY')
 
 DEBUG = config('DEBUG', default=False, cast=bool)
+
+TESTING = 'test' in sys.argv
 
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=lambda v: [s.strip() for s in v.split(',')])
 
@@ -151,7 +154,7 @@ if not DEBUG:
     STATIC_ROOT = BASE_DIR / 'staticfiles'
     STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
 
-if not DEBUG:
+if not DEBUG and not TESTING:
     # Force HTTPS
     SECURE_SSL_REDIRECT = True
     # Proxy header
