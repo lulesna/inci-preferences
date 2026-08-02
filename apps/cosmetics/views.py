@@ -11,7 +11,7 @@ from apps.preferences.models import UserProfile
 
 
 class CosmeticViewSet(viewsets.ModelViewSet):
-    queryset = Cosmetic.objects.all()
+    queryset = Cosmetic.objects.prefetch_related('ingredients').all()
     serializer_class = CosmeticSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_fields = ['main_category', 'subcategory', 'brand']
