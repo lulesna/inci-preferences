@@ -2,6 +2,7 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
 from .models import Cosmetic
@@ -16,6 +17,7 @@ class CosmeticViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_fields = ['main_category', 'subcategory', 'brand']
     search_fields = ['name', 'brand']
+    permission_classes = [IsAuthenticatedOrReadOnly]  # GET publiczne, wszystko inne prywatne
 
     def perform_create(self, serializer):
         cosmetic = serializer.save()

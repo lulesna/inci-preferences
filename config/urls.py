@@ -17,6 +17,9 @@ urlpatterns = [
     path('cosmetic/<int:pk>/', views.cosmetic_detail, name='cosmetic_detail'),
     path('dupes/', TemplateView.as_view(template_name='dupes.html'), name='dupes'),
     path('scan/', TemplateView.as_view(template_name='scan.html'), name='scan'),
+    path('privacy/', TemplateView.as_view(template_name='privacy.html'), name='privacy'),
+    path('polityka-prywatnosci/', TemplateView.as_view(template_name='privacy_pl.html'), name='privacy_pl'),
+    path('terms/', TemplateView.as_view(template_name='terms.html'), name='terms'),
 
     path('categories/makeup/makeup_eyes', views.makeup_eyes, name='makeup_eyes'),
     path('categories/makeup/makeup_face', views.makeup_face, name='makeup_face'),

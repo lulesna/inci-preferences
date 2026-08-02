@@ -34,7 +34,15 @@
     {% endif %}
 
     <script>
-    const cosmeticId = window.location.pathname.split('/').filter(Boolean).pop();
+    function escapeHtml(text) {
+        if (text === null || text === undefined) return '';
+        const div = document.createElement('div');
+        div.textContent = String(text);
+        return div.innerHTML;
+    }
+
+    const rawId = window.location.pathname.split('/').filter(Boolean).pop();
+    const cosmeticId = /^\d+$/.test(rawId) ? rawId : null;
     let userPreferences = null;
     let selectedIngredient = null;
 
@@ -113,89 +121,169 @@
         await loadUserPreferences();
 
         try {
-            const response = await fetch(`/api/cosmetics/${cosmeticId}/`);
+            const response = await fetch(`/api/cosmetics/${encodeURIComponent(cosmeticId)}/`);
             const cosmetic = await response.json();
 
-            let html = `
-                <div class="cosmetic-detail-header">
-                    <h2>${cosmetic.name}</h2>
-                    {% if user.is_authenticated %}
-                    <button id="favorite-btn" onclick="toggleFavorite()" title="Add to favorites">☆</button>
-                    {% endif %}
-                    <p><strong>Brand:</strong> ${cosmetic.brand}</p>
-                    <p><strong>Category:</strong> ${formatCategory(cosmetic.main_category)}</p>
-                    ${cosmetic.subcategory ? `<p><strong>Subcategory:</strong> ${formatCategory(cosmetic.subcategory)}</p>` : ''}
-                    ${cosmetic.product_type ? `<p><strong>Product Type:</strong> ${formatCategory(cosmetic.product_type)}</p>` : ''}
-                </div>
+            const container = document.getElementById('cosmetic-details');
+            container.innerHTML = '';
 
-                <div class="ingredients-section">
-                    <h3>Full Ingredients List (${cosmetic.ingredients.length})</h3>
-            `;
+            const header = document.createElement('div');
+            header.className = 'cosmetic-detail-header';
 
-            if (cosmetic.ingredients.length > 0) {
-                html += '<div class="ingredients-list">';
+            const h2 = document.createElement('h2');
+            h2.textContent = cosmetic.name;
+            header.appendChild(h2);
+
+            {% if user.is_authenticated %}
+            const favBtn = document.createElement('button');
+            favBtn.id = 'favorite-btn';
+            favBtn.onclick = toggleFavorite;
+            favBtn.title = 'Add to favorites';
+            favBtn.textContent = '☆';
+            header.appendChild(favBtn);
+            {% endif %}
+
+            const brandP = document.createElement('p');
+            const brandStrong = document.createElement('strong');
+            brandStrong.textContent = 'Brand:';
+            brandP.appendChild(brandStrong);
+            brandP.appendChild(document.createTextNode(' ' + cosmetic.brand));
+            header.appendChild(brandP);
+
+            const categoryP = document.createElement('p');
+            const categoryStrong = document.createElement('strong');
+            categoryStrong.textContent = 'Category:';
+            categoryP.appendChild(categoryStrong);
+            categoryP.appendChild(document.createTextNode(' ' + formatCategory(cosmetic.main_category)));
+            header.appendChild(categoryP);
+
+            if (cosmetic.subcategory) {
+                const subP = document.createElement('p');
+                const subStrong = document.createElement('strong');
+                subStrong.textContent = 'Subcategory:';
+                subP.appendChild(subStrong);
+                subP.appendChild(document.createTextNode(' ' + formatCategory(cosmetic.subcategory)));
+                header.appendChild(subP);
+            }
+
+            if (cosmetic.product_type) {
+                const typeP = document.createElement('p');
+                const typeStrong = document.createElement('strong');
+                typeStrong.textContent = 'Product Type:';
+                typeP.appendChild(typeStrong);
+                typeP.appendChild(document.createTextNode(' ' + formatCategory(cosmetic.product_type)));
+                header.appendChild(typeP);
+            }
+
+            container.appendChild(header);
+
+            const ingredientsSection = document.createElement('div');
+            ingredientsSection.className = 'ingredients-section';
+
+            const ingredientsCount = Array.isArray(cosmetic.ingredients) ? cosmetic.ingredients.length : 0;
+
+            const h3 = document.createElement('h3');
+            h3.textContent = `Full Ingredients List (${ingredientsCount})`;
+            ingredientsSection.appendChild(h3);
+
+            if (ingredientsCount > 0) {
+                const list = document.createElement('div');
+                list.className = 'ingredients-list';
 
                 cosmetic.ingredients.forEach((ing, index) => {
                     const color = getIngredientColor(ing.id);
+                    const ingredientId = typeof ing.id === 'number' ? ing.id : 0;
+
+                    const span = document.createElement('span');
+                    span.className = `ingredient-tag ${color}`;
+                    span.textContent = ing.inci_name;
 
                     {% if user.is_authenticated %}
-                    html += `<span class="ingredient-tag ${color} clickable"
-                                   onclick="openIngredientModal(${ing.id}, '${ing.inci_name.replace(/'/g, "\\'")}')"
-                                   title="Click to set preference">${ing.inci_name}</span>`;
+                    span.classList.add('clickable');
+                    span.title = 'Click to set preference';
+                    span.onclick = () => openIngredientModal(ingredientId, ing.inci_name);
                     {% else %}
-                    html += `<span class="ingredient-tag ${color}" title="${ing.purpose || 'No purpose listed'}">${ing.inci_name}</span>`;
+                    span.title = ing.purpose || 'No purpose listed';
                     {% endif %}
 
+                    list.appendChild(span);
+
                     if (index < cosmetic.ingredients.length - 1) {
-                        html += ' ';
+                        list.appendChild(document.createTextNode(' '));
                     }
                 });
 
-                html += '</div>';
+                ingredientsSection.appendChild(list);
 
                 {% if user.is_authenticated %}
                 if (userPreferences) {
-                    html += `<div class="ingredient-legend">
-                        <span class="ingredient-tag safe">✅ Safe</span>
-                        <span class="ingredient-tag moderate">⚠️ Moderate</span>
-                        <span class="ingredient-tag unsafe">🚫 Unsafe</span>
-                        <span style="color: var(--text); font-size: 12px;">based on your preferences - click ingredient to change</span>
-                    </div>`;
+                    const legend = document.createElement('div');
+                    legend.className = 'ingredient-legend';
+
+                    const safeSpan = document.createElement('span');
+                    safeSpan.className = 'ingredient-tag safe';
+                    safeSpan.textContent = '✅ Safe';
+                    legend.appendChild(safeSpan);
+
+                    const moderateSpan = document.createElement('span');
+                    moderateSpan.className = 'ingredient-tag moderate';
+                    moderateSpan.textContent = '⚠️ Moderate';
+                    legend.appendChild(moderateSpan);
+
+                    const unsafeSpan = document.createElement('span');
+                    unsafeSpan.className = 'ingredient-tag unsafe';
+                    unsafeSpan.textContent = '🚫 Unsafe';
+                    legend.appendChild(unsafeSpan);
+
+                    const legendText = document.createElement('span');
+                    legendText.style.color = 'var(--text)';
+                    legendText.style.fontSize = '12px';
+                    legendText.textContent = 'based on your preferences - click ingredient to change';
+                    legend.appendChild(legendText);
+
+                    ingredientsSection.appendChild(legend);
                 }
                 {% endif %}
-
             } else {
-                html += '<p>No ingredients listed.</p>';
+                const p = document.createElement('p');
+                p.textContent = 'No ingredients listed.';
+                ingredientsSection.appendChild(p);
             }
 
-            html += '</div>';
+            container.appendChild(ingredientsSection);
 
-            html += `
-                <div style="text-align: center; margin-top: 30px;">
-                    <a href="/dupes/?id=${cosmetic.id}" style="
-                        display: inline-block;
-                        padding: 12px 24px;
-                        background-color: var(--main-pink);
-                        color: white;
-                        text-decoration: none;
-                        border-radius: 50px;
-                        font-weight: 600;
-                        transition: all 0.3s;
-                    " onmouseover="this.style.transform='translateY(-2px)'"
-                       onmouseout="this.style.transform='translateY(0)'">
-                        Find Similar Products
-                    </a>
-                </div>
-            `;
+            const cosmeticIdForLink = typeof cosmetic.id === 'number' ? cosmetic.id : 0;
+            const dupesDiv = document.createElement('div');
+            dupesDiv.style.textAlign = 'center';
+            dupesDiv.style.marginTop = '30px';
 
-            document.getElementById('cosmetic-details').innerHTML = html;
+            const dupesLink = document.createElement('a');
+            dupesLink.href = `/dupes/?id=${cosmeticIdForLink}`;
+            dupesLink.style.display = 'inline-block';
+            dupesLink.style.padding = '12px 24px';
+            dupesLink.style.backgroundColor = 'var(--main-pink)';
+            dupesLink.style.color = 'white';
+            dupesLink.style.textDecoration = 'none';
+            dupesLink.style.borderRadius = '50px';
+            dupesLink.style.fontWeight = '600';
+            dupesLink.style.transition = 'all 0.3s';
+            dupesLink.textContent = 'Find Similar Products';
+            dupesLink.onmouseover = function() { this.style.transform = 'translateY(-2px)'; };
+            dupesLink.onmouseout = function() { this.style.transform = 'translateY(0)'; };
+
+            dupesDiv.appendChild(dupesLink);
+            container.appendChild(dupesDiv);
 
             {% if user.is_authenticated %}
             checkIfFavorite();
             {% endif %}
 
         } catch (error) {
-            document.getElementById('cosmetic-details').innerHTML = '<p>Error loading cosmetic details.</p>';
+            const container = document.getElementById('cosmetic-details');
+            container.innerHTML = '';
+            const p = document.createElement('p');
+            p.textContent = 'Error loading cosmetic details.';
+            container.appendChild(p);
         }
     }
 
@@ -265,7 +353,15 @@
     }
     {% endif %}
 
-    loadCosmeticDetails();
+    if (cosmeticId) {
+        loadCosmeticDetails();
+    } else {
+        const container = document.getElementById('cosmetic-details');
+        container.innerHTML = '';
+        const p = document.createElement('p');
+        p.textContent = 'Invalid cosmetic ID.';
+        container.appendChild(p);
+    }
     </script>
 
     <style>

@@ -1,96 +1,209 @@
-# Analizator Składów Kosmetyków - INCI Preferences
-   ![CI/CD Pipeline](https://github.com/lulesna/analizator-skladow-kosmetykow/actions/workflows/ci.yml/badge.svg)
-   ![Docker](https://img.shields.io/badge/docker-ready-blue)
-   ![Kubernetes](https://img.shields.io/badge/kubernetes-yes-blue)
+# INCI Preferences — Personalizowany Analizator Składów Kosmetycznych
 
-Aplikacja webowa do analizy składów kosmetyków oparta na indywidualnych preferencjach użytkownika. W przeciwieństwie do popularnych analizatorów składów, które klasyfikują substancje w sposób uniwersalny, INCI Preferences pozwala każdemu użytkownikowi samodzielnie określić, które składniki toleruje, a których powinien unikać.
+![CI/CD Pipeline](https://github.com/lulesna/inci-preferences/actions/workflows/ci.yml/badge.svg)
+![Python](https://img.shields.io/badge/python-3.12-blue)
+![Django](https://img.shields.io/badge/django-6.0-green)
+![PostgreSQL](https://img.shields.io/badge/postgresql-15-blue)
+![Docker](https://img.shields.io/badge/docker-ready-blue)
+![License](https://img.shields.io/badge/license-Academic-orange)
 
-Projekt powstał w ramach seminarium licencjackiego.
+Pełnostackowa aplikacja webowa realizująca personalizowaną analizę składów kosmetyków w oparciu o indywidualne profile preferencji użytkowników. System wykorzystuje algorytmy dopasowania składników, OCR do rozpoznawania tekstu ze zdjęć oraz spersonalizowane algorytmy rekomendacji.
 
-## Motywacja za projektem
+Projekt zrealizowany w ramach pracy licencjackiej na kierunku Informatyka, specjalność technologie sieciowe i bazy danych (Uniwersytet Gdański).
 
-Skóra każdego człowieka reaguje inaczej na te same składniki kosmetyczne. Osoba z atopowym zapaleniem skóry może źle tolerować substancje powszechnie uznawane za bezpieczne, podczas gdy inne osoby nie mają z nimi żadnych problemów. Standardowe analizatory składów oceniają substancje w sposób uogólniony, co nie odpowiada rzeczywistym potrzebom osób z wrażliwą skórą, alergiami czy chorobami dermatologicznymi.
+**Live demo:** [incipreferences.app](https://incipreferences.app/)
 
-INCI Preferences rozwiązuje ten problem, umożliwiając tworzenie spersonalizowanych profili preferencji, które są następnie wykorzystywane do oceny bezpieczeństwa produktów i generowania rekomendacji.
+---
+
+## Problem i motywacja
+
+Popularne analizatory składów kosmetyków (CosDNA, INCI Beauty, INCI Decoder) stosują **statyczną, uniwersalną klasyfikację** składników, gdzie każda substancja otrzymuje jedną ocenę bezpieczeństwa, niezależnie od użytkownika. Takie podejście ignoruje kluczowy fakt: **reakcje skóry są indywidualne**.
+
+Osoba z atopowym zapaleniem skóry może źle tolerować niacynamid (uznawany za bezpieczny), podczas gdy inna osoba bez problemu stosuje kwas salicylowy (zwykle oznaczany jako umiarkowany). Klasyfikacje uniwersalne nie odpowiadają rzeczywistości dermatologicznej.
+
+**INCI Preferences** rozwiązuje ten problem, wprowadzając model **spersonalizowanej klasyfikacji składników** oraz algorytmy rekomendacji dopasowane do indywidualnego profilu użytkownika.
+
+---
+
+## Kluczowe wyzwania techniczne
+
+### 1. Model danych z relacjami many-to-many o różnych semantykach
+Projekt wymagał zaprojektowania schematu relacyjnego, w którym jeden użytkownik ma **jednocześnie trzy niezależne relacje M:N** ze składnikami (safe, moderate, unsafe) oraz **czwartą relację M:N** z ulubionymi kosmetykami. Każdy kosmetyk ma także relację M:N ze składnikami. Wymagało to precyzyjnego zaprojektowania `related_name` i strategii zapytań.
+
+### 2. Optymalizacja zapytań do bazy danych
+Analiza bezpieczeństwa dla listy 100+ kosmetyków generowała pierwotnie **N+1 zapytań**. Zastosowanie `prefetch_related('ingredients')` oraz konwersji QuerySetów na `set()` w Pythonie ograniczyło liczbę zapytań do stałej wartości, redukując czas odpowiedzi o rząd wielkości.
+
+### 3. Algorytm parsowania składów INCI
+Parser radzi sobie ze specyfiką list INCI: różne separatory (przecinki, myślniki), wielkość liter, białe znaki, składniki wieloczłonowe. Wykorzystuje wyrażenia regularne oraz dopasowanie case-insensitive z automatycznym tworzeniem brakujących rekordów w bazie.
+
+### 4. Algorytm wyszukiwania zamienników (dupes)
+Implementacja algorytmu porównywania składów oparta na **teorii mnogości** — obliczanie procentowego podobieństwa poprzez operacje na zbiorach składników (przecięcie i suma). Threshold podobieństwa 40% wyeliminowany na drodze eksperymentalnej.
+
+### 5. Integracja OCR w przeglądarce
+Wykorzystanie **Tesseract.js** (biblioteka WebAssembly) do rozpoznawania składów bezpośrednio w przeglądarce, bez wysyłania zdjęć na serwer. Wymagało obsługi asynchronicznego pipeline'u: upload → preprocessing → OCR → parsowanie → analiza bezpieczeństwa.
+
+### 6. Bezpieczeństwo aplikacji webowej
+Systematyczna ochrona przed atakami XSS w warstwie frontendu — funkcje escapujące HTML, budowanie DOM przez `createElement` zamiast `innerHTML` z surowymi danymi, walidacja typów po stronie klienta. Content Security Policy (CSP) skonfigurowana w middleware Django.
+
+---
+
+## Architektura systemu
+
+Aplikacja została podzielona zgodnie z zasadą **Single Responsibility Principle** na cztery niezależne moduły Django:
+
+```
+apps/
+├── ingredients/    - zarządzanie składnikami INCI (Ingredient model + REST API)
+├── cosmetics/      - zarządzanie kosmetykami, parser, algorytmy dupes (Cosmetic model + ViewSet)
+├── preferences/    - profile użytkowników, ulubione, algorytmy rekomendacji (UserProfile model)
+└── users/          - autentykacja, rejestracja, zarządzanie kontem
+```
+
+Backend eksponuje **RESTful API** oparte na Django REST Framework z ViewSetami, custom actions oraz middleware do uwierzytelniania sesyjnego.
+
+Frontend to **SPA-like aplikacja** wykorzystująca vanilla JavaScript z asynchronicznymi wywołaniami `fetch()` do API, dynamicznym renderowaniem DOM oraz komunikacją z backendem przez JSON.
+
+---
 
 ## Funkcjonalności
 
 ### System kont użytkowników
-- Rejestracja i logowanie (unikalny login + hasło)
-- Zarządzanie profilem: zmiana loginu, hasła, usuwanie konta
+- Rejestracja i logowanie oparte o Django Authentication
+- Zarządzanie profilem: zmiana loginu, zmiana hasła z walidacją (PBKDF2 + SHA256), usuwanie konta
+- Session-based authentication z CSRF Protection
 
-### Zarządzanie preferencjami składników
-- Trójpoziomowa klasyfikacja składników (bezpieczne / umiarkowane / niebezpieczne)
-- Szybkie ustawianie preferencji przez kliknięcie w składnik na stronie produktu
-- Analiza ulubionych kosmetyków - automatyczne wykrywanie często występujących składników z sugestiami dodania ich do preferencji
+### Personalizowana klasyfikacja składników
+- Trójpoziomowa klasyfikacja (bezpieczne / umiarkowane / niebezpieczne) per użytkownik
+- Interaktywne ustawianie preferencji przez kliknięcie w składnik
+- **Automatyczna analiza wzorców** — algorytm wykrywa składniki występujące w ≥50% ulubionych produktów i sugeruje dodanie ich do preferencji
 
-### Przeglądanie i wyszukiwanie
-- Wyszukiwanie kosmetyków po nazwie lub marce
-- Zaawansowane filtrowanie (kaskadowe kategorie, składniki must-contain/must-not-contain, sortowanie, filtrowanie po bezpieczeństwie)
-- Hierarchiczna nawigacja po kategoriach produktów
-- Wyświetlanie pełnego składu INCI z kolorowymi tagami zgodnie z preferencjami
+### Wyszukiwarka i zaawansowane filtrowanie
+- Full-text search po nazwie kosmetyku i marce (Django `SearchFilter`)
+- Kaskadowe filtrowanie po kategoriach (kategoria → podkategoria → typ produktu)
+- Wielokrotne filtry składnikowe (must-contain, must-NOT-contain) z autocomplete
+- Sortowanie wg bezpieczeństwa, alfabetycznie, wg liczby bezpiecznych składników
 
-### System oceny bezpieczeństwa
-Kosmetyki są automatycznie oznaczane kolorem na podstawie preferencji użytkownika:
-- **Zielony** - produkt nie zawiera składników umiarkowanych ani niebezpiecznych
-- **Pomarańczowy** - produkt zawiera co najmniej jeden składnik umiarkowany
-- **Czerwony** - produkt zawiera co najmniej jeden składnik niebezpieczny
+### Algorytm oceny bezpieczeństwa
+Kosmetyki są klasyfikowane w czasie rzeczywistym poprzez porównanie ich składu z profilem użytkownika:
 
-### Rekomendacje i wyszukiwanie zamienników
-- Spersonalizowany system rekomendacji - top 10 produktów bez składników niebezpiecznych i umiarkowanych
-- Wyszukiwanie zamienników (dupes) - algorytm porównywania składów z progiem podobieństwa 40%
+| Kolor | Warunek |
+|-------|---------|
+| 🟢 Zielony | Kosmetyk zawiera wyłącznie składniki neutralne lub oznaczone jako bezpieczne |
+| 🟡 Żółty | Kosmetyk zawiera co najmniej jeden składnik oznaczony jako umiarkowany |
+| 🔴 Czerwony | Kosmetyk zawiera co najmniej jeden składnik oznaczony jako niebezpieczny |
 
-### Dodatkowe funkcje
-- Ulubione kosmetyki z dedykowaną zakładką
-- Dodawanie nowych kosmetyków przez wklejenie danych ze sklepu internetowego
-- Skanowanie składu ze zdjęcia (OCR) z możliwością edycji rozpoznanego tekstu i pełną analizą bezpieczeństwa
+### Algorytmy rekomendacji i wyszukiwania zamienników
+- **Top-N recommendations** — ranking bezpiecznych kosmetyków posortowanych wg liczby dopasowanych bezpiecznych składników
+- **Dupes finder** — algorytm porównywania oparty na współczynniku Jaccarda (podobieństwo zbiorów), threshold 40%
+- Sortowanie wyników wg similarity score
 
-## Technologie
+### Skanowanie składów ze zdjęć (OCR)
+- Upload zdjęcia z drag & drop lub file picker
+- Rozpoznawanie tekstu przez Tesseract.js (WebAssembly, on-device)
+- Automatyczne czyszczenie i parsowanie tekstu (usuwanie markerów `Ingredients:`, `INCI:`, normalizacja białych znaków)
+- Możliwość edycji rozpoznanego tekstu przed analizą
+- Pełna analiza bezpieczeństwa z podziałem na kategorie
+
+---
+
+## Stack technologiczny
 
 ### Backend
-- **Python 3.12**
-- **Django 6.0** - framework webowy
-- **Django REST Framework** - budowa RESTful API
-- **PostgreSQL** - relacyjna baza danych
-- **Gunicorn** - production-ready WSGI HTTP Server
-- **Whitenoise** - serwowanie plików statycznych w produkcji
-- **psycopg2** - PostgreSQL adapter dla Pythona
-- **python-decouple** - zarządzanie zmiennymi środowiskowymi
-- **django-filter** - zaawansowane filtrowanie w API
+| Technologia | Cel |
+|------------|-----|
+| **Python 3.12** | Język programowania |
+| **Django 6.0** | Framework webowy (MTV) |
+| **Django REST Framework** | RESTful API z ViewSetami |
+| **PostgreSQL 15** | Relacyjna baza danych |
+| **Gunicorn** | Production WSGI HTTP Server |
+| **Whitenoise** | Serwowanie plików statycznych |
+| **django-filter** | Zaawansowane filtrowanie API |
+| **django-csp** | Content Security Policy |
+| **psycopg2** | PostgreSQL adapter |
+| **python-decouple** | Environment variables management |
 
 ### Frontend
-- **HTML5** i **CSS3** - struktura i stylowanie (CSS Grid, Flexbox, Custom Properties)
-- **Vanilla JavaScript** - bez frameworków dla lepszej wydajności
-- **Tesseract.js** - biblioteka OCR do skanowania składów ze zdjęć
+| Technologia | Cel |
+|------------|-----|
+| **HTML5 / CSS3** | Struktura i stylowanie (Grid, Flexbox, Custom Properties) |
+| **Vanilla JavaScript** | Interakcja z API, dynamiczne renderowanie DOM |
+| **Tesseract.js** | OCR w przeglądarce (WebAssembly) |
+| **Fetch API** | Asynchroniczne wywołania REST API |
 
-### Infrastruktura
-- **Supabase** - hosting bazy PostgreSQL z connection poolingiem
-- **Railway** - platforma hostingowa dla aplikacji
-- **Git & GitHub** - kontrola wersji i CI/CD
+### Infrastruktura i DevOps
+| Technologia | Cel |
+|------------|-----|
+| **Docker** | Konteneryzacja aplikacji (multi-stage build, non-root user, healthcheck) |
+| **Railway** | Platforma hostingowa (auto-deploy z GitHub) |
+| **Supabase** | Managed PostgreSQL z connection poolingiem (port 6543) |
+| **GitHub Actions** | CI/CD pipeline (testy, security scan, Docker build) |
+| **Porkbun** | Rejestracja domeny + DNS management |
+| **Cloudflare** | DNS, CDN, SSL |
+
+### Testowanie i jakość kodu
+| Technologia | Cel |
+|------------|-----|
+| **Django TestCase** | Testy jednostkowe i integracyjne |
+| **DRF APIClient** | Testy REST API |
+| **coverage.py** | Pomiar pokrycia kodu testami |
+| **flake8** | Linter jakości kodu |
+| **bandit** | Skanowanie bezpieczeństwa kodu |
+| **safety** | Skanowanie zależności pod kątem CVE |
 
 ### Bezpieczeństwo
-- Session-based authentication
-- CSRF Protection
-- Hashowanie haseł algorytmem PBKDF2 z SHA256
-- Zmienne środowiskowe dla danych wrażliwych
+- Session-based authentication (Django Auth)
+- CSRF Protection na wszystkich formularzach i żądaniach POST
+- Password hashing: PBKDF2 z SHA256 (Django default)
+- XSS prevention: HTML escaping w JavaScript, textContent zamiast innerHTML dla user-supplied data
+- Content Security Policy (CSP) middleware
+- HTTPS wymuszony w produkcji (Let's Encrypt via Cloudflare)
+- Environment variables dla wszystkich danych wrażliwych
+- Docker non-root user, minimal image size (--no-install-recommends)
 
-## Struktura projektu
+---
 
-Aplikacja została podzielona na cztery moduły Django zgodnie z zasadą Single Responsibility Principle:
+## CI/CD Pipeline
 
-- **ingredients** - zarządzanie składnikami INCI
-- **cosmetics** - zarządzanie produktami kosmetycznymi
-- **preferences** - preferencje użytkowników i ulubione produkty
-- **users** - rejestracja, logowanie, zarządzanie kontem
+Automatyczny pipeline uruchamiany przy każdym push oraz pull request na branch `main`:
 
-## Demo
+1. **Test job** — uruchomienie testów Django z bazą PostgreSQL w kontenerze
+2. **Security scan** — skanowanie zależności (safety) i kodu (bandit)
+3. **Docker build test** — weryfikacja poprawności Dockerfile'a z cache warstw
+4. **Deployment notification** — potwierdzenie sukcesu, trigger dla Railway auto-deploy
 
-Aplikacja dostępna online: [incipreferences.app](https://incipreferences.app/)
+---
+
+## Modele danych
+
+### Kluczowe relacje
+
+  - `User` (Django) 1:1 `UserProfile` (extended profile z preferencjami)
+  - `UserProfile` M:N `Ingredient` (safe/moderate/unsafe — trzy niezależne relacje)
+  - `UserProfile` M:N `Cosmetic` (favorites)
+  - `Cosmetic` M:N `Ingredient` (skład produktu)
+  - `Cosmetic` — hierarchiczne kategorie (main\_category → subcategory → product\_type)
+
+-----
+
+## Roadmap i możliwości rozwoju
+
+Zaplanowane kierunki dalszego rozwoju:
+
+  - **Integracja z LLM (OpenAI API / Claude API)** — inteligentny asystent kosmetyczny odpowiadający na pytania użytkowników
+  - **Rozszerzone algorytmy rekomendacji** — collaborative filtering bazujący na preferencjach podobnych użytkowników
+  - **Aplikacja mobilna** — React Native lub Flutter z natywnym OCR
+  - **Rozszerzenie bazy składników** o dane z EWG Skin Deep i EU CosIng
+  - **Push notifications** — alerty o nowych bezpiecznych produktach spełniających preferencje
+
+-----
 
 ## Autorki
 
-- **Łucja Leśna** - [GitHub](https://github.com/lulesna)
-- **Oliwia Natzke** - [GitHub](https://github.com/onatzke)
+  - **Łucja Leśna** — architektura systemu, backend, deployment, testy |
+    [GitHub](https://github.com/lulesna)
+  - **Oliwia Natzke** — projekt UI/UX, frontend, koncepcja funkcjonalności | [GitHub](https://github.com/onatzke)
+
+-----
 
 ## Licencja
 

@@ -15,6 +15,19 @@
         <form method="post">
             {% csrf_token %}
             {{ form.as_p }}
+
+            <div class="form-group" style="margin: 20px 0;">
+                <label style="display: flex; align-items: flex-start; gap: 8px; font-size: 14px; line-height: 1.5;">
+                    <input type="checkbox" name="accept_terms" required style="margin-top: 4px;">
+                    <span>
+                        I have read and accept the
+                        <a href="{% url 'terms' %}" target="_blank" style="color: var(--main-pink);">Terms of Service</a>
+                        and
+                        <a href="{% url 'privacy' %}" target="_blank" style="color: var(--main-pink);">Privacy Policy</a>.
+                    </span>
+                </label>
+            </div>
+
             <button type="submit" class="btn-primary">Register</button>
         </form>
 

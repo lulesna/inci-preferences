@@ -42,6 +42,8 @@ class CustomUserCreationForm(forms.ModelForm):
 
 def register_view(request):
     if request.method == 'POST':
+        if not request.POST.get('accept_terms'):
+            messages.error(request, 'You must accept the Terms of Service and Privacy Policy.')
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
