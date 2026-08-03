@@ -121,8 +121,7 @@
 
     async function loadCosmetics() {
         try {
-            const response = await fetch('/api/cosmetics/?main_category=BODY');
-            allCosmetics = await response.json();
+            allCosmetics = await fetchAllPages('/api/cosmetics/?main_category=BODY');
             visibleCount = perLoad;
             showCosmetics();
         } catch (error) {

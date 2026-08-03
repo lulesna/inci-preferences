@@ -30,13 +30,13 @@ class CosmeticAPITest(TestCase):
         self.client.force_authenticate(user=None)  # wyloguj
         response = self.client.get('/api/cosmetics/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertGreaterEqual(len(response.data), 1)
+        self.assertGreaterEqual(len(response.data['results']), 1)
 
     def test_list_cosmetics_authenticated(self):
         """test że zalogowany user może pobrać listę"""
         response = self.client.get('/api/cosmetics/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertGreaterEqual(len(response.data), 1)
+        self.assertGreaterEqual(len(response.data['results']), 1)
 
     def test_get_cosmetic_detail(self):
         response = self.client.get(f'/api/cosmetics/{self.cosmetic.id}/')
@@ -47,12 +47,12 @@ class CosmeticAPITest(TestCase):
     def test_search_cosmetic_by_name(self):
         response = self.client.get('/api/cosmetics/?search=Test')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertGreaterEqual(len(response.data), 1)
+        self.assertGreaterEqual(len(response.data['results']), 1)
 
     def test_filter_by_main_category(self):
         response = self.client.get('/api/cosmetics/?main_category=FACE')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        for cosmetic in response.data:
+        for cosmetic in response.data['results']:
             self.assertEqual(cosmetic['main_category'], 'FACE')
 
     def test_create_cosmetic_requires_authentication(self):
@@ -96,11 +96,11 @@ class IngredientAPITest(TestCase):
     def test_list_ingredients(self):
         response = self.client.get('/api/ingredients/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 3)
+        self.assertEqual(len(response.data['results']), 3)
 
     def test_search_ingredient(self):
         response = self.client.get('/api/ingredients/?search=Niacin')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertGreaterEqual(len(response.data), 1)
-        ingredient_names = [ing['inci_name'] for ing in response.data]
+        self.assertGreaterEqual(len(response.data['results']), 1)
+        ingredient_names = [ing['inci_name'] for ing in response.data['results']]
         self.assertIn('Niacinamide', ingredient_names)

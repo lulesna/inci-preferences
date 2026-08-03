@@ -140,8 +140,7 @@
 
     async function loadIngredients() {
         try {
-            const response = await fetch('/api/ingredients/');
-            allIngredients = await response.json();
+            allIngredients = await fetchAllPages('/api/ingredients/');
         } catch (error) {
             console.error('Error loading ingredients');
         }
@@ -514,8 +513,7 @@
 
             url += params.join('&');
 
-            const response = await fetch(url);
-            let cosmetics = await response.json();
+            let cosmetics = await fetchAllPages(url);
 
             if (filters.productType) {
                 cosmetics = cosmetics.filter(c => c.product_type === filters.productType);

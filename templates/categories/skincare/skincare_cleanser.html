@@ -117,8 +117,7 @@
 
     async function loadCosmetics() {
         try {
-            const response = await fetch('/api/cosmetics/?main_category=FACE&subcategory=Cleanser');
-            const cosmetics = await response.json();
+            const cosmetics = await fetchAllPages('/api/cosmetics/?main_category=FACE&subcategory=Cleanser');
 
             await displayCosmeticsWithSafety(cosmetics, 'cosmetics-list');
         } catch (error) {

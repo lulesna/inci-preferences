@@ -8,6 +8,7 @@ class Ingredient(models.Model):
     class Meta:
         verbose_name = "Ingredient"
         verbose_name_plural = "Ingredients"
+        ordering = ['id']
 
     def __str__(self):
         return self.inci_name

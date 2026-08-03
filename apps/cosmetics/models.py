@@ -84,6 +84,7 @@ class Cosmetic(models.Model):
     class Meta:
         verbose_name = "Cosmetic"
         verbose_name_plural = "Cosmetics"
+        ordering = ['id']
 
     def __str__(self):
         return f"{self.name} - {self.brand}"

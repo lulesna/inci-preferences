@@ -16,7 +16,7 @@ class IngredientAPITest(TestCase):
     def test_list_ingredients_public(self):
         response = self.client.get('/api/ingredients/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 3)
+        self.assertEqual(len(response.data['results']), 3)
 
     def test_get_ingredient_detail(self):
         response = self.client.get(f'/api/ingredients/{self.ingredient1.id}/')
@@ -28,18 +28,18 @@ class IngredientAPITest(TestCase):
         response = self.client.get('/api/ingredients/?search=Niacin')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        ingredient_names = [ing['inci_name'] for ing in response.data]
+        ingredient_names = [ing['inci_name'] for ing in response.data['results']]
         self.assertIn('Niacinamide', ingredient_names)
 
     def test_search_ingredient_case_insensitive(self):
         response = self.client.get('/api/ingredients/?search=aqua')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertGreaterEqual(len(response.data), 1)
+        self.assertGreaterEqual(len(response.data['results']), 1)
 
     def test_search_nonexistent_ingredient(self):
         response = self.client.get('/api/ingredients/?search=XYZNonExistent')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 0)
+        self.assertEqual(len(response.data['results']), 0)
 
     def test_create_ingredient_requires_authentication(self):
         response = self.client.post('/api/ingredients/', {

@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils.functional import cached_property
 from apps import cosmetics
 from apps.ingredients.models import Ingredient
 
@@ -45,15 +46,28 @@ class UserProfile(models.Model):
     def __str__(self):
         return f"{self.user.username}'s profile"
 
+    # Cache'owane per-instancja profilu, żeby przy serializacji listy kosmetyków
+    # (kolor bezpieczeństwa liczony osobno dla każdego produktu) nie odpytywać
+    # tych samych M2M-ów od nowa za każdym razem.
+    @cached_property
+    def _unsafe_ingredient_set(self):
+        return set(self.unsafe_ingredients.all())
+
+    @cached_property
+    def _moderate_ingredient_set(self):
+        return set(self.moderate_ingredients.all())
+
+    @cached_property
+    def _safe_ingredient_set(self):
+        return set(self.safe_ingredients.all())
+
     def get_cosmetic_safety_color(self, cosmetic):
         cosmetic_ingredients = set(cosmetic.ingredients.all())
 
-        unsafe = set(self.unsafe_ingredients.all())
-        if cosmetic_ingredients.intersection(unsafe):
+        if cosmetic_ingredients.intersection(self._unsafe_ingredient_set):
             return 'RED'
 
-        moderate = set(self.moderate_ingredients.all())
-        if cosmetic_ingredients.intersection(moderate):
+        if cosmetic_ingredients.intersection(self._moderate_ingredient_set):
             return 'YELLOW'
 
         return 'GREEN'
@@ -61,9 +75,9 @@ class UserProfile(models.Model):
     def get_cosmetic_safety_details(self, cosmetic):
         cosmetic_ingredients = set(cosmetic.ingredients.all())
 
-        unsafe = set(self.unsafe_ingredients.all()).intersection(cosmetic_ingredients)
-        moderate = set(self.moderate_ingredients.all()).intersection(cosmetic_ingredients)
-        safe = set(self.safe_ingredients.all()).intersection(cosmetic_ingredients)
+        unsafe = self._unsafe_ingredient_set.intersection(cosmetic_ingredients)
+        moderate = self._moderate_ingredient_set.intersection(cosmetic_ingredients)
+        safe = self._safe_ingredient_set.intersection(cosmetic_ingredients)
 
         color = self.get_cosmetic_safety_color(cosmetic)
 
