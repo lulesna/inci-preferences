@@ -8,6 +8,10 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import update_session_auth_hash
 from django.shortcuts import redirect
 from django.views.decorators.http import require_POST
+from django.core.cache import cache
+
+LOGIN_ATTEMPT_LIMIT = 5
+LOGIN_ATTEMPT_WINDOW = 300  # sekundy
 
 
 class CustomUserCreationForm(forms.ModelForm):
@@ -42,10 +46,11 @@ class CustomUserCreationForm(forms.ModelForm):
 
 def register_view(request):
     if request.method == 'POST':
+        form = CustomUserCreationForm(request.POST)
+
         if not request.POST.get('accept_terms'):
             messages.error(request, 'You must accept the Terms of Service and Privacy Policy.')
-        form = CustomUserCreationForm(request.POST)
-        if form.is_valid():
+        elif form.is_valid():
             user = form.save()
 
             from apps.preferences.models import UserProfile
@@ -62,14 +67,24 @@ def register_view(request):
 
 def login_view(request):
     if request.method == 'POST':
+        ip = request.META.get('REMOTE_ADDR', 'unknown')
+        cache_key = f'login_attempts_{ip}'
+        attempts = cache.get(cache_key, 0)
+
+        if attempts >= LOGIN_ATTEMPT_LIMIT:
+            messages.error(request, 'Too many failed login attempts. Please try again in a few minutes.')
+            return render(request, 'users/login.html')
+
         username = request.POST.get('username')
         password = request.POST.get('password')
         user = authenticate(request, username=username, password=password)
 
         if user is not None:
+            cache.delete(cache_key)
             login(request, user)
             return redirect('index')
         else:
+            cache.set(cache_key, attempts + 1, LOGIN_ATTEMPT_WINDOW)
             messages.error(request, 'Invalid username or password')
 
     return render(request, 'users/login.html')
@@ -115,6 +130,7 @@ def update_account(request):
 
 
 @login_required
+@require_POST
 def delete_account(request):
     user = request.user
     logout(request)

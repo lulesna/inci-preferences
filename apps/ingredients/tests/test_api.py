@@ -2,7 +2,7 @@ from django.test import TestCase
 from django.contrib.auth.models import User
 from rest_framework.test import APIClient
 from rest_framework import status
-from apps.ingredients.models import Ingredient
+from apps.ingredients.models import Ingredient, IngredientEditProposal
 
 
 class IngredientAPITest(TestCase):
@@ -58,3 +58,37 @@ class IngredientAPITest(TestCase):
         }, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(Ingredient.objects.filter(inci_name='Hyaluronic Acid').exists())
+
+    def test_update_by_regular_user_creates_pending_proposal(self):
+        """edycja przez zwykłego usera nie zmienia obiektu od razu, tylko trafia do kolejki"""
+        user = User.objects.create_user(username='testuser2', password='testpass123')
+        self.client.force_authenticate(user=user)
+
+        response = self.client.patch(f'/api/ingredients/{self.ingredient1.id}/', {
+            'purpose': 'Renamed purpose'
+        }, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+
+        self.ingredient1.refresh_from_db()
+        self.assertEqual(self.ingredient1.purpose, 'Solvent')
+
+        proposal = IngredientEditProposal.objects.get(ingredient=self.ingredient1)
+        self.assertEqual(proposal.status, 'PENDING')
+        self.assertEqual(proposal.proposed_data['purpose'], 'Renamed purpose')
+
+    def test_delete_requires_admin(self):
+        user = User.objects.create_user(username='testuser3', password='testpass123')
+        self.client.force_authenticate(user=user)
+
+        response = self.client.delete(f'/api/ingredients/{self.ingredient1.id}/')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertTrue(Ingredient.objects.filter(id=self.ingredient1.id).exists())
+
+    def test_delete_by_admin_succeeds(self):
+        admin_user = User.objects.create_superuser(username='admin', password='adminpass123')
+        self.client.force_authenticate(user=admin_user)
+
+        response = self.client.delete(f'/api/ingredients/{self.ingredient1.id}/')
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Ingredient.objects.filter(id=self.ingredient1.id).exists())

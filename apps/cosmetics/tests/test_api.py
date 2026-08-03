@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from django.urls import reverse
 from rest_framework.test import APIClient
 from rest_framework import status
-from apps.cosmetics.models import Cosmetic
+from apps.cosmetics.models import Cosmetic, CosmeticEditProposal
 from apps.ingredients.models import Ingredient
 
 
@@ -84,6 +84,50 @@ class CosmeticAPITest(TestCase):
         response = self.client.get(f'/api/cosmetics/{self.cosmetic.id}/')
         self.assertIn('ingredients', response.data)
         self.assertEqual(len(response.data['ingredients']), 2)
+
+    def test_update_by_regular_user_creates_pending_proposal(self):
+        """edycja przez zwykłego usera nie zmienia obiektu od razu, tylko trafia do kolejki"""
+        response = self.client.patch(f'/api/cosmetics/{self.cosmetic.id}/', {
+            'name': 'Renamed Cream'
+        }, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+
+        self.cosmetic.refresh_from_db()
+        self.assertEqual(self.cosmetic.name, 'Test Cream')
+
+        proposal = CosmeticEditProposal.objects.get(cosmetic=self.cosmetic)
+        self.assertEqual(proposal.status, 'PENDING')
+        self.assertEqual(proposal.proposed_data['name'], 'Renamed Cream')
+        self.assertEqual(proposal.submitted_by, self.user)
+
+    def test_delete_requires_admin(self):
+        response = self.client.delete(f'/api/cosmetics/{self.cosmetic.id}/')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertTrue(Cosmetic.objects.filter(id=self.cosmetic.id).exists())
+
+    def test_delete_by_admin_succeeds(self):
+        admin_user = User.objects.create_superuser(username='admin', password='adminpass123')
+        self.client.force_authenticate(user=admin_user)
+
+        response = self.client.delete(f'/api/cosmetics/{self.cosmetic.id}/')
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Cosmetic.objects.filter(id=self.cosmetic.id).exists())
+
+    def test_approving_proposal_applies_change(self):
+        proposal = CosmeticEditProposal.objects.create(
+            cosmetic=self.cosmetic,
+            proposed_data={'name': 'Approved Name'},
+            submitted_by=self.user,
+        )
+
+        admin_user = User.objects.create_superuser(username='admin2', password='adminpass123')
+        proposal.approve(reviewer=admin_user)
+
+        self.cosmetic.refresh_from_db()
+        self.assertEqual(self.cosmetic.name, 'Approved Name')
+        self.assertEqual(proposal.status, 'APPROVED')
+        self.assertEqual(proposal.reviewed_by, admin_user)
 
 
 class IngredientAPITest(TestCase):

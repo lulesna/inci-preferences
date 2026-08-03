@@ -1,10 +1,12 @@
 from django.test import TestCase, Client
 from django.contrib.auth.models import User
+from django.core.cache import cache
 from django.urls import reverse
 
 
 class UserAuthenticationTest(TestCase):
     def setUp(self):
+        cache.clear()
         self.client = Client()
         self.user = User.objects.create_user(
             username='testuser',
@@ -26,13 +28,38 @@ class UserAuthenticationTest(TestCase):
         })
         self.assertNotEqual(response.status_code, 302)
 
+    def test_login_locked_out_after_too_many_failed_attempts(self):
+        for _ in range(5):
+            self.client.post(reverse('users:login'), {
+                'username': 'testuser',
+                'password': 'wrongpassword'
+            })
+
+        # nawet z poprawnym hasłem, ten adres IP jest tymczasowo zablokowany
+        response = self.client.post(reverse('users:login'), {
+            'username': 'testuser',
+            'password': 'Pass123!'
+        })
+        self.assertNotEqual(response.status_code, 302)
+        self.assertFalse(response.wsgi_request.user.is_authenticated)
+
     def test_register_new_user(self):
         response = self.client.post(reverse('users:register'), {
             'username': 'newuser',
             'password1': 'Pass123!',
-            'password2': 'Pass123!'
+            'password2': 'Pass123!',
+            'accept_terms': 'on'
         })
         self.assertTrue(User.objects.filter(username='newuser').exists())
+
+    def test_register_without_accepting_terms(self):
+        """rejestracja nie powinna się udać bez zaznaczenia zgody na regulamin"""
+        response = self.client.post(reverse('users:register'), {
+            'username': 'newuser3',
+            'password1': 'Pass123!',
+            'password2': 'Pass123!'
+        })
+        self.assertFalse(User.objects.filter(username='newuser3').exists())
 
     def test_register_password_mismatch(self):
         response = self.client.post(reverse('users:register'), {

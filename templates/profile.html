@@ -372,7 +372,18 @@
     function confirmDeleteAccount() {
         if (confirm('Are you sure you want to delete your account? This action cannot be undone!')) {
             if (confirm('This will permanently delete all your data. Are you absolutely sure?')) {
-                window.location.href = '{% url "users:delete_account" %}';
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '{% url "users:delete_account" %}';
+
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = 'csrfmiddlewaretoken';
+                csrfInput.value = getCookie('csrftoken');
+                form.appendChild(csrfInput);
+
+                document.body.appendChild(form);
+                form.submit();
             }
         }
     }

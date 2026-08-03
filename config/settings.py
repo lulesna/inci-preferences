@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'apps.users',
     'apps.preferences',
     'django_filters',
+    'csp',
 ]
 
 MIDDLEWARE = [
@@ -52,9 +53,16 @@ MIDDLEWARE = [
     'csp.middleware.CSPMiddleware',
 ]
 
-CSP_DEFAULT_SRC = ("'self'",)
-CSP_SCRIPT_SRC = ("'self'",)
-CSP_STYLE_SRC = ("'self'", "'unsafe-inline'")
+CONTENT_SECURITY_POLICY = {
+    'DIRECTIVES': {
+        'default-src': ["'self'"],
+        'script-src': ["'self'", 'https://cdn.jsdelivr.net'],
+        'style-src': ["'self'", "'unsafe-inline'"],
+        'img-src': ["'self'", 'data:'],
+        'worker-src': ["'self'", 'blob:'],
+        'connect-src': ["'self'", 'https://cdn.jsdelivr.net', 'https://tessdata.projectnaptha.com'],
+    },
+}
 
 ROOT_URLCONF = 'config.urls'
 
@@ -82,6 +90,14 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 50,
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '100/min',
+        'user': '300/min',
+    },
 }
 
 # Database

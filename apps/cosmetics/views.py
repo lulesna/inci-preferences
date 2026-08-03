@@ -3,9 +3,10 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from rest_framework.permissions import IsAdminUser
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
-from .models import Cosmetic
+from .models import Cosmetic, CosmeticEditProposal
 from .serializers import CosmeticSerializer, CosmeticWithSafetySerializer
 from apps.ingredients.models import Ingredient
 from apps.preferences.models import UserProfile
@@ -17,7 +18,12 @@ class CosmeticViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_fields = ['main_category', 'subcategory', 'brand']
     search_fields = ['name', 'brand']
-    permission_classes = [IsAuthenticatedOrReadOnly]  # GET publiczne, wszystko inne prywatne
+    permission_classes = [IsAuthenticatedOrReadOnly]  # GET publiczne, POST dla zalogowanych
+
+    def get_permissions(self):
+        if self.action == 'destroy':
+            return [IsAdminUser()]
+        return super().get_permissions()
 
     def perform_create(self, serializer):
         cosmetic = serializer.save()
@@ -26,6 +32,23 @@ class CosmeticViewSet(viewsets.ModelViewSet):
             cosmetic.ingredients_text = self.request.data['ingredients_text']
             cosmetic.save()
             cosmetic.parse_and_add_ingredients(auto_create=True)
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        partial = kwargs.get('partial', False)
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+
+        CosmeticEditProposal.objects.create(
+            cosmetic=instance,
+            proposed_data=dict(serializer.validated_data),
+            submitted_by=request.user,
+        )
+
+        return Response(
+            {'detail': 'Change submitted for admin review.'},
+            status=status.HTTP_202_ACCEPTED
+        )
 
     def get_serializer_class(self):
         if self.action in ['with_colors', 'list'] and self.request.user.is_authenticated:
