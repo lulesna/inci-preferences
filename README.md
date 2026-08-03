@@ -25,28 +25,6 @@ Osoba z atopowym zapaleniem skóry może źle tolerować niacynamid (uznawany za
 
 ---
 
-## Kluczowe wyzwania techniczne
-
-### 1. Model danych z relacjami many-to-many o różnych semantykach
-Projekt wymagał zaprojektowania schematu relacyjnego, w którym jeden użytkownik ma **jednocześnie trzy niezależne relacje M:N** ze składnikami (safe, moderate, unsafe) oraz **czwartą relację M:N** z ulubionymi kosmetykami. Każdy kosmetyk ma także relację M:N ze składnikami. Wymagało to precyzyjnego zaprojektowania `related_name` i strategii zapytań.
-
-### 2. Optymalizacja zapytań do bazy danych
-Analiza bezpieczeństwa dla listy 100+ kosmetyków generowała pierwotnie **N+1 zapytań**. Zastosowanie `prefetch_related('ingredients')` oraz konwersji QuerySetów na `set()` w Pythonie ograniczyło liczbę zapytań do stałej wartości, redukując czas odpowiedzi o rząd wielkości.
-
-### 3. Algorytm parsowania składów INCI
-Parser radzi sobie ze specyfiką list INCI: różne separatory (przecinki, myślniki), wielkość liter, białe znaki, składniki wieloczłonowe. Wykorzystuje wyrażenia regularne oraz dopasowanie case-insensitive z automatycznym tworzeniem brakujących rekordów w bazie.
-
-### 4. Algorytm wyszukiwania zamienników (dupes)
-Implementacja algorytmu porównywania składów oparta na **teorii mnogości** — obliczanie procentowego podobieństwa poprzez operacje na zbiorach składników (przecięcie i suma). Threshold podobieństwa 40% wyeliminowany na drodze eksperymentalnej.
-
-### 5. Integracja OCR w przeglądarce
-Wykorzystanie **Tesseract.js** (biblioteka WebAssembly) do rozpoznawania składów bezpośrednio w przeglądarce, bez wysyłania zdjęć na serwer. Wymagało obsługi asynchronicznego pipeline'u: upload → preprocessing → OCR → parsowanie → analiza bezpieczeństwa.
-
-### 6. Bezpieczeństwo aplikacji webowej
-Systematyczna ochrona przed atakami XSS w warstwie frontendu — funkcje escapujące HTML, budowanie DOM przez `createElement` zamiast `innerHTML` z surowymi danymi, walidacja typów po stronie klienta. Content Security Policy (CSP) skonfigurowana w middleware Django.
-
----
-
 ## Architektura systemu
 
 Aplikacja została podzielona zgodnie z zasadą **Single Responsibility Principle** na cztery niezależne moduły Django:
