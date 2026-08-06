@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'apps.preferences',
     'django_filters',
     'csp',
+    'storages',
 ]
 
 MIDDLEWARE = [
@@ -53,12 +54,15 @@ MIDDLEWARE = [
     'csp.middleware.CSPMiddleware',
 ]
 
+USE_R2 = config('USE_R2', default=False, cast=bool)
+R2_PUBLIC_URL = config('R2_PUBLIC_URL', default='') if USE_R2 else ''
+
 CONTENT_SECURITY_POLICY = {
     'DIRECTIVES': {
         'default-src': ["'self'"],
-        'script-src': ["'self'", "'unsafe-inline'", 'https://cdn.jsdelivr.net'],
-        'style-src': ["'self'", "'unsafe-inline'"],
-        'img-src': ["'self'", 'data:'],
+        'script-src': ["'self'", "'unsafe-inline'", 'https://cdn.jsdelivr.net'] + ([R2_PUBLIC_URL] if R2_PUBLIC_URL else []),
+        'style-src': ["'self'", "'unsafe-inline'"] + ([R2_PUBLIC_URL] if R2_PUBLIC_URL else []),
+        'img-src': ["'self'", 'data:'] + ([R2_PUBLIC_URL] if R2_PUBLIC_URL else []),
         'worker-src': ["'self'", 'blob:'],
         'connect-src': ["'self'", 'https://cdn.jsdelivr.net', 'https://tessdata.projectnaptha.com'],
     },
@@ -168,7 +172,28 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_REDIRECT_URL = "index"
 LOGOUT_REDIRECT_URL = "index"
 
-if not DEBUG:
+if USE_R2:
+    STORAGES = {
+        'default': {
+            'BACKEND': 'django.core.files.storage.FileSystemStorage',
+        },
+        'staticfiles': {
+            'BACKEND': 'storages.backends.s3.S3Storage',
+            'OPTIONS': {
+                'access_key': config('R2_ACCESS_KEY_ID'),
+                'secret_key': config('R2_SECRET_ACCESS_KEY'),
+                'bucket_name': config('R2_BUCKET_NAME'),
+                'endpoint_url': f"https://{config('R2_ACCOUNT_ID')}.r2.cloudflarestorage.com",
+                'custom_domain': R2_PUBLIC_URL.replace('https://', '').replace('http://', ''),
+                'default_acl': None,
+                'querystring_auth': False,
+                'region_name': 'auto',
+                'file_overwrite': True,
+            },
+        },
+    }
+    STATIC_URL = f"{R2_PUBLIC_URL.rstrip('/')}/static/"
+elif not DEBUG:
     STATIC_ROOT = BASE_DIR / 'staticfiles'
     STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
 
