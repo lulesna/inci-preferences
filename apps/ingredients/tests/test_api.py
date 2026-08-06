@@ -1,5 +1,6 @@
 from django.test import TestCase
 from django.contrib.auth.models import User
+from django.core.cache import cache
 from rest_framework.test import APIClient
 from rest_framework import status
 from apps.ingredients.models import Ingredient, IngredientEditProposal
@@ -8,6 +9,7 @@ from apps.ingredients.models import Ingredient, IngredientEditProposal
 class IngredientAPITest(TestCase):
 
     def setUp(self):
+        cache.clear()
         self.client = APIClient()
         self.ingredient1 = Ingredient.objects.create(inci_name="Aqua", purpose="Solvent")
         self.ingredient2 = Ingredient.objects.create(inci_name="Glycerin", purpose="Humectant")
@@ -92,3 +94,12 @@ class IngredientAPITest(TestCase):
         response = self.client.delete(f'/api/ingredients/{self.ingredient1.id}/')
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(Ingredient.objects.filter(id=self.ingredient1.id).exists())
+
+    def test_anon_user_throttled_after_limit(self):
+        """anonimowe żądania są limitowane do 100/min"""
+        for _ in range(100):
+            response = self.client.get('/api/ingredients/')
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response = self.client.get('/api/ingredients/')
+        self.assertEqual(response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
