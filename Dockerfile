@@ -24,7 +24,6 @@ RUN SECRET_KEY="dummy-key-for-build" \
     DB_PASSWORD="dummy" \
     DB_HOST="localhost" \
     DB_PORT="5432" \
-    USE_POSTGRES=False \
     ALLOWED_HOSTS="localhost" \
     python manage.py collectstatic --noinput
 

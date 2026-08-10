@@ -120,6 +120,20 @@ Kosmetyki są klasyfikowane w czasie rzeczywistym poprzez porównanie ich skład
 | **GitHub Actions** | CI/CD pipeline (testy, security scan, Docker build) |
 | **Porkbun** | Rejestracja domeny + DNS management |
 | **Cloudflare** | DNS, CDN, SSL |
+| **Cloudflare R2** | Hosting plików statycznych (CSS, JS, fonty, obrazy) |
+
+#### Pliki statyczne na Cloudflare R2
+
+Włączane zmienną `USE_R2`. Przy `USE_R2=False` pliki serwuje whitenoise z kontenera. Przy `USE_R2=True` `STATIC_URL` wskazuje na publiczny
+adres bucketu, a `{% static %}` generuje adresy R2.
+
+Wysyłkę plików robi job `Publish static files to R2` w GitHub Actions, po przejściu
+testów, na push do `main`. Dzięki temu klucze zapisu do R2 żyją wyłącznie jako
+GitHub Secrets.
+
+Zmienne środowiskowe aplikacji na Railway: `USE_R2=True` oraz `R2_PUBLIC_URL`.
+GitHub Secrets: `R2_PUBLIC_URL`, `R2_ACCOUNT_ID`, `R2_BUCKET_NAME`,
+`R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`. Wzór w `.env.example`.
 
 ### Testowanie i jakość kodu
 | Technologia | Cel |

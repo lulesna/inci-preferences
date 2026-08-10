@@ -63,6 +63,7 @@ CONTENT_SECURITY_POLICY = {
         'script-src': ["'self'", "'unsafe-inline'", 'https://cdn.jsdelivr.net'] + ([R2_PUBLIC_URL] if R2_PUBLIC_URL else []),
         'style-src': ["'self'", "'unsafe-inline'"] + ([R2_PUBLIC_URL] if R2_PUBLIC_URL else []),
         'img-src': ["'self'", 'data:'] + ([R2_PUBLIC_URL] if R2_PUBLIC_URL else []),
+        'font-src': ["'self'"] + ([R2_PUBLIC_URL] if R2_PUBLIC_URL else []),
         'worker-src': ["'self'", 'blob:'],
         'connect-src': ["'self'", 'https://cdn.jsdelivr.net', 'https://tessdata.projectnaptha.com'],
     },
@@ -108,24 +109,16 @@ REST_FRAMEWORK = {
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 
-if DEBUG and not config('USE_POSTGRES', default=False, cast=bool):
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': config('DB_NAME'),
+        'USER': config('DB_USER'),
+        'PASSWORD': config('DB_PASSWORD'),
+        'HOST': config('DB_HOST'),
+        'PORT': config('DB_PORT', default='5432'),
     }
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': config('DB_NAME'),
-            'USER': config('DB_USER'),
-            'PASSWORD': config('DB_PASSWORD'),
-            'HOST': config('DB_HOST'),
-            'PORT': config('DB_PORT', default='5432'),
-        }
-    }
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -180,15 +173,17 @@ if USE_R2:
         'staticfiles': {
             'BACKEND': 'storages.backends.s3.S3Storage',
             'OPTIONS': {
-                'access_key': config('R2_ACCESS_KEY_ID'),
-                'secret_key': config('R2_SECRET_ACCESS_KEY'),
-                'bucket_name': config('R2_BUCKET_NAME'),
-                'endpoint_url': f"https://{config('R2_ACCOUNT_ID')}.r2.cloudflarestorage.com",
+                'access_key': config('R2_ACCESS_KEY_ID', default=''),
+                'secret_key': config('R2_SECRET_ACCESS_KEY', default=''),
+                'bucket_name': config('R2_BUCKET_NAME', default=''),
+                'endpoint_url': f"https://{config('R2_ACCOUNT_ID', default='')}.r2.cloudflarestorage.com",
                 'custom_domain': R2_PUBLIC_URL.replace('https://', '').replace('http://', ''),
+                'location': 'static',
                 'default_acl': None,
                 'querystring_auth': False,
                 'region_name': 'auto',
                 'file_overwrite': True,
+                'object_parameters': {'CacheControl': 'public, max-age=3600'},
             },
         },
     }
