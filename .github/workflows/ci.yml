@@ -121,18 +121,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-          cache: 'pip'
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Verify R2 secrets are configured
+      - name: Check R2 secrets
+        id: r2
         env:
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
           R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
@@ -140,16 +130,36 @@ jobs:
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_PUBLIC_URL: ${{ secrets.R2_PUBLIC_URL }}
         run: |
+          present=""
           missing=""
           for name in R2_ACCOUNT_ID R2_BUCKET_NAME R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY R2_PUBLIC_URL; do
-            if [ -z "${!name}" ]; then missing="$missing $name"; fi
+            if [ -z "${!name}" ]; then missing="$missing $name"; else present="$present $name"; fi
           done
-          if [ -n "$missing" ]; then
-            echo "Brakuje sekretów GitHub:$missing"
+          if [ -z "$present" ]; then
+            echo "::warning::R2 nie jest jeszcze skonfigurowane"
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          elif [ -n "$missing" ]; then
+            echo "::error::Niepełna konfiguracja R2. Brakuje sekretów:$missing"
             exit 1
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Set up Python 3.12
+        if: steps.r2.outputs.configured == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        if: steps.r2.outputs.configured == 'true'
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
       - name: Collectstatic to R2
+        if: steps.r2.outputs.configured == 'true'
         env:
           DEBUG: 'False'
           SECRET_KEY: 'collectstatic-only-key'
