@@ -129,6 +129,23 @@ class CosmeticAPITest(TestCase):
         self.assertEqual(proposal.status, 'APPROVED')
         self.assertEqual(proposal.reviewed_by, admin_user)
 
+    def test_approving_ingredients_change_reparses_ingredient_list(self):
+        """zatwierdzenie nowego składu musi przebudować powiązania"""
+        proposal = CosmeticEditProposal.objects.create(
+            cosmetic=self.cosmetic,
+            proposed_data={'ingredients_text': 'Aqua, Panthenol'},
+            submitted_by=self.user,
+        )
+
+        admin_user = User.objects.create_superuser(username='admin3', password='adminpass123')
+        proposal.approve(reviewer=admin_user)
+
+        self.cosmetic.refresh_from_db()
+        names = set(self.cosmetic.ingredients.values_list('inci_name', flat=True))
+
+        self.assertEqual(self.cosmetic.ingredients_text, 'Aqua, Panthenol')
+        self.assertIn('Panthenol', names)
+
 
 class IngredientAPITest(TestCase):
     def setUp(self):

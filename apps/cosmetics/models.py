@@ -167,6 +167,9 @@ class CosmeticEditProposal(models.Model):
             setattr(self.cosmetic, field, value)
         self.cosmetic.save()
 
+        if 'ingredients_text' in self.proposed_data:
+            self.cosmetic.parse_and_add_ingredients(auto_create=True)
+
         self.status = 'APPROVED'
         self.reviewed_by = reviewer
         self.reviewed_at = timezone.now()

@@ -35,7 +35,7 @@
 
                 <div id="propose-form" style="display: none;">
                     <label for="propose-purpose">Purpose</label>
-                    <textarea id="propose-purpose" rows="3" maxlength="500"></textarea>
+                    <textarea id="propose-purpose" rows="3" maxlength="100"></textarea>
                     <p class="propose-hint">
                         Suggestions go to moderation — the catalogue changes only after an admin approves.
                     </p>
@@ -47,6 +47,65 @@
             </div>
 
             <button class="cancel-btn" onclick="closeIngredientModal()">Cancel</button>
+        </div>
+    </div>
+
+    <div id="cosmetic-modal" style="display: none;">
+        <div class="modal-overlay" onclick="closeCosmeticModal()"></div>
+        <div class="modal-content modal-wide">
+            <h3>Suggest an edit</h3>
+            <p class="propose-hint">
+                Corrections go to moderation — the catalogue changes only after an admin approves.
+            </p>
+
+            <div class="edit-field">
+                <label for="edit-name">Name</label>
+                <input type="text" id="edit-name" maxlength="100">
+            </div>
+
+            <div class="edit-field">
+                <label for="edit-brand">Brand</label>
+                <input type="text" id="edit-brand" maxlength="100">
+            </div>
+
+            <div class="edit-field">
+                <label for="edit-main-category">Category</label>
+                <select id="edit-main-category">
+                    <option value="">Select category</option>
+                    <option value="FACE">Skincare</option>
+                    <option value="MAKEUP">Makeup</option>
+                    <option value="BODY">Bodycare</option>
+                </select>
+            </div>
+
+            <div class="edit-field" id="edit-subcategory-container" style="display: none;">
+                <label for="edit-subcategory">Subcategory</label>
+                <select id="edit-subcategory">
+                    <option value="">Select subcategory</option>
+                </select>
+            </div>
+
+            <div class="edit-field" id="edit-product-type-container" style="display: none;">
+                <label for="edit-product-type">Product type</label>
+                <select id="edit-product-type">
+                    <option value="">Select product type</option>
+                </select>
+            </div>
+
+            <div class="edit-field">
+                <label for="edit-ingredients">Ingredients (INCI, comma separated)</label>
+                <textarea id="edit-ingredients" rows="5"></textarea>
+                <p class="propose-hint">
+                    Shown as currently stored in the catalogue. Leave unchanged if the list is correct.
+                </p>
+            </div>
+
+            <button type="button" id="edit-submit-btn" class="propose-submit" onclick="submitCosmeticProposal()">
+                Submit for review
+            </button>
+            <p id="edit-status" class="propose-status" role="status"></p>
+
+            <button class="cancel-btn" onclick="closeCosmeticModal()">Cancel</button>
         </div>
     </div>
     {% endif %}
@@ -63,6 +122,7 @@
     const cosmeticId = /^\d+$/.test(rawId) ? rawId : null;
     let userPreferences = null;
     let selectedIngredient = null;
+    let currentCosmetic = null;
 
     async function loadUserPreferences() {
         {% if user.is_authenticated %}
@@ -131,6 +191,19 @@
         }
     }
 
+    // DRF zwraca błędy walidacji pól jako {"pole": ["komunikat"]}, bez klucza
+    // "detail". Bez tego użytkownik dostawał ogólne "nie udało się" zamiast
+    // informacji, co dokładnie jest nie tak.
+    function extractApiError(data) {
+        if (!data || typeof data !== 'object') return null;
+        if (typeof data.detail === 'string') return data.detail;
+
+        const first = Object.values(data)[0];
+        if (Array.isArray(first) && first.length) return String(first[0]);
+        if (typeof first === 'string') return first;
+        return null;
+    }
+
     function setProposeStatus(message, kind) {
         const statusEl = document.getElementById('propose-status');
         statusEl.textContent = message;
@@ -168,11 +241,185 @@
                 field.disabled = true;
             } else {
                 const data = await response.json().catch(() => ({}));
-                setProposeStatus(data.detail || 'Could not submit the suggestion.', 'error');
+                setProposeStatus(extractApiError(data) || 'Could not submit the suggestion.', 'error');
                 submitBtn.disabled = false;
             }
         } catch (error) {
             setProposeStatus('Network error. Please try again.', 'error');
+            submitBtn.disabled = false;
+        }
+    }
+
+    // Te same listy co w formularzu dodawania kosmetyku — kategorie
+    // i typy produktu zależą kaskadowo od wyboru wyżej.
+    const cosmeticSubcategories = {
+        'FACE': [
+            {value: 'CLEANSER', label: 'Cleanser'},
+            {value: 'TONER', label: 'Toner'},
+            {value: 'SERUM', label: 'Serum'},
+            {value: 'MOISTURIZER', label: 'Moisturizer'},
+            {value: 'SPF', label: 'SPF & Sun Protection'}
+        ],
+        'MAKEUP': [
+            {value: 'EYES', label: 'Eyes'},
+            {value: 'FACE', label: 'Face'},
+            {value: 'LIPS', label: 'Lips'}
+        ],
+        'BODY': []
+    };
+
+    const cosmeticProductTypes = {
+        'EYES': [
+            {value: 'MASCARA', label: 'Mascara'},
+            {value: 'EYESHADOW', label: 'Eyeshadow'},
+            {value: 'EYELINER', label: 'Eyeliner'},
+            {value: 'BROWS', label: 'Products For Brows'}
+        ],
+        'FACE': [
+            {value: 'FOUNDATION', label: 'Foundation'},
+            {value: 'CONCEALER', label: 'Concealer'},
+            {value: 'POWDER', label: 'Powder'},
+            {value: 'BLUSH', label: 'Blush'},
+            {value: 'BRONZER', label: 'Bronzer'},
+            {value: 'HIGHLIGHTER', label: 'Highlighter'},
+            {value: 'CONTOUR', label: 'Contour'},
+            {value: 'PRIMER', label: 'Face Primer'},
+            {value: 'SETTING_SPRAY', label: 'Setting Spray'}
+        ],
+        'LIPS': [
+            {value: 'LIPSTICK', label: 'Lipstick'},
+            {value: 'LIP_GLOSS', label: 'Lip Gloss'},
+            {value: 'LIP_LINER', label: 'Lip Liner'},
+            {value: 'LIP_BALM', label: 'Lip Balm'},
+            {value: 'LIP_STAIN', label: 'Lip Stain'}
+        ]
+    };
+
+    function fillSelect(select, options, placeholder, selectedValue) {
+        select.innerHTML = '';
+
+        const blank = document.createElement('option');
+        blank.value = '';
+        blank.textContent = placeholder;
+        select.appendChild(blank);
+
+        options.forEach(item => {
+            const option = document.createElement('option');
+            option.value = item.value;
+            option.textContent = item.label;
+            select.appendChild(option);
+        });
+
+        select.value = selectedValue || '';
+    }
+
+    function refreshSubcategorySelect(mainCategory, selectedValue) {
+        const options = cosmeticSubcategories[mainCategory] || [];
+        const container = document.getElementById('edit-subcategory-container');
+
+        fillSelect(document.getElementById('edit-subcategory'), options, 'Select subcategory', selectedValue);
+        container.style.display = options.length ? 'block' : 'none';
+    }
+
+    function refreshProductTypeSelect(subcategory, selectedValue) {
+        const options = cosmeticProductTypes[subcategory] || [];
+        const container = document.getElementById('edit-product-type-container');
+
+        fillSelect(document.getElementById('edit-product-type'), options, 'Select product type', selectedValue);
+        container.style.display = options.length ? 'block' : 'none';
+    }
+
+    function openCosmeticModal() {
+        if (!currentCosmetic) return;
+
+        document.getElementById('edit-name').value = currentCosmetic.name || '';
+        document.getElementById('edit-brand').value = currentCosmetic.brand || '';
+        document.getElementById('edit-main-category').value = currentCosmetic.main_category || '';
+
+        refreshSubcategorySelect(currentCosmetic.main_category, currentCosmetic.subcategory);
+        refreshProductTypeSelect(currentCosmetic.subcategory, currentCosmetic.product_type);
+
+        // ingredients_text jest write_only w API, więc odtwarzamy listę
+        // z przeparsowanych składników — użytkownik widzi to, co faktycznie
+        // siedzi w katalogu, a nie oryginalnie wklejony tekst.
+        const names = Array.isArray(currentCosmetic.ingredients)
+            ? currentCosmetic.ingredients.map(ing => ing.inci_name)
+            : [];
+        document.getElementById('edit-ingredients').value = names.join(', ');
+
+        setEditStatus('');
+        document.getElementById('edit-submit-btn').disabled = false;
+        document.getElementById('cosmetic-modal').style.display = 'block';
+    }
+
+    function closeCosmeticModal() {
+        document.getElementById('cosmetic-modal').style.display = 'none';
+    }
+
+    function setEditStatus(message, kind) {
+        const statusEl = document.getElementById('edit-status');
+        statusEl.textContent = message;
+        statusEl.className = kind ? `propose-status ${kind}` : 'propose-status';
+    }
+
+    document.getElementById('edit-main-category').addEventListener('change', function() {
+        refreshSubcategorySelect(this.value, '');
+        refreshProductTypeSelect('', '');
+    });
+
+    document.getElementById('edit-subcategory').addEventListener('change', function() {
+        refreshProductTypeSelect(this.value, '');
+    });
+
+    async function submitCosmeticProposal() {
+        if (!currentCosmetic) return;
+
+        const submitBtn = document.getElementById('edit-submit-btn');
+        const name = document.getElementById('edit-name').value.trim();
+        const brand = document.getElementById('edit-brand').value.trim();
+        const mainCategory = document.getElementById('edit-main-category').value;
+
+        if (!name || !brand) {
+            setEditStatus('Name and brand cannot be empty.', 'error');
+            return;
+        }
+
+        if (!mainCategory) {
+            setEditStatus('Pick a category.', 'error');
+            return;
+        }
+
+        const payload = {
+            name: name,
+            brand: brand,
+            main_category: mainCategory,
+            subcategory: document.getElementById('edit-subcategory').value || '',
+            product_type: document.getElementById('edit-product-type').value || '',
+            ingredients_text: document.getElementById('edit-ingredients').value.trim()
+        };
+
+        submitBtn.disabled = true;
+        setEditStatus('Sending...');
+
+        try {
+            const response = await fetch(`/api/cosmetics/${encodeURIComponent(cosmeticId)}/`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.status === 202) {
+                setEditStatus('Thanks! Your correction is waiting for admin review.', 'success');
+            } else {
+                const data = await response.json().catch(() => ({}));
+                setEditStatus(extractApiError(data) || 'Could not submit the correction.', 'error');
+                submitBtn.disabled = false;
+            }
+        } catch (error) {
+            setEditStatus('Network error. Please try again.', 'error');
             submitBtn.disabled = false;
         }
     }
@@ -212,6 +459,7 @@
         try {
             const response = await fetch(`/api/cosmetics/${encodeURIComponent(cosmeticId)}/`);
             const cosmetic = await response.json();
+            currentCosmetic = cosmetic;
 
             const container = document.getElementById('cosmetic-details');
             container.innerHTML = '';
@@ -230,6 +478,13 @@
             favBtn.title = 'Add to favorites';
             favBtn.textContent = '☆';
             header.appendChild(favBtn);
+
+            const editBtn = document.createElement('button');
+            editBtn.id = 'edit-cosmetic-btn';
+            editBtn.onclick = openCosmeticModal;
+            editBtn.title = 'Suggest an edit';
+            editBtn.textContent = 'Suggest an edit';
+            header.appendChild(editBtn);
             {% endif %}
 
             const brandP = document.createElement('p');
@@ -539,6 +794,81 @@
     .preference-btn.unsafe:hover {
         background: rgba(197, 78, 163, 0.1);
         transform: scale(1.02);
+    }
+
+    #cosmetic-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 1000;
+    }
+
+    .modal-content.modal-wide {
+        max-width: 520px;
+        max-height: 85vh;
+        overflow-y: auto;
+    }
+
+    #edit-cosmetic-btn {
+        margin-left: 12px;
+        padding: 8px 16px;
+        background: none;
+        border: 2px solid var(--main-pink);
+        border-radius: 50px;
+        color: var(--main-pink);
+        font-size: 13px;
+        font-weight: 600;
+        font-family: 'KineksRound', sans-serif;
+        cursor: pointer;
+        transition: all 0.3s;
+        vertical-align: middle;
+    }
+
+    #edit-cosmetic-btn:hover {
+        background: var(--main-pink);
+        color: white;
+    }
+
+    .edit-field {
+        text-align: left;
+        margin-bottom: 14px;
+    }
+
+    .edit-field label {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 6px;
+    }
+
+    .edit-field input,
+    .edit-field select,
+    .edit-field textarea {
+        width: 100%;
+        padding: 10px;
+        border: 2px solid var(--lime);
+        border-radius: 10px;
+        font-size: 14px;
+        font-family: 'KineksRound', sans-serif;
+        outline: none;
+        background: white;
+    }
+
+    .edit-field textarea {
+        resize: vertical;
+    }
+
+    .edit-field input:focus,
+    .edit-field select:focus,
+    .edit-field textarea:focus {
+        border-color: var(--main-pink);
+    }
+
+    .edit-field .propose-hint {
+        margin: 6px 0 0;
     }
 
     .propose-section {
