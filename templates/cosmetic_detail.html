@@ -28,6 +28,24 @@
                 </button>
             </div>
 
+            <div class="propose-section">
+                <button type="button" class="propose-toggle" onclick="toggleProposeForm()">
+                    Suggest a correction
+                </button>
+
+                <div id="propose-form" style="display: none;">
+                    <label for="propose-purpose">Purpose</label>
+                    <textarea id="propose-purpose" rows="3" maxlength="500"></textarea>
+                    <p class="propose-hint">
+                        Suggestions go to moderation — the catalogue changes only after an admin approves.
+                    </p>
+                    <button type="button" id="propose-submit-btn" class="propose-submit" onclick="submitEditProposal()">
+                        Submit for review
+                    </button>
+                    <p id="propose-status" class="propose-status" role="status"></p>
+                </div>
+            </div>
+
             <button class="cancel-btn" onclick="closeIngredientModal()">Cancel</button>
         </div>
     </div>
@@ -77,15 +95,86 @@
     }
 
     {% if user.is_authenticated %}
-    function openIngredientModal(ingredientId, ingredientName) {
+    function openIngredientModal(ingredientId, ingredientName, ingredientPurpose) {
         selectedIngredient = ingredientId;
         document.getElementById('modal-ingredient-name').textContent = ingredientName;
+        resetProposeForm(ingredientPurpose);
         document.getElementById('ingredient-modal').style.display = 'block';
     }
 
     function closeIngredientModal() {
         document.getElementById('ingredient-modal').style.display = 'none';
         selectedIngredient = null;
+    }
+
+    // Formularz zgłoszenia startuje zwinięty i wypełniony obecną wartością,
+    // żeby użytkownik poprawiał tekst, a nie pisał go od zera.
+    function resetProposeForm(ingredientPurpose) {
+        const field = document.getElementById('propose-purpose');
+        field.value = ingredientPurpose || '';
+        field.disabled = false;
+
+        document.getElementById('propose-form').style.display = 'none';
+        document.getElementById('propose-submit-btn').disabled = false;
+
+        const statusEl = document.getElementById('propose-status');
+        statusEl.textContent = '';
+        statusEl.className = 'propose-status';
+    }
+
+    function toggleProposeForm() {
+        const form = document.getElementById('propose-form');
+        const hidden = form.style.display === 'none';
+        form.style.display = hidden ? 'block' : 'none';
+        if (hidden) {
+            document.getElementById('propose-purpose').focus();
+        }
+    }
+
+    function setProposeStatus(message, kind) {
+        const statusEl = document.getElementById('propose-status');
+        statusEl.textContent = message;
+        statusEl.className = kind ? `propose-status ${kind}` : 'propose-status';
+    }
+
+    async function submitEditProposal() {
+        if (!selectedIngredient) return;
+
+        const field = document.getElementById('propose-purpose');
+        const submitBtn = document.getElementById('propose-submit-btn');
+        const purpose = field.value.trim();
+
+        if (!purpose) {
+            setProposeStatus('Purpose cannot be empty.', 'error');
+            return;
+        }
+
+        submitBtn.disabled = true;
+        setProposeStatus('Sending...');
+
+        try {
+            const response = await fetch(`/api/ingredients/${encodeURIComponent(selectedIngredient)}/`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({purpose: purpose})
+            });
+
+            // 202, nie 200 — API przyjmuje zgłoszenie, ale katalogu jeszcze nie zmienia.
+            if (response.status === 202) {
+                setProposeStatus('Thanks! Your suggestion is waiting for admin review.', 'success');
+                field.disabled = true;
+            } else {
+                const data = await response.json().catch(() => ({}));
+                setProposeStatus(data.detail || 'Could not submit the suggestion.', 'error');
+                submitBtn.disabled = false;
+            }
+        } catch (error) {
+            setProposeStatus('Network error. Please try again.', 'error');
+            submitBtn.disabled = false;
+        }
     }
 
     async function setIngredientPreference(color) {
@@ -201,7 +290,7 @@
                     {% if user.is_authenticated %}
                     span.classList.add('clickable');
                     span.title = 'Click to set preference';
-                    span.onclick = () => openIngredientModal(ingredientId, ing.inci_name);
+                    span.onclick = () => openIngredientModal(ingredientId, ing.inci_name, ing.purpose);
                     {% else %}
                     span.title = ing.purpose || 'No purpose listed';
                     {% endif %}
@@ -450,6 +539,108 @@
     .preference-btn.unsafe:hover {
         background: rgba(197, 78, 163, 0.1);
         transform: scale(1.02);
+    }
+
+    .propose-section {
+        border-top: 1px solid #e8e8e8;
+        padding-top: 16px;
+        margin-bottom: 16px;
+    }
+
+    .propose-toggle {
+        width: 100%;
+        padding: 10px;
+        background: none;
+        border: 2px dashed var(--main-pink);
+        border-radius: 12px;
+        color: var(--main-pink);
+        font-size: 14px;
+        font-weight: 600;
+        font-family: 'KineksRound', sans-serif;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .propose-toggle:hover {
+        background: rgba(223, 150, 180, 0.1);
+    }
+
+    #propose-form {
+        margin-top: 14px;
+        text-align: left;
+    }
+
+    #propose-form label {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 6px;
+    }
+
+    #propose-purpose {
+        width: 100%;
+        padding: 10px;
+        border: 2px solid var(--lime);
+        border-radius: 10px;
+        font-size: 14px;
+        font-family: 'KineksRound', sans-serif;
+        resize: vertical;
+        outline: none;
+    }
+
+    #propose-purpose:focus {
+        border-color: var(--main-pink);
+    }
+
+    #propose-purpose:disabled {
+        background: #f4f4f4;
+        color: #888;
+    }
+
+    .propose-hint {
+        font-size: 12px;
+        color: #777;
+        margin: 8px 0 12px;
+    }
+
+    .propose-submit {
+        width: 100%;
+        padding: 12px;
+        background-color: var(--lime);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-size: 14px;
+        font-weight: bold;
+        font-family: 'KineksRound', sans-serif;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .propose-submit:hover:not(:disabled) {
+        background-color: var(--main-pink);
+    }
+
+    .propose-submit:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
+    }
+
+    .propose-status {
+        font-size: 13px;
+        margin-top: 10px;
+        min-height: 1em;
+    }
+
+    .propose-status.success {
+        color: #2d8659;
+        font-weight: 600;
+    }
+
+    .propose-status.error {
+        color: var(--accent-dark);
+        font-weight: 600;
     }
 
     .cancel-btn {
