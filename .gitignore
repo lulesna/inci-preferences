@@ -176,3 +176,4 @@ cython_debug/
 /graphify-out/
 /.claude/
 /CLAUDE.md
+/.gitattributes
