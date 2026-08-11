@@ -222,15 +222,22 @@
             return;
         }
 
+        const csrfToken = getCookie('csrftoken');
+        if (!csrfToken) {
+            setProposeStatus('Your session expired. Please reload the page and log in again.', 'error');
+            return;
+        }
+
         submitBtn.disabled = true;
         setProposeStatus('Sending...');
 
         try {
             const response = await fetch(`/api/ingredients/${encodeURIComponent(selectedIngredient)}/`, {
                 method: 'PATCH',
+                credentials: 'same-origin',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken')
+                    'X-CSRFToken': csrfToken
                 },
                 body: JSON.stringify({purpose: purpose})
             });
@@ -250,8 +257,6 @@
         }
     }
 
-    // Te same listy co w formularzu dodawania kosmetyku — kategorie
-    // i typy produktu zależą kaskadowo od wyboru wyżej.
     const cosmeticSubcategories = {
         'FACE': [
             {value: 'CLEANSER', label: 'Cleanser'},
@@ -310,6 +315,14 @@
             select.appendChild(option);
         });
 
+        const known = options.some(item => item.value === selectedValue);
+        if (selectedValue && !known) {
+            const current = document.createElement('option');
+            current.value = selectedValue;
+            current.textContent = `${selectedValue} (obecna wartość)`;
+            select.appendChild(current);
+        }
+
         select.value = selectedValue || '';
     }
 
@@ -318,7 +331,7 @@
         const container = document.getElementById('edit-subcategory-container');
 
         fillSelect(document.getElementById('edit-subcategory'), options, 'Select subcategory', selectedValue);
-        container.style.display = options.length ? 'block' : 'none';
+        container.style.display = (options.length || selectedValue) ? 'block' : 'none';
     }
 
     function refreshProductTypeSelect(subcategory, selectedValue) {
@@ -326,7 +339,7 @@
         const container = document.getElementById('edit-product-type-container');
 
         fillSelect(document.getElementById('edit-product-type'), options, 'Select product type', selectedValue);
-        container.style.display = options.length ? 'block' : 'none';
+        container.style.display = (options.length || selectedValue) ? 'block' : 'none';
     }
 
     function openCosmeticModal() {
@@ -339,9 +352,6 @@
         refreshSubcategorySelect(currentCosmetic.main_category, currentCosmetic.subcategory);
         refreshProductTypeSelect(currentCosmetic.subcategory, currentCosmetic.product_type);
 
-        // ingredients_text jest write_only w API, więc odtwarzamy listę
-        // z przeparsowanych składników — użytkownik widzi to, co faktycznie
-        // siedzi w katalogu, a nie oryginalnie wklejony tekst.
         const names = Array.isArray(currentCosmetic.ingredients)
             ? currentCosmetic.ingredients.map(ing => ing.inci_name)
             : [];
@@ -398,15 +408,22 @@
             ingredients_text: document.getElementById('edit-ingredients').value.trim()
         };
 
+        const csrfToken = getCookie('csrftoken');
+        if (!csrfToken) {
+            setEditStatus('Your session expired. Please reload the page and log in again.', 'error');
+            return;
+        }
+
         submitBtn.disabled = true;
         setEditStatus('Sending...');
 
         try {
             const response = await fetch(`/api/cosmetics/${encodeURIComponent(cosmeticId)}/`, {
                 method: 'PATCH',
+                credentials: 'same-origin',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken')
+                    'X-CSRFToken': csrfToken
                 },
                 body: JSON.stringify(payload)
             });

@@ -27,6 +27,8 @@ RUN SECRET_KEY="dummy-key-for-build" \
     ALLOWED_HOSTS="localhost" \
     python manage.py collectstatic --noinput
 
+RUN chmod +x /app/entrypoint.sh
+
 RUN groupadd -r appuser && useradd -r -m -g appuser appuser \
     && chown -R appuser:appuser /app
 
@@ -37,4 +39,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 
 EXPOSE 8000
 
+ENTRYPOINT ["/app/entrypoint.sh"]
 CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000"]
