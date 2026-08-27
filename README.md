@@ -13,6 +13,8 @@ Praca licencjacka, kierunek Informatyka, specjalność technologie sieciowe i ba
 
 **Live demo:** [incipreferences.app](https://incipreferences.app/)
 
+![Widok strony głównej](static/screenshots/home.png)
+
 ---
 
 ## Problem i motywacja
@@ -57,12 +59,16 @@ Frontend to SPA-like aplikacja w vanilla JavaScript: asynchroniczne wywołania `
 - Interaktywne ustawianie preferencji przez kliknięcie w składnik
 - Automatyczna analiza wzorców: algorytm wykrywa składniki występujące w co najmniej 50% ulubionych produktów i proponuje dodanie ich do preferencji
 
+![Rekomendacja składników](static/screenshots/insights.png)
+
 ### Wyszukiwarka i zaawansowane filtrowanie
 - Full-text search po nazwie kosmetyku i marce (Django `SearchFilter`)
 - Kaskadowe filtrowanie po kategoriach (kategoria → podkategoria → typ produktu)
 - Wielokrotne filtry składnikowe (must-contain, must-NOT-contain) z autocomplete
 - Sortowanie wg bezpieczeństwa, alfabetycznie, wg liczby bezpiecznych składników
 - Wyniki API stronicowane (`PageNumberPagination`, 50 pozycji na stronę)
+
+![Wyszukiwanie z systemem filtrowania](static/screenshots/search.png)
 
 ### Algorytm oceny bezpieczeństwa
 Kosmetyki są klasyfikowane w czasie rzeczywistym poprzez porównanie ich składu z profilem użytkownika:
