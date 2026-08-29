@@ -1,0 +1,278 @@
+/* Styl dokumentów prawnych (polityka prywatności, regulamin).
+   Numeracja sekcji i spisu treści idzie z liczników CSS, żeby numery
+   nie rozjechały się przy dodaniu lub usunięciu punktu. */
+
+.legal {
+    max-width: 46rem;
+    margin: 0 auto 3rem;
+    padding: 2.5rem 2rem;
+    background: #ffffff;
+    border-radius: 18px;
+    box-shadow: 0 2px 18px rgba(0, 0, 0, 0.06);
+
+    /* Dokument jest wyspą typograficzną: globalne style serwisu wyśrodkowują
+       tekst i kolorują go na różowo, co dla kilkunastu ekranów treści prawnej
+       jest nieczytelne. Ustawiamy wyrównanie i kolor jawnie. */
+    text-align: left;
+    color: #2b2b2b;
+    font-size: 1rem;
+    line-height: 1.7;
+}
+
+.legal h1,
+.legal h2 {
+    color: #1f1f1f;
+    text-align: left;
+}
+
+.legal-header {
+    /* Reset po globalnym `header { position: sticky; ... }` ze style.css,
+       który przykleiłby nagłówek dokumentu do góry ekranu i nadał mu
+       zaokrąglenia oraz rozmycie tła przeznaczone dla paska nawigacji. */
+    position: static;
+    z-index: auto;
+    border-radius: 0;
+    backdrop-filter: none;
+    box-shadow: none;
+    background: none;
+
+    padding: 0 0 1.5rem;
+    margin-bottom: 2rem;
+    border-bottom: 2px solid var(--main-pink);
+}
+
+.legal-header h1 {
+    font-size: 2rem;
+    font-weight: 600;
+    line-height: 1.2;
+    margin-bottom: 0.75rem;
+}
+
+.legal-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.25rem;
+    align-items: baseline;
+    font-size: 0.9rem;
+    color: #5a5a5a;
+}
+
+.legal-lang {
+    color: var(--accent-dark);
+    text-decoration: none;
+    border-bottom: 1px solid currentColor;
+}
+
+.legal-lang:hover,
+.legal-lang:focus-visible {
+    color: var(--main-pink);
+}
+
+/* Spis treści */
+
+.legal-toc {
+    /* display jawnie, bo globalna reguła `nav { display: flex }` z style.css
+       układałaby nagłówek spisu obok listy. */
+    display: block;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 2.5rem;
+    background: #fdf6fa;
+    border: 1px solid #f0dce8;
+    border-radius: 12px;
+}
+
+.legal-toc h2 {
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #6a6a6a;
+    margin-bottom: 0.85rem;
+}
+
+.legal-toc ol {
+    counter-reset: toc;
+    columns: 2;
+    column-gap: 2rem;
+    list-style: none;
+    padding: 0;
+}
+
+.legal-toc li {
+    counter-increment: toc;
+    break-inside: avoid;
+    margin-bottom: 0.4rem;
+    font-size: 0.92rem;
+}
+
+.legal-toc li::before {
+    content: counter(toc) ". ";
+    color: var(--accent-dark);
+    font-variant-numeric: tabular-nums;
+}
+
+.legal-toc a {
+    color: var(--text);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+}
+
+.legal-toc a:hover,
+.legal-toc a:focus-visible {
+    border-bottom-color: var(--main-pink);
+}
+
+/* Treść */
+
+.legal-body {
+    counter-reset: section;
+}
+
+.legal-section {
+    margin-bottom: 2.25rem;
+    scroll-margin-top: 6rem;
+}
+
+.legal-section > h2 {
+    counter-increment: section;
+    display: flex;
+    gap: 0.6rem;
+    font-size: 1.2rem;
+    font-weight: 600;
+    line-height: 1.35;
+    margin-bottom: 0.85rem;
+}
+
+.legal-section > h2::before {
+    content: counter(section) ".";
+    color: var(--accent-dark);
+    font-variant-numeric: tabular-nums;
+}
+
+.legal-section p {
+    margin-bottom: 0.9rem;
+}
+
+.legal-section ul {
+    margin: 0 0 1rem 1.25rem;
+}
+
+.legal-section li {
+    margin-bottom: 0.45rem;
+}
+
+.legal-section a {
+    color: var(--accent-dark);
+}
+
+/* Tabela cookies i podobne zestawienia */
+
+.legal-table-wrap {
+    overflow-x: auto;
+    margin-bottom: 1rem;
+}
+
+.legal-table {
+    width: 100%;
+    min-width: 32rem;
+    border-collapse: collapse;
+    font-size: 0.92rem;
+}
+
+.legal-table caption {
+    text-align: left;
+    padding-bottom: 0.6rem;
+    font-size: 0.85rem;
+    color: #5a5a5a;
+}
+
+.legal-table th,
+.legal-table td {
+    padding: 0.6rem 0.75rem;
+    text-align: left;
+    vertical-align: top;
+    border-bottom: 1px solid #ece4e8;
+}
+
+.legal-table thead th {
+    font-weight: 600;
+    background: #fdf6fa;
+    border-bottom: 2px solid #f0dce8;
+}
+
+.legal-table code {
+    font-family: ui-monospace, "SFMono-Regular", "Consolas", monospace;
+    font-size: 0.88em;
+    padding: 0.1em 0.35em;
+    background: #f6eef3;
+    border-radius: 4px;
+}
+
+/* Blok kontaktowy */
+
+.legal-contact {
+    padding: 1.1rem 1.35rem;
+    background: #fdf6fa;
+    border-left: 3px solid var(--main-pink);
+    border-radius: 0 10px 10px 0;
+    font-style: normal;
+}
+
+.legal-contact dt {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #5a5a5a;
+    margin-top: 0.6rem;
+}
+
+.legal-contact dt:first-child {
+    margin-top: 0;
+}
+
+.legal-contact dd {
+    margin: 0.15rem 0 0;
+}
+
+/* Wyróżnione zastrzeżenie */
+
+.legal-callout {
+    padding: 1.1rem 1.35rem;
+    background: #fff8e8;
+    border-left: 3px solid #e8b84b;
+    border-radius: 0 10px 10px 0;
+}
+
+.legal-callout p:last-child {
+    margin-bottom: 0;
+}
+
+@media (max-width: 640px) {
+    .legal {
+        padding: 1.75rem 1.25rem;
+        border-radius: 12px;
+    }
+
+    .legal-header h1 {
+        font-size: 1.6rem;
+    }
+
+    .legal-toc ol {
+        columns: 1;
+    }
+}
+
+@media print {
+    .legal {
+        max-width: none;
+        box-shadow: none;
+        padding: 0;
+    }
+
+    .legal-toc {
+        display: none;
+    }
+
+    .legal-section {
+        break-inside: avoid;
+    }
+}
