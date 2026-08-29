@@ -1,12 +1,11 @@
-from django.contrib.auth.forms import PasswordChangeForm
+from django import forms
+from django.contrib.auth.forms import PasswordChangeForm, UserCreationForm, UsernameField
 from django.shortcuts import render, redirect
 from django.contrib.auth import login, authenticate, logout
 from django.contrib import messages
 from django.contrib.auth.models import User
-from django import forms
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import update_session_auth_hash
-from django.shortcuts import redirect
 from django.views.decorators.http import require_POST
 from django.core.cache import cache
 
@@ -14,34 +13,29 @@ LOGIN_ATTEMPT_LIMIT = 5
 LOGIN_ATTEMPT_WINDOW = 300  # sekundy
 
 
-class CustomUserCreationForm(forms.ModelForm):
-    username = forms.CharField(max_length=150, required=True, help_text='Unique username.')
-    password1 = forms.CharField(label='Password', widget=forms.PasswordInput, required=True)
-    password2 = forms.CharField(label='Password confirmation', widget=forms.PasswordInput, required=True)
+class CustomUserCreationForm(UserCreationForm):
+
+    class Meta(UserCreationForm.Meta):
+        model = User
+        fields = ('username',)
+
+
+class UsernameChangeForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ('username', 'password1', 'password2')
+        fields = ('username',)
+        field_classes = {'username': UsernameField}
 
     def clean_username(self):
         username = self.cleaned_data.get('username')
-        if User.objects.filter(username=username).exists():
+
+        if username and User.objects.filter(
+            username__iexact=username
+        ).exclude(pk=self.instance.pk).exists():
             raise forms.ValidationError('This username is already taken.')
+
         return username
-
-    def clean_password2(self):
-        password1 = self.cleaned_data.get('password1')
-        password2 = self.cleaned_data.get('password2')
-        if password1 and password2 and password1 != password2:
-            raise forms.ValidationError('Passwords do not match.')
-        return password2
-
-    def save(self, commit=True):
-        user = super().save(commit=False)
-        user.set_password(self.cleaned_data['password1'])
-        if commit:
-            user.save()
-        return user
 
 
 def register_view(request):
@@ -116,15 +110,15 @@ def change_password(request):
 @login_required
 def update_account(request):
     if request.method == 'POST':
-        new_username = request.POST.get('username')
-        user = request.user
+        form = UsernameChangeForm(request.POST, instance=request.user)
 
-        if User.objects.filter(username=new_username).exclude(id=user.id).exists():
-            messages.error(request, 'This username is already taken.')
-        else:
-            user.username = new_username
-            user.save()
+        if form.is_valid():
+            form.save()
             messages.success(request, 'Username updated successfully!')
+        else:
+            for errors in form.errors.values():
+                for error in errors:
+                    messages.error(request, error)
 
     return redirect('profile')
 

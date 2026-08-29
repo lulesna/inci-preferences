@@ -39,7 +39,38 @@ class CustomUserCreationFormTest(TestCase):
 
         user = form.save()
 
-        # Hasło nie może wylądować w bazie otwartym tekstem — save() nadpisuje
-        # je wynikiem set_password().
         self.assertNotEqual(user.password, 'ZlozoneHaslo123')
         self.assertTrue(user.check_password('ZlozoneHaslo123'))
+
+
+class PasswordValidatorsTest(TestCase):
+
+    def form_data(self, password):
+        return {
+            'username': 'nowyuser',
+            'password1': password,
+            'password2': password,
+        }
+
+    def assertPasswordRejected(self, password):
+        form = CustomUserCreationForm(data=self.form_data(password))
+
+        self.assertFalse(form.is_valid(), f'Hasło {password!r} powinno zostać odrzucone')
+        self.assertIn('password2', form.errors)
+        return form.errors['password2']
+
+    def test_too_short_password_rejected(self):
+        # MinimumLengthValidator, domyślnie minimum 8 znaków
+        self.assertPasswordRejected('Ab1x')
+
+    def test_common_password_rejected(self):
+        # CommonPasswordValidator, lista 20 000 najpopularniejszych haseł
+        self.assertPasswordRejected('password123')
+
+    def test_numeric_password_rejected(self):
+        # NumericPasswordValidator
+        self.assertPasswordRejected('86753098421')
+
+    def test_password_similar_to_username_rejected(self):
+        # UserAttributeSimilarityValidator porównuje hasło z nazwą użytkownika
+        self.assertPasswordRejected('nowyuser1')

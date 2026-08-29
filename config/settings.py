@@ -1,6 +1,5 @@
 from pathlib import Path
 from decouple import config
-import os
 import sys
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.

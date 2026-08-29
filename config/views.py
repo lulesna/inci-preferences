@@ -44,12 +44,6 @@ def skincare_serum(request):
 def add_cosmetic(request):
     return render(request, 'addcosmetic.html')
 
-def login_view(request):
-    return render(request, 'users/login.html')
-
-def check_cosmetic(request):
-    return render(request, 'check_cosmetic.html')
-
 def search(request):
     return render(request, 'search.html')
 

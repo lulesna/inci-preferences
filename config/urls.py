@@ -32,7 +32,6 @@ urlpatterns = [
     path('categories/skincare/skincare_toner', views.skincare_toner, name='skincare_toner'),
 
     path('addcosmetic/', views.add_cosmetic, name='addcosmetic'),
-    path('check/', views.check_cosmetic, name='check_cosmetic'),
     path('api/', include('apps.ingredients.urls')),
     path('api/', include('apps.cosmetics.urls')),
     path('api/', include('apps.preferences.urls')),

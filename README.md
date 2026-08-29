@@ -13,7 +13,7 @@ Praca licencjacka, kierunek Informatyka, specjalność technologie sieciowe i ba
 
 **Live demo:** [incipreferences.app](https://incipreferences.app/)
 
-![Widok strony głównej](static/screenshots/home.png)
+![Widok strony głównej](docs/screenshots/home.png)
 
 ---
 
@@ -50,25 +50,28 @@ Frontend to SPA-like aplikacja w vanilla JavaScript: asynchroniczne wywołania `
 ### System kont użytkowników
 - Rejestracja i logowanie oparte o Django Authentication
 - Rejestracja wymaga akceptacji Regulaminu i Polityki Prywatności
-- Zarządzanie profilem: zmiana loginu, zmiana hasła z walidacją (PBKDF2 + SHA256), usuwanie konta
+- Zarządzanie profilem: zmiana loginu, zmiana hasła (`PasswordChangeForm` z walidatorami Django), usuwanie konta
+- Hasła hashowane algorytmem PBKDF2 z SHA256 (domyślny hasher Django)
 - Session-based authentication z CSRF Protection
-- Ochrona przed brute-force: blokada logowania na 5 minut po 5 nieudanych próbach z danego IP
+- Ochrona przed brute-force: blokada logowania na 5 minut po 5 nieudanych próbach, licznik trzymany w cache aplikacji
 
 ### Personalizowana klasyfikacja składników
 - Trójpoziomowa klasyfikacja (bezpieczne / umiarkowane / niebezpieczne) per użytkownik
-- Interaktywne ustawianie preferencji przez kliknięcie w składnik
-- Automatyczna analiza wzorców: algorytm wykrywa składniki występujące w co najmniej 50% ulubionych produktów i proponuje dodanie ich do preferencji
+- Interaktywne ustawianie preferencji: wyszukiwarka składników z autocomplete i przypisaniem koloru
+- Automatyczna analiza wzorców: przy minimum 3 ulubionych produktach algorytm wykrywa składniki występujące w co najmniej 50% z nich i proponuje dodanie ich do preferencji
 
-![Rekomendacja składników](static/screenshots/insights.png)
+![Ustawianie preferencji składnikowych](docs/screenshots/addpreference.png)
+
+![Rekomendacja składników](docs/screenshots/insights.png)
 
 ### Wyszukiwarka i zaawansowane filtrowanie
-- Full-text search po nazwie kosmetyku i marce (Django `SearchFilter`)
+- Wyszukiwanie po fragmencie nazwy kosmetyku i marki (DRF `SearchFilter`)
 - Kaskadowe filtrowanie po kategoriach (kategoria → podkategoria → typ produktu)
 - Wielokrotne filtry składnikowe (must-contain, must-NOT-contain) z autocomplete
-- Sortowanie wg bezpieczeństwa, alfabetycznie, wg liczby bezpiecznych składników
-- Wyniki API stronicowane (`PageNumberPagination`, 50 pozycji na stronę)
+- Sortowanie wg bezpieczeństwa, alfabetycznie, wg marki, wg liczby bezpiecznych składników
+- Listy zasobów w API stronicowane (`PageNumberPagination`, 50 pozycji na stronę)
 
-![Wyszukiwanie z systemem filtrowania](static/screenshots/search.png)
+![Wyszukiwanie z systemem filtrowania](docs/screenshots/search.png)
 
 ### Algorytm oceny bezpieczeństwa
 Kosmetyki są klasyfikowane w czasie rzeczywistym poprzez porównanie ich składu z profilem użytkownika:
@@ -80,8 +83,8 @@ Kosmetyki są klasyfikowane w czasie rzeczywistym poprzez porównanie ich skład
 | 🔴 Czerwony | Kosmetyk zawiera co najmniej jeden składnik oznaczony jako niebezpieczny |
 
 ### Algorytmy rekomendacji i wyszukiwania zamienników
-- Top-N recommendations: ranking bezpiecznych kosmetyków posortowanych wg liczby dopasowanych bezpiecznych składników
-- Dupes finder: porównanie oparte na współczynniku Jaccarda (podobieństwo zbiorów), threshold 40%
+- Top-N recommendations: ranking maksymalnie 10 kosmetyków bez składników oznaczonych jako umiarkowane i niebezpieczne, posortowanych wg liczby dopasowanych bezpiecznych składników
+- Dupes finder: porównanie zbiorów składników w obrębie tej samej kategorii głównej; miarą jest udział składników oryginału obecnych w produkcie porównywanym, próg 50%, zwracane top 10
 - Sortowanie wyników wg similarity score
 
 ### Skanowanie składów ze zdjęć (OCR)
@@ -120,10 +123,10 @@ Kosmetyki są klasyfikowane w czasie rzeczywistym poprzez porównanie ich skład
 ### Infrastruktura i DevOps
 | Technologia | Cel |
 |------------|-----|
-| **Docker** | Konteneryzacja aplikacji (multi-stage build, non-root user, healthcheck) |
+| **Docker** | Konteneryzacja aplikacji (non-root user, healthcheck, `--no-install-recommends`) |
 | **Railway** | Platforma hostingowa (auto-deploy z GitHub) |
 | **Supabase** | Managed PostgreSQL z connection poolingiem (port 6543) |
-| **GitHub Actions** | CI/CD pipeline (testy, security scan, Docker build) |
+| **GitHub Actions** | CI/CD pipeline (testy, security scan, Docker build, publikacja statyków na R2) |
 | **Porkbun** | Rejestracja domeny + DNS management |
 | **Cloudflare** | DNS, CDN, SSL |
 | **Cloudflare R2** | Hosting plików statycznych (CSS, JS, fonty, obrazy) |
@@ -142,21 +145,20 @@ GitHub Secrets: `R2_PUBLIC_URL`, `R2_ACCOUNT_ID`, `R2_BUCKET_NAME`,
 `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`. Wzór w `.env.example`.
 
 ### Testowanie i jakość kodu
-| Technologia | Cel |
-|------------|-----|
-| **Django TestCase** | Testy jednostkowe i integracyjne |
-| **DRF APIClient** | Testy REST API |
-| **coverage.py** | Pomiar pokrycia kodu testami |
-| **flake8** | Linter jakości kodu |
-| **bandit** | Skanowanie bezpieczeństwa kodu |
-| **safety** | Skanowanie zależności pod kątem CVE |
+| Technologia | Cel                                                        |
+|------------|------------------------------------------------------------|
+| **Django TestCase** | Testy jednostkowe i integracyjne (106 testów w 4 modułach) |
+| **DRF APIClient** | Testy REST API                                             |
+| **flake8** | Linter jakości kodu                                        |
+| **bandit** | Skanowanie bezpieczeństwa kodu                             |
+| **safety** | Skanowanie zależności pod kątem CVE                        |
 
 ### Bezpieczeństwo
 - Session-based authentication (Django Auth)
 - CSRF Protection na wszystkich formularzach i żądaniach stanowych (POST/PUT/PATCH/DELETE)
 - Password hashing: PBKDF2 z SHA256 (Django default)
-- XSS prevention: HTML escaping w JavaScript, textContent zamiast innerHTML dla user-supplied data
-- Content Security Policy (CSP): whitelista ograniczona do własnej domeny i CDN wymaganego przez Tesseract.js
+- XSS prevention: escapowanie danych z API przed wstawieniem do DOM (`escapeHtml`), `textContent` zamiast `innerHTML` dla treści pochodzących od użytkowników
+- Content Security Policy (CSP): whitelista ograniczona do własnej domeny, bucketu R2 i CDN wymaganego przez Tesseract.js. Skrypty i style osadzone w szablonach wymagają obecnie `'unsafe-inline'` — wyniesienie tego kodu do osobnych plików i zdjęcie wyjątku jest w planach rozwoju
 - Rate limiting: throttling API (Django REST Framework) oraz blokada logowania po nieudanych próbach
 - Kontrola dostępu do katalogu: każdy zalogowany user może dodać nowy kosmetyk/składnik, ale edycja istniejącego wpisu trafia do kolejki moderacji i wymaga akceptacji administratora; usuwanie zarezerwowane wyłącznie dla adminów
 - HTTPS wymuszony w produkcji (Let's Encrypt via Cloudflare)
@@ -169,10 +171,11 @@ GitHub Secrets: `R2_PUBLIC_URL`, `R2_ACCOUNT_ID`, `R2_BUCKET_NAME`,
 
 Automatyczny pipeline uruchamiany przy każdym push oraz pull request na branch `main`:
 
-1. **Test job**: uruchomienie testów Django z bazą PostgreSQL w kontenerze
+1. **Tests & Linting**: flake8 (błędy krytyczne blokują pipeline, pozostałe ostrzeżenia raportowane) oraz testy Django z bazą PostgreSQL w kontenerze
 2. **Security scan**: skanowanie zależności (safety) i kodu (bandit)
 3. **Docker build test**: weryfikacja poprawności Dockerfile'a z cache warstw
-4. **Deployment notification**: potwierdzenie sukcesu, trigger dla Railway auto-deploy
+4. **Publish static files to R2**: wysyłka plików statycznych na Cloudflare R2, tylko przy push na `main` i po przejściu testów
+5. **Deployment status**: potwierdzenie sukcesu, trigger dla Railway auto-deploy
 
 ---
 
