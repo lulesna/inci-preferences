@@ -164,6 +164,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_REDIRECT_URL = "index"
 LOGOUT_REDIRECT_URL = "index"
 
+# Konto pokazowe opisane w README. Jego login i hasło są publiczne, więc widok
+# profilu blokuje na nim zmianę nazwy, zmianę hasła i usunięcie konta.
+# Pusta wartość wyłącza tę ochronę.
+DEMO_USERNAME = config('DEMO_USERNAME', default='testuser')
+
 if USE_R2:
     STORAGES = {
         'default': {

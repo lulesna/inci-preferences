@@ -1,261 +1,355 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Terms of Service - INCI Preferences{% endblock %}
 
+{% block meta_description %}INCI Preferences terms of service: eligibility, account rules, user-generated content, acceptable use, and limitation of liability.{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/legal.css' %}">
+{% endblock %}
+
 {% block content %}
-<section class="main-section">
-    <div style="max-width: 800px; margin: 0 auto; padding: 20px;">
+<article class="legal">
+
+    <header class="legal-header">
         <h1>Terms of Service</h1>
-        <p><em>Last updated: July 29, 2026</em></p>
+        <div class="legal-meta">
+            <span>Last updated: <time datetime="2026-08-29">29 August 2026</time></span>
+        </div>
+    </header>
 
-        <h2>1. Introduction</h2>
-        <p>
-            Welcome to INCI Preferences ("Service", "we", "our", "us"), a web application 
-            available at <a href="https://incipreferences.app">incipreferences.app</a>. 
-            These Terms of Service ("Terms") govern your use of our Service. By accessing 
-            or using the Service, you agree to be bound by these Terms.
-        </p>
-        <p>
-            If you do not agree to these Terms, please do not use the Service.
-        </p>
+    <nav class="legal-toc" aria-label="Table of contents">
+        <h2>Contents</h2>
+        <ol>
+            <li><a href="#introduction">Introduction</a></li>
+            <li><a href="#provider">Service provider</a></li>
+            <li><a href="#description">Description of the Service</a></li>
+            <li><a href="#eligibility">Eligibility</a></li>
+            <li><a href="#registration">Account registration</a></li>
+            <li><a href="#free">Free service</a></li>
+            <li><a href="#user-content">User-generated content</a></li>
+            <li><a href="#acceptable-use">Acceptable use</a></li>
+            <li><a href="#intellectual-property">Intellectual property</a></li>
+            <li><a href="#informational">Informational nature of the Service</a></li>
+            <li><a href="#accuracy">Accuracy of information</a></li>
+            <li><a href="#liability">Limitation of liability</a></li>
+            <li><a href="#third-party">Third-party services</a></li>
+            <li><a href="#data-protection">Data protection</a></li>
+            <li><a href="#termination">Account termination</a></li>
+            <li><a href="#availability">Service availability</a></li>
+            <li><a href="#changes">Changes to the Terms</a></li>
+            <li><a href="#governing-law">Governing law</a></li>
+            <li><a href="#consumer-rights">Consumer rights</a></li>
+            <li><a href="#severability">Severability</a></li>
+            <li><a href="#contact">Contact</a></li>
+            <li><a href="#entire-agreement">Entire agreement</a></li>
+        </ol>
+    </nav>
 
-        <h2>2. Service Provider</h2>
-        <p>The Service is provided jointly by:</p>
-        <ul>
-            <li><strong>Łucja Leśna</strong></li>
-            <li><strong>Oliwia Natzke</strong></li>
-        </ul>
-        <p>
-            Contact: <a href="mailto:kontakt@incipreferences.app">kontakt@incipreferences.app</a>
-        </p>
+    <div class="legal-body">
 
-        <h2>3. Description of Service</h2>
-        <p>
-            INCI Preferences is a web application that provides personalized analysis of cosmetic 
-            product ingredients based on user-defined preferences. The main features include:
-        </p>
-        <ul>
-            <li>Personalized ingredient classification (safe, moderate, unsafe)</li>
-            <li>Cosmetic product database with search and filtering</li>
-            <li>Personalized product recommendations</li>
-            <li>Similar product finder (dupes)</li>
-            <li>OCR-based ingredient scanning from photos</li>
-            <li>Favorite products management</li>
-        </ul>
+        <section class="legal-section" id="introduction">
+            <h2>Introduction</h2>
+            <p>
+                Welcome to INCI Preferences (“Service”, “we”, “our”, “us”), a web application
+                available at <a href="https://incipreferences.app">incipreferences.app</a>.
+                These Terms of Service (“Terms”) govern your use of our Service. By accessing
+                or using the Service, you agree to be bound by these Terms.
+            </p>
+            <p>
+                If you do not agree to these Terms, please do not use the Service.
+            </p>
+        </section>
 
-        <h2>4. Eligibility</h2>
-        <p>
-            To use the Service, you must be at least <strong>16 years old</strong>. 
-            By using the Service, you represent and warrant that you meet this age requirement.
-        </p>
-        <p>
-            If you are under 16, you may only use the Service with the consent and supervision 
-            of a parent or legal guardian.
-        </p>
+        <section class="legal-section" id="provider">
+            <h2>Service provider</h2>
+            <p>The Service is provided jointly by Łucja Leśna and Oliwia Natzke.</p>
+            <dl class="legal-contact">
+                <dt>Contact</dt>
+                <dd><a href="mailto:contact@incipreferences.app">contact@incipreferences.app</a></dd>
+            </dl>
+        </section>
 
-        <h2>5. Account Registration</h2>
-        <p>
-            To access certain features of the Service, you must create an account. When registering, you agree to:
-        </p>
-        <ul>
-            <li>Provide accurate and complete information</li>
-            <li>Choose a secure password</li>
-            <li>Keep your login credentials confidential</li>
-            <li>Take responsibility for all activities that occur under your account</li>
-            <li>Notify us immediately of any unauthorized access to your account</li>
-        </ul>
-        <p>
-            We reserve the right to suspend or terminate accounts that provide false information 
-            or violate these Terms.
-        </p>
+        <section class="legal-section" id="description">
+            <h2>Description of the Service</h2>
+            <p>
+                INCI Preferences is a web application that provides personalised analysis of
+                cosmetic product ingredients based on user-defined preferences. The main features
+                include:
+            </p>
+            <ul>
+                <li>personalised ingredient classification (safe, moderate, unsafe),</li>
+                <li>a cosmetic product database with search and filtering,</li>
+                <li>personalised product recommendations,</li>
+                <li>a similar product finder (dupes),</li>
+                <li>OCR-based ingredient scanning from photos,</li>
+                <li>favourite products management.</li>
+            </ul>
+        </section>
 
-        <h2>6. Free Service</h2>
-        <p>
-            The Service is provided <strong>free of charge</strong>. We do not charge any fees 
-            for account registration, using the analysis features, or accessing recommendations.
-        </p>
-        <p>
-            We reserve the right to introduce paid features in the future. Users will be notified 
-            in advance of any changes to the pricing model.
-        </p>
+        <section class="legal-section" id="eligibility">
+            <h2>Eligibility</h2>
+            <p>
+                To use the Service, you must be at least <strong>16 years old</strong>. By using
+                the Service, you represent and warrant that you meet this age requirement.
+            </p>
+            <p>
+                If you are under 16, you may only use the Service with the consent and supervision
+                of a parent or legal guardian.
+            </p>
+        </section>
 
-        <h2>7. User-Generated Content</h2>
-        <p>
-            Users may add information about cosmetic products to the Service, including product 
-            names, brands, and ingredient lists. By submitting this content, you:
-        </p>
-        <ul>
-            <li>Confirm that you have the right to submit this information</li>
-            <li>Grant us a non-exclusive, royalty-free license to display, distribute, and use 
-                the content within the Service</li>
-            <li>Understand that submitted content becomes publicly available in the Service</li>
-            <li>Agree not to submit false, misleading, or inaccurate information</li>
-        </ul>
-        <p>
-            We reserve the right to remove content that violates these Terms without prior notice.
-        </p>
+        <section class="legal-section" id="registration">
+            <h2>Account registration</h2>
+            <p>
+                To access certain features of the Service, you must create an account. When
+                registering, you agree to:
+            </p>
+            <ul>
+                <li>provide accurate and complete information,</li>
+                <li>choose a secure password,</li>
+                <li>keep your login credentials confidential,</li>
+                <li>take responsibility for all activities that occur under your account,</li>
+                <li>notify us immediately of any unauthorised access to your account.</li>
+            </ul>
+            <p>
+                We reserve the right to suspend or terminate accounts that provide false
+                information or violate these Terms.
+            </p>
+        </section>
 
-        <h2>8. Acceptable Use</h2>
-        <p>When using the Service, you agree <strong>NOT</strong> to:</p>
-        <ul>
-            <li>Use the Service for any illegal purposes</li>
-            <li>Attempt to gain unauthorized access to the Service or its systems</li>
-            <li>Interfere with or disrupt the Service or its servers</li>
-            <li>Use automated systems (bots, scrapers, crawlers) without our permission</li>
-            <li>Submit spam, malicious content, or offensive material</li>
-            <li>Impersonate other users or entities</li>
-            <li>Collect data about other users without their consent</li>
-            <li>Reverse engineer, decompile, or attempt to extract source code of the Service</li>
-            <li>Use the Service to violate the intellectual property rights of others</li>
-            <li>Overload the Service infrastructure with excessive requests</li>
-        </ul>
+        <section class="legal-section" id="free">
+            <h2>Free service</h2>
+            <p>
+                The Service is provided <strong>free of charge</strong>. We do not charge any fees
+                for account registration, using the analysis features, or accessing recommendations.
+            </p>
+            <p>
+                We reserve the right to introduce paid features in the future. Users will be
+                notified in advance of any changes to the pricing model.
+            </p>
+        </section>
 
-        <h2>9. Intellectual Property</h2>
-        <p>
-            The Service, including its design, code, algorithms, and features, is the property 
-            of the Service providers and is protected by applicable intellectual property laws.
-        </p>
-        <p>
-            Product information (names, brands, ingredient lists) submitted by users remains 
-            in the public domain within the Service and may be used by other users for 
-            personal analysis purposes.
-        </p>
+        <section class="legal-section" id="user-content">
+            <h2>User-generated content</h2>
+            <p>
+                Users may add information about cosmetic products to the Service, including product
+                names, brands, and ingredient lists. By submitting this content, you:
+            </p>
+            <ul>
+                <li>confirm that you have the right to submit this information,</li>
+                <li>
+                    grant us a non-exclusive, royalty-free licence to display, distribute, and use
+                    the content within the Service,
+                </li>
+                <li>understand that submitted content becomes publicly available in the Service,</li>
+                <li>agree not to submit false, misleading, or inaccurate information.</li>
+            </ul>
+            <p>
+                We reserve the right to remove content that violates these Terms without prior
+                notice.
+            </p>
+        </section>
 
-        <h2>10. Informational Nature of the Service</h2>
-        <p>
-            <strong>IMPORTANT:</strong> INCI Preferences is an <strong>informational and 
-            educational tool</strong>. The Service:
-        </p>
-        <ul>
-            <li>Does <strong>NOT</strong> provide medical, dermatological, or professional advice</li>
-            <li>Does <strong>NOT</strong> replace consultation with a qualified healthcare professional</li>
-            <li>Does <strong>NOT</strong> guarantee the accuracy of ingredient safety assessments</li>
-            <li>Analyses are based on user-defined preferences, not scientific studies</li>
-        </ul>
-        <p>
-            <strong>If you experience skin problems, allergic reactions, or have concerns about 
-            cosmetic products, consult a qualified dermatologist or healthcare provider.</strong>
-        </p>
+        <section class="legal-section" id="acceptable-use">
+            <h2>Acceptable use</h2>
+            <p>When using the Service, you agree <strong>not</strong> to:</p>
+            <ul>
+                <li>use the Service for any illegal purposes,</li>
+                <li>attempt to gain unauthorised access to the Service or its systems,</li>
+                <li>interfere with or disrupt the Service or its servers,</li>
+                <li>use automated systems (bots, scrapers, crawlers) without our permission,</li>
+                <li>submit spam, malicious content, or offensive material,</li>
+                <li>impersonate other users or entities,</li>
+                <li>collect data about other users without their consent,</li>
+                <li>reverse engineer, decompile, or attempt to extract the source code of the Service,</li>
+                <li>use the Service to violate the intellectual property rights of others,</li>
+                <li>overload the Service infrastructure with excessive requests.</li>
+            </ul>
+        </section>
 
-        <h2>11. Accuracy of Information</h2>
-        <p>
-            While we strive to maintain accurate product information, we cannot guarantee that all 
-            data in the Service is complete, accurate, or up-to-date. Product formulations may 
-            change over time. Always verify ingredients on the actual product packaging.
-        </p>
-        <p>
-            User-submitted product information has not been verified by us. We are not responsible 
-            for the accuracy of user-generated content.
-        </p>
+        <section class="legal-section" id="intellectual-property">
+            <h2>Intellectual property</h2>
+            <p>
+                The Service, including its design, code, algorithms, and features, is the property
+                of the Service providers and is protected by applicable intellectual property laws.
+            </p>
+            <p>
+                Product information (names, brands, ingredient lists) submitted by users remains
+                in the public domain within the Service and may be used by other users for personal
+                analysis purposes.
+            </p>
+        </section>
 
-        <h2>12. Limitation of Liability</h2>
-        <p>
-            To the maximum extent permitted by law, we shall not be liable for:
-        </p>
-        <ul>
-            <li>Any allergic reactions, skin issues, or health problems resulting from the use 
-                of cosmetic products analyzed through the Service</li>
-            <li>Inaccurate or outdated ingredient information</li>
-            <li>Service interruptions, technical errors, or data loss</li>
-            <li>Actions taken based on Service recommendations</li>
-            <li>Third-party services integrated with the Service (hosting, database providers)</li>
-            <li>Indirect, incidental, or consequential damages</li>
-        </ul>
-        <p>
-            The Service is provided "AS IS" and "AS AVAILABLE" without warranties of any kind, 
-            either express or implied.
-        </p>
+        <section class="legal-section" id="informational">
+            <h2>Informational nature of the Service</h2>
+            <div class="legal-callout">
+                <p>
+                    <strong>Important:</strong> INCI Preferences is an
+                    <strong>informational and educational tool</strong>. The Service:
+                </p>
+                <ul>
+                    <li>does <strong>not</strong> provide medical, dermatological, or professional advice,</li>
+                    <li>does <strong>not</strong> replace consultation with a qualified healthcare professional,</li>
+                    <li>does <strong>not</strong> guarantee the accuracy of ingredient safety assessments,</li>
+                    <li>bases its analyses on user-defined preferences, not on scientific studies.</li>
+                </ul>
+                <p>
+                    <strong>
+                        If you experience skin problems, allergic reactions, or have concerns about
+                        cosmetic products, consult a qualified dermatologist or healthcare provider.
+                    </strong>
+                </p>
+            </div>
+        </section>
 
-        <h2>13. Third-Party Services</h2>
-        <p>
-            The Service uses third-party services for hosting, database management, and content 
-            delivery (Railway.app, Supabase, Cloudflare). Your use of the Service is also subject 
-            to the terms and privacy policies of these third-party providers.
-        </p>
+        <section class="legal-section" id="accuracy">
+            <h2>Accuracy of information</h2>
+            <p>
+                While we strive to maintain accurate product information, we cannot guarantee that
+                all data in the Service is complete, accurate, or up to date. Product formulations
+                may change over time. Always verify ingredients on the actual product packaging.
+            </p>
+            <p>
+                User-submitted product information has not been verified by us. We are not
+                responsible for the accuracy of user-generated content.
+            </p>
+        </section>
 
-        <h2>14. Data Protection</h2>
-        <p>
-            Your privacy is important to us. Please review our 
-            <a href="{% url 'privacy' %}">Privacy Policy</a> to understand how we collect, 
-            use, and protect your personal data in accordance with GDPR.
-        </p>
+        <section class="legal-section" id="liability">
+            <h2>Limitation of liability</h2>
+            <p>To the maximum extent permitted by law, we shall not be liable for:</p>
+            <ul>
+                <li>
+                    any allergic reactions, skin issues, or health problems resulting from the use
+                    of cosmetic products analysed through the Service,
+                </li>
+                <li>inaccurate or outdated ingredient information,</li>
+                <li>service interruptions, technical errors, or data loss,</li>
+                <li>actions taken based on Service recommendations,</li>
+                <li>third-party services integrated with the Service (hosting, database providers),</li>
+                <li>indirect, incidental, or consequential damages.</li>
+            </ul>
+            <p>
+                The Service is provided “as is” and “as available” without warranties of any kind,
+                either express or implied.
+            </p>
+        </section>
 
-        <h2>15. Account Termination</h2>
-        <p>
-            You may delete your account at any time through your profile settings. Upon deletion, 
-            all your personal data will be permanently removed from our database.
-        </p>
-        <p>
-            We reserve the right to suspend or terminate your account if you violate these Terms, 
-            engage in fraudulent activities, or misuse the Service.
-        </p>
+        <section class="legal-section" id="third-party">
+            <h2>Third-party services</h2>
+            <p>
+                The Service uses third-party providers for hosting, database management, content
+                delivery, and email forwarding (Railway, Supabase, Cloudflare). Your use of the
+                Service is also subject to the terms and privacy policies of these providers.
+            </p>
+        </section>
 
-        <h2>16. Service Availability</h2>
-        <p>
-            While we strive to maintain the Service availability at all times, we do not guarantee 
-            uninterrupted access. The Service may be temporarily unavailable due to:
-        </p>
-        <ul>
-            <li>Scheduled maintenance</li>
-            <li>Technical issues</li>
-            <li>Third-party service outages</li>
-            <li>Circumstances beyond our control</li>
-        </ul>
-        <p>
-            We reserve the right to modify, suspend, or discontinue the Service at any time without prior notice.
-        </p>
+        <section class="legal-section" id="data-protection">
+            <h2>Data protection</h2>
+            <p>
+                Your privacy is important to us. Please review our
+                <a href="{% url 'privacy' %}">Privacy Policy</a> to understand how we collect,
+                use, and protect your personal data in accordance with the GDPR.
+            </p>
+        </section>
 
-        <h2>17. Changes to the Terms</h2>
-        <p>
-            We reserve the right to modify these Terms at any time. Significant changes will be 
-            announced on the Service. Continued use of the Service after changes are posted 
-            constitutes acceptance of the new Terms.
-        </p>
-        <p>
-            We recommend reviewing these Terms periodically to stay informed of any updates.
-        </p>
+        <section class="legal-section" id="termination">
+            <h2>Account termination</h2>
+            <p>
+                You may delete your account at any time through your profile settings. Upon
+                deletion, all your personal data is permanently removed from our database.
+            </p>
+            <p>
+                We reserve the right to suspend or terminate your account if you violate these
+                Terms, engage in fraudulent activities, or misuse the Service.
+            </p>
+        </section>
 
-        <h2>18. Governing Law</h2>
-        <p>
-            These Terms are governed by the laws of Poland and applicable European Union regulations, 
-            without regard to conflict of law principles.
-        </p>
-        <p>
-            Any disputes arising from the use of the Service shall be resolved by the competent 
-            courts in Poland, unless mandatory consumer protection laws provide otherwise.
-        </p>
+        <section class="legal-section" id="availability">
+            <h2>Service availability</h2>
+            <p>
+                While we strive to keep the Service available at all times, we do not guarantee
+                uninterrupted access. The Service may be temporarily unavailable due to:
+            </p>
+            <ul>
+                <li>scheduled maintenance,</li>
+                <li>technical issues,</li>
+                <li>third-party service outages,</li>
+                <li>circumstances beyond our control.</li>
+            </ul>
+            <p>
+                We reserve the right to modify, suspend, or discontinue the Service at any time
+                without prior notice.
+            </p>
+        </section>
 
-        <h2>19. Consumer Rights</h2>
-        <p>
-            If you are a consumer in the European Union, you retain all rights granted to you 
-            under applicable consumer protection laws, which cannot be waived or limited by these Terms.
-        </p>
-        <p>
-            You have the right to submit complaints to consumer protection authorities in your 
-            country of residence.
-        </p>
+        <section class="legal-section" id="changes">
+            <h2>Changes to the Terms</h2>
+            <p>
+                We reserve the right to modify these Terms at any time. Significant changes will be
+                announced in the Service. Continued use of the Service after changes are posted
+                constitutes acceptance of the new Terms.
+            </p>
+            <p>
+                We recommend reviewing these Terms periodically to stay informed of any updates.
+            </p>
+        </section>
 
-        <h2>20. Severability</h2>
-        <p>
-            If any provision of these Terms is found to be invalid or unenforceable, the remaining 
-            provisions shall continue in full force and effect.
-        </p>
+        <section class="legal-section" id="governing-law">
+            <h2>Governing law</h2>
+            <p>
+                These Terms are governed by the laws of Poland and applicable European Union
+                regulations, without regard to conflict of law principles.
+            </p>
+            <p>
+                Any disputes arising from the use of the Service shall be resolved by the competent
+                courts in Poland, unless mandatory consumer protection laws provide otherwise.
+            </p>
+        </section>
 
-        <h2>21. Contact</h2>
-        <p>
-            For questions regarding these Terms of Service, please contact us:
-        </p>
-        <ul>
-            <li>Email: <a href="mailto:kontakt@incipreferences.app">kontakt@incipreferences.app</a></li>
-            <li>Service address: <a href="https://incipreferences.app">https://incipreferences.app</a></li>
-        </ul>
+        <section class="legal-section" id="consumer-rights">
+            <h2>Consumer rights</h2>
+            <p>
+                If you are a consumer in the European Union, you retain all rights granted to you
+                under applicable consumer protection laws, which cannot be waived or limited by
+                these Terms.
+            </p>
+            <p>
+                You have the right to submit complaints to consumer protection authorities in your
+                country of residence.
+            </p>
+        </section>
 
-        <h2>22. Entire Agreement</h2>
-        <p>
-            These Terms, together with our <a href="{% url 'privacy' %}">Privacy Policy</a>, 
-            constitute the entire agreement between you and the Service providers regarding your 
-            use of the Service.
-        </p>
+        <section class="legal-section" id="severability">
+            <h2>Severability</h2>
+            <p>
+                If any provision of these Terms is found to be invalid or unenforceable, the
+                remaining provisions shall continue in full force and effect.
+            </p>
+        </section>
+
+        <section class="legal-section" id="contact">
+            <h2>Contact</h2>
+            <p>For questions regarding these Terms of Service, please contact us:</p>
+            <dl class="legal-contact">
+                <dt>Email</dt>
+                <dd><a href="mailto:contact@incipreferences.app">contact@incipreferences.app</a></dd>
+                <dt>Service address</dt>
+                <dd><a href="https://incipreferences.app">incipreferences.app</a></dd>
+            </dl>
+        </section>
+
+        <section class="legal-section" id="entire-agreement">
+            <h2>Entire agreement</h2>
+            <p>
+                These Terms, together with our <a href="{% url 'privacy' %}">Privacy Policy</a>,
+                constitute the entire agreement between you and the Service providers regarding
+                your use of the Service.
+            </p>
+        </section>
+
     </div>
-</section>
+</article>
 {% endblock %}

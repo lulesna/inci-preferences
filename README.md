@@ -13,6 +13,18 @@ Praca licencjacka, kierunek Informatyka, specjalność technologie sieciowe i ba
 
 **Live demo:** [incipreferences.app](https://incipreferences.app/)
 
+Zdecydowana większość funkcji (personalizowana klasyfikacja składników, rekomendacje, ulubione,
+kolorowanie kosmetyków wg profilu) jest dostępna dopiero po zalogowaniu. Żeby nie trzeba było
+zakładać konta, przygotowałyśmy konto pokazowe:
+
+| Login | Hasło |
+|-------|-------|
+| `testuser` | `testuser` |
+
+Konto jest współdzielone: jego nazwa, hasło i istnienie są zablokowane przed zmianą, a preferencje
+ustawione przez jednego odwiedzającego zobaczy następny. Do normalnego korzystania z serwisu warto
+założyć własne konto.
+
 ![Widok strony głównej](docs/screenshots/home.png)
 
 ---
@@ -124,25 +136,21 @@ Kosmetyki są klasyfikowane w czasie rzeczywistym poprzez porównanie ich skład
 | Technologia | Cel |
 |------------|-----|
 | **Docker** | Konteneryzacja aplikacji (non-root user, healthcheck, `--no-install-recommends`) |
-| **Railway** | Platforma hostingowa (auto-deploy z GitHub) |
-| **Supabase** | Managed PostgreSQL z connection poolingiem (port 6543) |
-| **GitHub Actions** | CI/CD pipeline (testy, security scan, Docker build, publikacja statyków na R2) |
-| **Porkbun** | Rejestracja domeny + DNS management |
-| **Cloudflare** | DNS, CDN, SSL |
-| **Cloudflare R2** | Hosting plików statycznych (CSS, JS, fonty, obrazy) |
+| **Railway** | Platforma hostingowa, region Amsterdam (auto-deploy z GitHub) |
+| **Supabase** | Managed PostgreSQL z connection poolingiem (port 6543), region Sztokholm |
+| **GitHub Actions** | CI/CD pipeline (testy, security scan, Docker build) |
+| **Porkbun** | Rejestracja domeny |
+| **Cloudflare** | DNS, CDN, SSL, Email Routing |
 
-#### Pliki statyczne na Cloudflare R2
+#### Pliki statyczne
 
-Włączane zmienną `USE_R2`. Przy `USE_R2=False` pliki serwuje whitenoise z kontenera. Przy `USE_R2=True` `STATIC_URL` wskazuje na publiczny
-adres bucketu, a `{% static %}` generuje adresy R2.
+Pliki statyczne serwuje **Whitenoise** bezpośrednio z kontenera aplikacji, za CDN-em Cloudflare.
 
-Wysyłkę plików robi job `Publish static files to R2` w GitHub Actions, po przejściu
-testów, na push do `main`. Dzięki temu klucze zapisu do R2 żyją wyłącznie jako
-GitHub Secrets.
-
-Zmienne środowiskowe aplikacji na Railway: `USE_R2=True` oraz `R2_PUBLIC_URL`.
-GitHub Secrets: `R2_PUBLIC_URL`, `R2_ACCOUNT_ID`, `R2_BUCKET_NAME`,
-`R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`. Wzór w `.env.example`.
+W kodzie znajduje się przygotowana, ale nieaktywna ścieżka alternatywna: hosting plików statycznych
+na Cloudflare R2, włączany zmienną `USE_R2`. Przy `USE_R2=True` `STATIC_URL` wskazuje na publiczny
+adres bucketu, a wysyłkę plików wykonuje opcjonalny job `Publish static files to R2`
+w GitHub Actions, który jest pomijany, dopóki sekrety R2 nie są skonfigurowane. Wzór zmiennych
+w `.env.example`.
 
 ### Testowanie i jakość kodu
 | Technologia | Cel                                                        |
@@ -158,7 +166,7 @@ GitHub Secrets: `R2_PUBLIC_URL`, `R2_ACCOUNT_ID`, `R2_BUCKET_NAME`,
 - CSRF Protection na wszystkich formularzach i żądaniach stanowych (POST/PUT/PATCH/DELETE)
 - Password hashing: PBKDF2 z SHA256 (Django default)
 - XSS prevention: escapowanie danych z API przed wstawieniem do DOM (`escapeHtml`), `textContent` zamiast `innerHTML` dla treści pochodzących od użytkowników
-- Content Security Policy (CSP): whitelista ograniczona do własnej domeny, bucketu R2 i CDN wymaganego przez Tesseract.js. Skrypty i style osadzone w szablonach wymagają obecnie `'unsafe-inline'` — wyniesienie tego kodu do osobnych plików i zdjęcie wyjątku jest w planach rozwoju
+- Content Security Policy (CSP): whitelista ograniczona do własnej domeny i CDN wymaganego przez Tesseract.js. Skrypty i style osadzone w szablonach wymagają obecnie `'unsafe-inline'` — wyniesienie tego kodu do osobnych plików i zdjęcie wyjątku jest w planach rozwoju
 - Rate limiting: throttling API (Django REST Framework) oraz blokada logowania po nieudanych próbach
 - Kontrola dostępu do katalogu: każdy zalogowany user może dodać nowy kosmetyk/składnik, ale edycja istniejącego wpisu trafia do kolejki moderacji i wymaga akceptacji administratora; usuwanie zarezerwowane wyłącznie dla adminów
 - HTTPS wymuszony w produkcji (Let's Encrypt via Cloudflare)
@@ -174,7 +182,7 @@ Automatyczny pipeline uruchamiany przy każdym push oraz pull request na branch 
 1. **Tests & Linting**: flake8 (błędy krytyczne blokują pipeline, pozostałe ostrzeżenia raportowane) oraz testy Django z bazą PostgreSQL w kontenerze
 2. **Security scan**: skanowanie zależności (safety) i kodu (bandit)
 3. **Docker build test**: weryfikacja poprawności Dockerfile'a z cache warstw
-4. **Publish static files to R2**: wysyłka plików statycznych na Cloudflare R2, tylko przy push na `main` i po przejściu testów
+4. **Publish static files to R2**: opcjonalny, pomijany dopóki sekrety R2 nie są ustawione (patrz „Pliki statyczne")
 5. **Deployment status**: potwierdzenie sukcesu, trigger dla Railway auto-deploy
 
 ---

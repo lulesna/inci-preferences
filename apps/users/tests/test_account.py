@@ -1,4 +1,4 @@
-from django.test import TestCase, Client
+from django.test import TestCase, Client, override_settings
 from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.urls import reverse
@@ -141,6 +141,73 @@ class UpdateAccountTest(TestCase):
 
         self.user.refresh_from_db()
         self.assertEqual(self.user.username, 'user1')
+
+
+@override_settings(DEMO_USERNAME='testuser')
+class DemoAccountProtectionTest(TestCase):
+    """Konto pokazowe ma publiczne dane logowania (README), więc nikt nie może
+    go przejąć ani usunąć."""
+
+    def setUp(self):
+        cache.clear()
+        self.client = Client()
+        self.demo = User.objects.create_user(username='testuser', password='testuser')
+        self.client.login(username='testuser', password='testuser')
+
+    def test_username_cannot_be_changed(self):
+        self.client.post(reverse('users:update_account'), {'username': 'przejete'})
+
+        self.demo.refresh_from_db()
+        self.assertEqual(self.demo.username, 'testuser')
+
+    def test_password_cannot_be_changed(self):
+        self.client.post(reverse('users:change_password'), {
+            'old_password': 'testuser',
+            'new_password1': 'NoweHaslo12345',
+            'new_password2': 'NoweHaslo12345',
+        })
+
+        self.demo.refresh_from_db()
+        self.assertTrue(self.demo.check_password('testuser'))
+
+    def test_account_cannot_be_deleted(self):
+        self.client.post(reverse('users:delete_account'))
+
+        self.assertTrue(User.objects.filter(username='testuser').exists())
+
+    def test_protection_is_case_insensitive(self):
+        # Nazwy różniące się wielkością liter to to samo konto, więc ochrona
+        # nie może zależeć od tego, jak zapisano ją w ustawieniach.
+        User.objects.filter(pk=self.demo.pk).update(username='TestUser')
+
+        self.client.post(reverse('users:update_account'), {'username': 'przejete'})
+
+        self.demo.refresh_from_db()
+        self.assertEqual(self.demo.username, 'TestUser')
+
+    def test_regular_account_is_unaffected(self):
+        zwykly = User.objects.create_user(username='zwykly', password='pass12345')
+        self.client.login(username='zwykly', password='pass12345')
+
+        self.client.post(reverse('users:update_account'), {'username': 'nowanazwa'})
+
+        zwykly.refresh_from_db()
+        self.assertEqual(zwykly.username, 'nowanazwa')
+
+
+@override_settings(DEMO_USERNAME='')
+class DemoProtectionDisabledTest(TestCase):
+
+    def test_empty_setting_disables_protection(self):
+        cache.clear()
+        user = User.objects.create_user(username='testuser', password='pass12345')
+        client = Client()
+        client.login(username='testuser', password='pass12345')
+
+        client.post(reverse('users:update_account'), {'username': 'nowanazwa'})
+
+        user.refresh_from_db()
+        self.assertEqual(user.username, 'nowanazwa')
 
 
 class DeleteAccountTest(TestCase):

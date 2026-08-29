@@ -1,153 +1,315 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Privacy Policy - INCI Preferences{% endblock %}
 
+{% block meta_description %}INCI Preferences privacy policy: what data we process, on what legal basis, for how long, and what rights users have.{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/legal.css' %}">
+{% endblock %}
+
 {% block content %}
-<section class="main-section">
-    <div style="max-width: 800px; margin: 0 auto; padding: 20px;">
+<article class="legal">
+
+    <header class="legal-header">
         <h1>Privacy Policy</h1>
-        <p><em>Last updated: July 29, 2026</em></p>
+        <div class="legal-meta">
+            <span>Last updated: <time datetime="2026-08-29">29 August 2026</time></span>
+            <a class="legal-lang" href="{% url 'privacy_pl' %}" hreflang="pl" lang="pl">Wersja polska</a>
+        </div>
+    </header>
 
-        <h2>1. Joint Data Controllers</h2>
-        <p>
-            The joint controllers of personal data processed within the INCI Preferences service
-            (hereinafter: "Service"), available at
-            <a href="https://incipreferences.app">incipreferences.app</a>, are:
-        </p>
-        <ul>
-            <li><strong>Łucja Leśna</strong></li>
-            <li><strong>Oliwia Natzke</strong></li>
-        </ul>
-        <p>
-            The joint controllers jointly determine the purposes and means of processing personal data
-            and share responsibility for ensuring compliance with the General Data Protection Regulation (GDPR).
-        </p>
-        <p>
-            <strong>Contact regarding privacy matters:</strong><br>
-            Email: <a href="mailto:kontakt@incipreferences.app">kontakt@incipreferences.app</a>
-        </p>
+    <nav class="legal-toc" aria-label="Table of contents">
+        <h2>Contents</h2>
+        <ol>
+            <li><a href="#controllers">Data controllers</a></li>
+            <li><a href="#scope">Scope of processed data</a></li>
+            <li><a href="#purposes">Purpose of processing</a></li>
+            <li><a href="#legal-basis">Legal basis for processing</a></li>
+            <li><a href="#retention">Data retention period</a></li>
+            <li><a href="#rights">Your rights</a></li>
+            <li><a href="#cookies">Cookies</a></li>
+            <li><a href="#recipients">Data recipients</a></li>
+            <li><a href="#transfers">Transfers outside the EEA</a></li>
+            <li><a href="#security">Data security</a></li>
+            <li><a href="#profiling">Automated decisions and profiling</a></li>
+            <li><a href="#user-content">Data entered by users</a></li>
+            <li><a href="#liability">Limitation of liability</a></li>
+            <li><a href="#changes">Changes to this policy</a></li>
+            <li><a href="#contact">Contact</a></li>
+        </ol>
+    </nav>
 
-        <h2>2. Scope of Processed Data</h2>
-        <p>The Service processes the following personal data:</p>
-        <ul>
-            <li><strong>Username</strong> - provided during registration</li>
-            <li><strong>Password</strong> - stored in encrypted form (PBKDF2 + SHA256 algorithm)</li>
-            <li><strong>Cosmetic preferences</strong> - list of ingredients marked as safe, moderate, or unsafe</li>
-            <li><strong>Favorite cosmetics list</strong></li>
-            <li><strong>Technical session data</strong> - session cookies enabling login functionality</li>
-        </ul>
+    <div class="legal-body">
 
-        <h2>3. Purpose of Data Processing</h2>
-        <p>Personal data is processed exclusively for the following purposes:</p>
-        <ul>
-            <li>Providing the cosmetic ingredient analysis service</li>
-            <li>Ensuring the functionality of personalized recommendations</li>
-            <li>Enabling login and account management</li>
-            <li>Ensuring the security of the Service</li>
-        </ul>
+        <section class="legal-section" id="controllers">
+            <h2>Data controllers</h2>
+            <p>
+                The joint controllers of personal data processed within the INCI Preferences
+                service (the “Service”), available at
+                <a href="https://incipreferences.app">incipreferences.app</a>, are Łucja Leśna
+                and Oliwia Natzke.
+            </p>
+            <p>
+                The joint controllers together determine the purposes and means of processing
+                personal data and share responsibility for compliance with the General Data
+                Protection Regulation (GDPR).
+            </p>
+            <dl class="legal-contact">
+                <dt>Privacy contact</dt>
+                <dd><a href="mailto:contact@incipreferences.app">contact@incipreferences.app</a></dd>
+            </dl>
+        </section>
 
-        <h2>4. Legal Basis for Processing</h2>
-        <p>
-            Data is processed based on Article 6(1)(b) of the GDPR
-            (performance of a contract for the provision of electronic services)
-            and Article 6(1)(a) of the GDPR (user consent expressed during registration).
-        </p>
+        <section class="legal-section" id="scope">
+            <h2>Scope of processed data</h2>
+            <p>The Service processes the following data:</p>
+            <ul>
+                <li><strong>Username</strong> – provided during registration</li>
+                <li>
+                    <strong>Password</strong> – stored only as an irreversible cryptographic hash
+                    (PBKDF2 with SHA256). We do not store passwords in plain text or in any
+                    reversibly encrypted form, and we cannot read them
+                </li>
+                <li><strong>Ingredient preferences</strong> – ingredients marked as safe, moderate, or unsafe</li>
+                <li><strong>List of favourite cosmetics</strong></li>
+                <li>
+                    <strong>Edit proposals</strong> – a proposed change to a cosmetic or ingredient
+                    is stored together with the identity of the person who submitted it, so that
+                    an administrator can review it
+                </li>
+                <li>
+                    <strong>IP address</strong> – recorded temporarily in the application cache on
+                    failed login attempts, to protect against brute-force attacks. The counter
+                    expires automatically after 5 minutes and is never written to the database
+                </li>
+                <li><strong>Technical session data</strong> – cookies described in the “Cookies” section</li>
+            </ul>
+            <p>
+                The Service <strong>does not require an email address</strong>, a name, or any
+                contact details. A username and a password are enough to create an account.
+            </p>
+        </section>
 
-        <h2>5. Data Retention Period</h2>
-        <p>
-            Personal data is stored for the duration of Service account usage.
-            Upon account deletion, all personal data is permanently removed from the database.
-        </p>
+        <section class="legal-section" id="purposes">
+            <h2>Purpose of processing</h2>
+            <p>Personal data is processed exclusively in order to:</p>
+            <ul>
+                <li>provide the cosmetic ingredient analysis service,</li>
+                <li>deliver personalised recommendations,</li>
+                <li>enable login and account management,</li>
+                <li>keep the Service secure, including protecting accounts against unauthorised access.</li>
+            </ul>
+        </section>
 
-        <h2>6. User Rights</h2>
-        <p>In relation to the processing of personal data, you have the right to:</p>
-        <ul>
-            <li>Access your personal data</li>
-            <li>Rectify (correct) your personal data</li>
-            <li>Erase your data (by deleting your account in your profile)</li>
-            <li>Restrict the processing of your data</li>
-            <li>Data portability</li>
-            <li>Object to processing</li>
-            <li>Withdraw consent to data processing</li>
-            <li>Lodge a complaint with the President of the Personal Data Protection Office (or your local supervisory authority)</li>
-        </ul>
-        <p>
-            To exercise the above rights, please contact us at:
-            <a href="mailto:kontakt@incipreferences.app">kontakt@incipreferences.app</a>
-        </p>
+        <section class="legal-section" id="legal-basis">
+            <h2>Legal basis for processing</h2>
+            <ul>
+                <li>
+                    <strong>Article 6(1)(b) GDPR</strong> – processing necessary for the performance
+                    of a contract for the provision of electronic services: maintaining the account,
+                    storing preferences and favourites, generating recommendations.
+                </li>
+                <li>
+                    <strong>Article 6(1)(f) GDPR</strong> – the controllers’ legitimate interest in
+                    keeping the Service secure: limiting failed login attempts and moderating
+                    user-submitted content.
+                </li>
+            </ul>
+        </section>
 
-        <h2>7. Cookies and Tracking Technologies</h2>
-        <p>The Service uses <strong>only essential technical cookies</strong>:</p>
-        <ul>
-            <li><strong>sessionid</strong> - identifier for the logged-in user session (Django)</li>
-            <li><strong>csrftoken</strong> - CSRF attack protection token</li>
-        </ul>
-        <p>
-            The Service <strong>does not use</strong> marketing, analytical, or advertising cookies.
-            We do not employ Google Analytics or any other tracking tools.
-        </p>
+        <section class="legal-section" id="retention">
+            <h2>Data retention period</h2>
+            <p>
+                Data is retained for as long as the account is in use. Deleting your account from
+                the profile panel permanently removes from the database: the user account, the
+                preference profile, ingredient markings, the favourites list, and any submitted
+                edit proposals.
+            </p>
+            <p>
+                This operation is irreversible – we keep no copies of that data after deletion.
+                The failed-login counter tied to an IP address expires on its own after 5 minutes.
+            </p>
+        </section>
 
-        <h2>8. Data Recipients</h2>
-        <p>Personal data is not shared with third parties, except for:</p>
-        <ul>
-            <li><strong>Hosting provider (Railway.app)</strong> - technical data necessary for Service operation</li>
-            <li><strong>Database provider (Supabase)</strong> - storage of application data</li>
-            <li><strong>Cloudflare</strong> - CDN and DDoS attack protection</li>
-        </ul>
-        <p>
-            The listed entities are obliged to maintain confidentiality and process data
-            solely for the purpose of providing services to the Service.
-        </p>
+        <section class="legal-section" id="rights">
+            <h2>Your rights</h2>
+            <p>In relation to the processing of your personal data, you have the right to:</p>
+            <ul>
+                <li>access your personal data,</li>
+                <li>rectify (correct) your personal data,</li>
+                <li>erase your data – directly, by deleting your account in the profile panel,</li>
+                <li>restrict processing,</li>
+                <li>data portability,</li>
+                <li>object to processing based on legitimate interest,</li>
+                <li>lodge a complaint with the President of the Personal Data Protection Office (UODO) or your local supervisory authority.</li>
+            </ul>
+            <p>
+                To exercise these rights, contact us at
+                <a href="mailto:contact@incipreferences.app">contact@incipreferences.app</a>.
+                We respond without undue delay and no later than one month from receiving a request.
+            </p>
+        </section>
 
-        <h2>9. Data Transfer Outside the EEA</h2>
-        <p>
-            Personal data is stored on servers located within the European Union.
-            In case of potential data transfer outside the EEA, it is carried out in accordance
-            with GDPR requirements (standard contractual clauses).
-        </p>
+        <section class="legal-section" id="cookies">
+            <h2>Cookies</h2>
+            <p>
+                The Service uses only cookies that are strictly necessary for it to function.
+                We do not use marketing, analytics, or advertising cookies – there is no Google
+                Analytics or any other tracking tool in the Service.
+            </p>
+            <div class="legal-table-wrap">
+                <table class="legal-table">
+                    <caption>Cookies set by the Service</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Name</th>
+                            <th scope="col">Purpose</th>
+                            <th scope="col">Retention</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>sessionid</code></td>
+                            <td>Identifier of the logged-in user session</td>
+                            <td>14 days</td>
+                        </tr>
+                        <tr>
+                            <td><code>csrftoken</code></td>
+                            <td>Token protecting forms against CSRF attacks</td>
+                            <td>1 year</td>
+                        </tr>
+                        <tr>
+                            <td><code>messages</code></td>
+                            <td>One-off interface notifications, e.g. confirmation that changes were saved</td>
+                            <td>Until the browser is closed</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p>
+                Because all of the above are strictly necessary to provide the service, storing
+                them does not require consent. You can delete or block cookies in your browser
+                settings – blocking them will, however, make it impossible to log in.
+            </p>
+        </section>
 
-        <h2>10. Data Security</h2>
-        <p>
-            To protect personal data, we implement the following measures:
-        </p>
-        <ul>
-            <li>Encrypted connections (HTTPS/TLS)</li>
-            <li>Password hashing with PBKDF2 and SHA256 algorithm</li>
-            <li>Protection against CSRF and XSS attacks</li>
-            <li>Content Security Policy (CSP)</li>
-            <li>Regular security updates</li>
-            <li>Data minimization principle</li>
-        </ul>
+        <section class="legal-section" id="recipients">
+            <h2>Data recipients</h2>
+            <p>
+                Personal data is never sold, nor shared with third parties for their own purposes.
+                We entrust it only to the infrastructure providers required to run the Service:
+            </p>
+            <ul>
+                <li><strong>Railway</strong> – application hosting (region: Amsterdam, Netherlands),</li>
+                <li><strong>Supabase</strong> – managed PostgreSQL database (region: Stockholm, Sweden),</li>
+                <li><strong>Cloudflare</strong> – DNS, CDN, DDoS protection, and forwarding of mail sent to our contact address,</li>
+                <li><strong>Google</strong> – the mailbox that receives correspondence sent to the Service’s contact address.</li>
+            </ul>
+            <p>
+                These entities process data solely on our instructions, to the extent necessary to
+                provide services to the Service, and are bound by confidentiality obligations.
+            </p>
+        </section>
 
-        <h2>11. Data Entered by Users</h2>
-        <p>
-            Users may add information about cosmetics to the Service (name, brand, ingredients).
-            This data <strong>is not considered personal data</strong> and is publicly available
-            in the Service. We kindly ask users not to include any personal information in these fields.
-        </p>
+        <section class="legal-section" id="transfers">
+            <h2>Transfers outside the EEA</h2>
+            <p>
+                The Service application and database run on servers located in the European Union –
+                in Amsterdam and Stockholm respectively. Account, preference, and favourites data
+                does not leave the EEA.
+            </p>
+            <p>
+                Cloudflare and Google, which handle the network layer and correspondence sent to our
+                contact address respectively, operate globally, so technical data and the content of
+                email messages may also be processed outside the European Economic Area.
+            </p>
+            <p>
+                Any such transfer takes place under standard contractual clauses approved by the
+                European Commission, which constitute appropriate safeguards within the meaning
+                of Article 46 GDPR.
+            </p>
+        </section>
 
-        <h2>12. Limitation of Liability</h2>
-        <p>
-            The Service is <strong>informational and educational in nature</strong>.
-            Cosmetic ingredient analyses and recommendations do not constitute medical or dermatological advice.
-            In case of skin problems or allergies, please consult a dermatologist.
-        </p>
+        <section class="legal-section" id="security">
+            <h2>Data security</h2>
+            <p>We apply the following technical measures to protect personal data:</p>
+            <ul>
+                <li>HTTPS/TLS encryption enforced across the whole Service,</li>
+                <li>passwords stored as PBKDF2 with SHA256 hashes,</li>
+                <li>CSRF protection on forms and output escaping against XSS,</li>
+                <li>Content Security Policy,</li>
+                <li>a limit on failed login attempts,</li>
+                <li>API rate limiting,</li>
+                <li>data minimisation – we collect only what the Service needs to work.</li>
+            </ul>
+        </section>
 
-        <h2>13. Changes to the Privacy Policy</h2>
-        <p>
-            We reserve the right to make changes to this Privacy Policy.
-            Users will be informed of significant changes through announcements on the Service.
-        </p>
+        <section class="legal-section" id="profiling">
+            <h2>Automated decisions and profiling</h2>
+            <p>
+                Cosmetic recommendations and safety colour markings are computed automatically,
+                based solely on the preferences a user has entered themselves. We do not build
+                profiles from behaviour, location, or data from other services.
+            </p>
+            <p>
+                This processing produces no legal effects concerning the user and does not
+                similarly significantly affect them within the meaning of Article 22 GDPR.
+            </p>
+        </section>
 
-        <h2>14. Contact</h2>
-        <p>
-            For matters concerning personal data protection and this Privacy Policy,
-            please contact us:
-        </p>
-        <ul>
-            <li>Email: <a href="mailto:kontakt@incipreferences.app">kontakt@incipreferences.app</a></li>
-            <li>Service address: <a href="https://incipreferences.app">https://incipreferences.app</a></li>
-        </ul>
-    </div>
-</section>
+        <section class="legal-section" id="user-content">
+            <h2>Data entered by users</h2>
+            <p>
+                Users may add information about cosmetics to the Service: name, brand, and
+                ingredient list. This content is publicly visible to all visitors and is not
+                attributed to a publicly displayed author.
+            </p>
+            <p>
+                Please do not enter any personal data into these fields – neither your own nor
+                anyone else’s.
+            </p>
+        </section>
+
+        <section class="legal-section" id="liability">
+            <h2>Limitation of liability</h2>
+            <div class="legal-callout">
+                <p>
+                    The Service is <strong>informational and educational in nature</strong>.
+                    Ingredient analyses and recommendations do not constitute medical or
+                    dermatological advice and are not a substitute for consulting a specialist.
+                </p>
+                <p>
+                    In case of skin problems, allergies, or doubts about tolerating an ingredient,
+                    please consult a dermatologist.
+                </p>
+            </div>
+        </section>
+
+        <section class="legal-section" id="changes">
+            <h2>Changes to this policy</h2>
+            <p>
+                We reserve the right to change this Privacy Policy. Users will be informed of
+                significant changes through an announcement in the Service. The date of the last
+                update is shown at the top of this document.
+            </p>
+        </section>
+
+        <section class="legal-section" id="contact">
+            <h2>Contact</h2>
+            <p>
+                For matters concerning personal data protection and this Privacy Policy, please
+                contact us:
+            </p>
+            <dl class="legal-contact">
+                <dt>Email</dt>
+                <dd><a href="mailto:contact@incipreferences.app">contact@incipreferences.app</a></dd>
+                <dt>Service address</dt>
+                <dd><a href="https://incipreferences.app">incipreferences.app</a></dd>
+            </dl>
+        </section>
+
+</div>
+</article>
 {% endblock %}

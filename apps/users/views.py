@@ -1,4 +1,5 @@
 from django import forms
+from django.conf import settings
 from django.contrib.auth.forms import PasswordChangeForm, UserCreationForm, UsernameField
 from django.shortcuts import render, redirect
 from django.contrib.auth import login, authenticate, logout
@@ -11,6 +12,23 @@ from django.core.cache import cache
 
 LOGIN_ATTEMPT_LIMIT = 5
 LOGIN_ATTEMPT_WINDOW = 300  # sekundy
+
+DEMO_LOCKED_MESSAGE = (
+    'This is a shared demo account. Its username and password are published in the '
+    'documentation, so they cannot be changed and the account cannot be deleted. '
+    'Register your own account to use these options.'
+)
+
+
+def is_demo_account(user):
+    """Czy to konto pokazowe, którego dane logowania są publiczne.
+
+    Login i hasło konta demo są podane w README, więc każdy odwiedzający mógłby
+    je przejąć, zmieniając hasło, albo zepsuć link w dokumentacji, zmieniając
+    nazwę. Widoki modyfikujące konto sprawdzają ten warunek przed zapisem.
+    """
+    demo_username = getattr(settings, 'DEMO_USERNAME', '')
+    return bool(demo_username) and user.username.lower() == demo_username.lower()
 
 
 class CustomUserCreationForm(UserCreationForm):
@@ -93,6 +111,10 @@ def logout_view(request):
 @login_required
 @require_POST
 def change_password(request):
+    if is_demo_account(request.user):
+        messages.error(request, DEMO_LOCKED_MESSAGE)
+        return redirect('profile')
+
     form = PasswordChangeForm(user=request.user, data=request.POST)
 
     if form.is_valid():
@@ -110,6 +132,10 @@ def change_password(request):
 @login_required
 def update_account(request):
     if request.method == 'POST':
+        if is_demo_account(request.user):
+            messages.error(request, DEMO_LOCKED_MESSAGE)
+            return redirect('profile')
+
         form = UsernameChangeForm(request.POST, instance=request.user)
 
         if form.is_valid():
@@ -126,6 +152,10 @@ def update_account(request):
 @login_required
 @require_POST
 def delete_account(request):
+    if is_demo_account(request.user):
+        messages.error(request, DEMO_LOCKED_MESSAGE)
+        return redirect('profile')
+
     user = request.user
     logout(request)
     user.delete()
