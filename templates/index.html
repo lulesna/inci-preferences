@@ -1,127 +1,96 @@
 {% extends "base.html" %}
+{% load static %}
 
-{% block title %}INCI Preferences{% endblock %}
+{% block title %}INCI Preferences | ingredient safety judged by your own skin{% endblock %}
+
+{% block meta_description %}Most ingredient databases give every substance one rating that everyone sees. Here you mark ingredients yourself and every product is coloured against your own list.{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/home.css' %}">
+{% endblock %}
 
 {% block content %}
-    <section class="main-section">
-        <h2>Search for cosmetics</h2>
-        <form class="search-form" action="{% url 'search' %}" method="GET">
+<section class="home-top">
+    <div>
+        <h2 class="home-headline">Ingredient safety judged by your skin, not by an average</h2>
+
+        <p class="home-lead">
+            Most ingredient databases give every substance one rating that everyone sees.
+            Skin doesn't work like that. Niacinamide sits on almost every list as safe, and
+            plenty of people with atopic skin still react to it.
+        </p>
+        <p class="home-lead">
+            So here <b>you decide</b>. Mark an ingredient once and every product in the catalogue
+            is coloured against your own list, not against someone else's average.
+        </p>
+
+        <form class="search-form home-search" action="{% url 'search' %}" method="GET">
             <div class="search-container">
-                <input
-                    type="text"
-                    name="q"
-                    class="search-input"
-                    placeholder="Search here..."
-                    required
-                    maxlength="200"
-                >
-                <button type="submit" class="search-btn">
-                    <span>Search</span>
-                </button>
+                <label for="home-search" class="visually-hidden">Search for a cosmetic</label>
+                <input type="text"
+                       id="home-search"
+                       name="q"
+                       class="search-input"
+                       placeholder="Search by product name or brand..."
+                       required
+                       maxlength="200">
+                <button type="submit" class="search-btn">Search</button>
             </div>
         </form>
-    </section>
+    </div>
 
-    <section class="info-section">
-        <h2>How does it work?</h2>
-        <ol class="steps-list">
-            <li>Search for a cosmetic and check its ingredients</li>
-            <li>After login in choose which ingredients suit you and which you wish to avoid</li>
-            <li>Add specific cosmetic and its ingredients</li>
-            <li>Look up items by categories</li>
-        </ol>
-    </section>
+    <div class="demo-card">
+        <p class="demo-title">One product, one person's profile</p>
+        <p class="demo-product">Hydrating Cream, ingredient list</p>
 
-    {% if user.is_authenticated %}
-    <section class="recommendations-section">
-        <h2>Recommended for You</h2>
-        <p style="color: var(--text); margin-bottom: 20px;">Based on your safe ingredients</p>
-        <div id="recommendations-list">
-            <p>Loading recommendations...</p>
+        <div class="demo-inci">
+            <span class="inci inci-safe">Aqua</span>
+            <span class="inci inci-safe">Glycerin</span>
+            <span class="inci inci-moderate">Niacinamide</span>
+            <span class="inci inci-neutral">Panthenol</span>
+            <span class="inci inci-unsafe">Parfum</span>
+            <span class="inci inci-neutral">Tocopherol</span>
         </div>
-    </section>
 
-    <script>
-    function escapeHtml(text) {
-        if (text === null || text === undefined) return '';
-        const div = document.createElement('div');
-        div.textContent = String(text);
-        return div.innerHTML;
-    }
+        <ul class="demo-legend">
+            <li><span class="legend-dot legend-safe"></span> Green: works for you</li>
+            <li><span class="legend-dot legend-moderate"></span> Amber: you use it carefully</li>
+            <li><span class="legend-dot legend-unsafe"></span> Red: you avoid it</li>
+            <li><span class="legend-dot legend-neutral"></span> Grey: you haven't decided yet</li>
+        </ul>
 
-    function formatCategory(text) {
-        if (!text) return '';
-        return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
-    }
+        <p class="demo-note">
+            Open the same cream on someone else's account and the colours can look completely
+            different. That is the whole idea: the catalogue is shared, the verdict is yours.
+        </p>
+    </div>
+</section>
 
-    async function loadRecommendations() {
-        try {
-            const response = await fetch('/api/cosmetics/recommended/');
-            const data = await response.json();
+{% if user.is_authenticated %}
+<section class="recommendations-section">
+    <h2>Recommended for you</h2>
+    <p>Products built only from ingredients you have already marked as safe.</p>
+    <div id="recommendations-list">
+        <p class="recommendations-note">Loading recommendations...</p>
+    </div>
+</section>
+{% else %}
+<section class="start-here">
+    <p>
+        Marking ingredients needs an account. If you would rather look around first, log in as
+        <code>testuser</code> with the password <code>testuser</code>. It is a shared demo profile
+        with preferences already set, so you can see the colours straight away.
+    </p>
+    <div class="start-actions">
+        <a class="start-primary" href="{% url 'users:register' %}">Create an account</a>
+        <a class="start-secondary" href="{% url 'users:login' %}">Log in</a>
+    </div>
+</section>
+{% endif %}
+{% endblock %}
 
-            const container = document.getElementById('recommendations-list');
-            container.innerHTML = '';
-
-            if (data.recommendations.length === 0) {
-                const p = document.createElement('p');
-                p.style.textAlign = 'center';
-                p.style.color = 'var(--text)';
-
-                p.appendChild(document.createTextNode('No recommendations yet. '));
-
-                const link = document.createElement('a');
-                link.href = '/profile/';
-                link.style.color = 'var(--main-pink)';
-                link.textContent = 'Set your ingredient preferences';
-                p.appendChild(link);
-
-                p.appendChild(document.createTextNode(' to get personalized recommendations!'));
-
-                container.appendChild(p);
-                return;
-            }
-
-            let html = '<div class="cosmetics-grid">';
-
-            data.recommendations.forEach(cosmetic => {
-                const escapedName = escapeHtml(cosmetic.name);
-                const escapedBrand = escapeHtml(cosmetic.brand);
-                const displayType = escapeHtml(formatCategory(cosmetic.product_type || cosmetic.subcategory || ''));
-                const displayCategory = escapeHtml(formatCategory(cosmetic.main_category));
-
-                const cosmeticId = typeof cosmetic.id === 'number' ? cosmetic.id : 0;
-                const safeCount = typeof cosmetic.safe_ingredients_count === 'number' ? cosmetic.safe_ingredients_count : 0;
-
-                html += `
-                    <div class="cosmetic-result-card safe">
-                        <div class="card-content">
-                            <h3>${escapedName}</h3>
-                            <p><strong>Brand:</strong> ${escapedBrand}</p>
-                            <p><strong>Category:</strong> ${displayCategory}</p>
-                            ${displayType ? `<p><strong>Type:</strong> ${displayType}</p>` : ''}
-                            <p><strong>Safe ingredients:</strong> ${safeCount}</p>
-                        </div>
-                        <a href="/cosmetic/${cosmeticId}/">View Details</a>
-                    </div>
-                `;
-            });
-
-            html += '</div>';
-            container.innerHTML = html;
-
-        } catch (error) {
-            const container = document.getElementById('recommendations-list');
-            container.innerHTML = '';
-            const p = document.createElement('p');
-            p.style.textAlign = 'center';
-            p.style.color = 'var(--text)';
-            p.textContent = 'Error loading recommendations.';
-            container.appendChild(p);
-        }
-    }
-
-    loadRecommendations();
-    </script>
-    {% endif %}
-
+{% block extra_js %}
+{% if user.is_authenticated %}
+<script src="{% static 'js/home.js' %}" defer></script>
+{% endif %}
 {% endblock %}
