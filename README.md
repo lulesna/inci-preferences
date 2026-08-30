@@ -25,7 +25,7 @@ Konto jest współdzielone: jego nazwa, hasło i istnienie są zablokowane przed
 ustawione przez jednego odwiedzającego zobaczy następny. Do normalnego korzystania z serwisu warto
 założyć własne konto.
 
-![Widok strony głównej](docs/screenshots/home.png)
+![Widok strony głównej](docs/screenshots/index.png)
 
 ---
 
@@ -165,9 +165,14 @@ Kosmetyki są klasyfikowane w czasie rzeczywistym poprzez porównanie ich skład
 | **Tesseract.js** | OCR w przeglądarce (WebAssembly) |
 | **Fetch API** | Asynchroniczne wywołania REST API |
 
-Arkusze stylów są podzielone wg odpowiedzialności: `style.css` (motyw i układ całego serwisu),
-`forms.css` (wspólne pola formularzy), `auth.css` (ekrany konta), `legal.css` (polityka prywatności
-i regulamin) oraz arkusze poszczególnych podstron.
+Arkusze stylów są podzielone wg odpowiedzialności: `style.css` (motyw, nagłówek, stopka i wspólne
+karty produktów), `forms.css` (pola formularzy), `auth.css` (ekrany konta), `home.css` (strona
+główna), `legal.css` (polityka prywatności i regulamin) oraz arkusze poszczególnych podstron.
+
+Typografia jest rozdzielona wg roli: KineksRound w nagłówkach, nawigacji i przyciskach, Nunito Sans
+w tekście ciągłym i polach formularzy. Oba kroje są hostowane lokalnie, bo CSP dopuszcza w
+`font-src` wyłącznie własną domenę. Nunito Sans jest krojem zmiennym, więc jeden plik na podzbiór
+znaków (`latin`, `latin-ext`) obsługuje całą skalę grubości.
 
 ### Infrastruktura i DevOps
 | Technologia        | Cel                                                                       |
@@ -211,7 +216,7 @@ tylko ten pierwszy plik.
 - Strony z danymi użytkownika (`/profile/`, `/favorites/`) chronione dekoratorem `@login_required`
 - Konto pokazowe zablokowane przed zmianą nazwy, hasła i usunięciem
 - XSS prevention: escapowanie danych z API przed wstawieniem do DOM (`escapeHtml`), `textContent` zamiast `innerHTML` dla treści pochodzących od użytkowników
-- Content Security Policy (CSP): whitelista ograniczona do własnej domeny i CDN wymaganego przez Tesseract.js. Ekrany konta, formularz dodawania kosmetyku i dokumenty prawne mają kod w osobnych plikach, ale pozostałe szablony nadal zawierają osadzone skrypty, więc wyjątek `'unsafe-inline'` jest wciąż potrzebny
+- Content Security Policy (CSP): whitelista ograniczona do własnej domeny i CDN wymaganego przez Tesseract.js. Strona główna, nawigacja, ekrany konta, formularz dodawania kosmetyku i dokumenty prawne mają kod w osobnych plikach; 17 pozostałych szablonów nadal zawiera osadzone skrypty, więc wyjątek `'unsafe-inline'` jest wciąż potrzebny
 - Rate limiting: throttling API (Django REST Framework) oraz blokada logowania po nieudanych próbach
 - Kontrola dostępu do katalogu: każdy zalogowany user może dodać nowy kosmetyk/składnik, ale edycja istniejącego wpisu trafia do kolejki moderacji i wymaga akceptacji administratora; usuwanie zarezerwowane wyłącznie dla adminów
 - HTTPS wymuszony w produkcji (Let's Encrypt via Cloudflare)

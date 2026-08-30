@@ -61,38 +61,45 @@
         return p;
     }
 
-    function wiersz(etykieta, wartosc) {
-        var p = document.createElement('p');
-        var mocny = document.createElement('strong');
-        mocny.textContent = etykieta + ': ';
-        p.appendChild(mocny);
-        p.appendChild(document.createTextNode(wartosc));
-        return p;
-    }
-
     // budowane przez DOM, nie innerHTML - nazwy kosmetyków pochodzą od użytkowników
     function karta(kosmetyk) {
         var element = document.createElement('div');
         element.className = 'cosmetic-result-card safe';
+
+        // liczba dopasowanych składników to jedyny powód, dla którego produkt
+        // tu trafił, więc idzie na odznakę zamiast w kolejny wiersz danych
+        var ile = typeof kosmetyk.safe_ingredients_count === 'number'
+            ? kosmetyk.safe_ingredients_count : 0;
+        var odznaka = document.createElement('span');
+        odznaka.className = 'safety-badge';
+        odznaka.textContent = ile + ' safe';
+        odznaka.title = ile + ' ingredients you marked as safe';
+        element.appendChild(odznaka);
 
         var tresc = document.createElement('div');
         tresc.className = 'card-content';
 
         var naglowek = document.createElement('h3');
         naglowek.textContent = kosmetyk.name || '';
+        naglowek.title = kosmetyk.name || '';
         tresc.appendChild(naglowek);
 
-        tresc.appendChild(wiersz('Brand', kosmetyk.brand || ''));
-        tresc.appendChild(wiersz('Category', zFormatowanaKategoria(kosmetyk.main_category)));
+        var marka = document.createElement('p');
+        marka.className = 'card-brand';
+        marka.textContent = kosmetyk.brand || '';
+        tresc.appendChild(marka);
 
-        var typ = zFormatowanaKategoria(kosmetyk.product_type || kosmetyk.subcategory || '');
-        if (typ) {
-            tresc.appendChild(wiersz('Type', typ));
+        var opis = [
+            zFormatowanaKategoria(kosmetyk.main_category),
+            zFormatowanaKategoria(kosmetyk.product_type || kosmetyk.subcategory || '')
+        ].filter(Boolean).join(' · ');
+
+        if (opis) {
+            var kategoria = document.createElement('p');
+            kategoria.className = 'card-category';
+            kategoria.textContent = opis;
+            tresc.appendChild(kategoria);
         }
-
-        var ile = typeof kosmetyk.safe_ingredients_count === 'number'
-            ? kosmetyk.safe_ingredients_count : 0;
-        tresc.appendChild(wiersz('Safe ingredients', String(ile)));
 
         element.appendChild(tresc);
 

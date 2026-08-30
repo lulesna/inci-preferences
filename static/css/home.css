@@ -342,3 +342,26 @@
         flex: 1;
     }
 }
+
+/* rekomendacje: marka i kategoria zamiast wiersza z etykietą */
+
+.recommendations-section h2 {
+    text-align: left;
+}
+
+.recommendations-section > p {
+    color: var(--text-soft);
+    font-size: 15px;
+    margin-bottom: 4px;
+}
+
+.cosmetic-result-card .card-brand {
+    color: var(--text);
+    font-weight: 600;
+    margin-bottom: 3px;
+}
+
+.cosmetic-result-card .card-category {
+    color: var(--text-muted);
+    font-size: 13px;
+}
