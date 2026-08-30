@@ -1,0 +1,10 @@
+# Zaleznosci wylacznie do pracy lokalnej
+#   pip install -r requirements-dev.txt
+
+-r requirements.txt
+
+# Automatyczne odswiezanie przegladarki przy zmianie plikow (DEBUG=True)
+django-browser-reload==1.18.0
+
+# Linter uzywany w CI
+flake8==7.1.1

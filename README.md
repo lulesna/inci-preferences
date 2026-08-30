@@ -48,7 +48,7 @@ apps/
 ├── ingredients/    - zarządzanie składnikami INCI (Ingredient model + REST API)
 ├── cosmetics/      - zarządzanie kosmetykami, parser, algorytmy dupes (Cosmetic model + ViewSet)
 ├── preferences/    - profile użytkowników, ulubione, algorytmy rekomendacji (UserProfile model)
-└── users/          - autentykacja, rejestracja, zarządzanie kontem
+└── users/          - autentykacja, rejestracja, reset hasła, zarządzanie kontem
 ```
 
 Backend eksponuje RESTful API oparte na Django REST Framework: ViewSety, custom actions, middleware do uwierzytelniania sesyjnego.
@@ -57,12 +57,39 @@ Frontend to SPA-like aplikacja w vanilla JavaScript: asynchroniczne wywołania `
 
 ---
 
+## Uruchomienie lokalne
+
+Baza w kontenerze, Django na hoście — `.env.example` jest już pod to skonfigurowany.
+
+```bash
+cp .env.example .env          # oczywiście do uzupełnienia
+docker compose up -d db
+pip install -r requirements-dev.txt
+python manage.py migrate
+python manage.py import_ingredients
+python manage.py runserver
+```
+
+Aplikacja wstaje na `http://localhost:8000`.
+
+Przy `DEBUG=True` działają dwa udogodnienia deweloperskie: `django-browser-reload` odświeża kartę
+przy każdej zmianie pliku, a wiadomości e-mail (link resetujący hasło) wypisują się w konsoli
+serwera zamiast iść przez SMTP.
+
+---
+
 ## Funkcjonalności
 
 ### System kont użytkowników
 - Rejestracja i logowanie oparte o Django Authentication
-- Rejestracja wymaga akceptacji Regulaminu i Polityki Prywatności
-- Zarządzanie profilem: zmiana loginu, zmiana hasła (`PasswordChangeForm` z walidatorami Django), usuwanie konta
+- Rejestracja wymaga akceptacji Regulaminu i Polityki Prywatności — zgoda jest polem formularza, więc wszystkie błędy pojawiają się w jednym przejściu, a nie po jednym na zgłoszenie
+- Nazwa użytkownika: litery (również z ogonkami), cyfry, `-` i `_`; zajętość sprawdzana bez rozróżniania wielkości liter
+- Wymagania hasła odhaczają się na żywo podczas pisania: minimum 8 znaków, mała litera, wielka litera, cyfra. Lista pod polem i walidator po stronie serwera korzystają z tej samej definicji reguł, więc nie mogą się rozjechać
+- Podgląd wpisywanego hasła, zachowanie loginu po nieudanej próbie, powrót pod adres z `?next=` po zalogowaniu
+- Adres e-mail jest **opcjonalny** i służy wyłącznie do resetu hasła. Konto bez niego działa w pełni, ale zapomnianego hasła nie da się odzyskać
+- Reset hasła na wbudowanych widokach Django: link ważny 24 godziny, jednorazowy; dla nieznanego adresu formularz pokazuje ten sam ekran potwierdzenia, żeby nie zdradzać, które konta istnieją
+- Po rejestracji użytkownik jest od razu zalogowany i trafia na profil
+- Zarządzanie profilem: zmiana nazwy i adresu e-mail, zmiana hasła, usunięcie konta
 - Hasła hashowane algorytmem PBKDF2 z SHA256 (domyślny hasher Django)
 - Session-based authentication z CSRF Protection
 - Ochrona przed brute-force: blokada logowania na 5 minut po 5 nieudanych próbach, licznik trzymany w cache aplikacji
@@ -84,6 +111,12 @@ Frontend to SPA-like aplikacja w vanilla JavaScript: asynchroniczne wywołania `
 - Listy zasobów w API stronicowane (`PageNumberPagination`, 50 pozycji na stronę)
 
 ![Wyszukiwanie z systemem filtrowania](docs/screenshots/search.png)
+
+### Dodawanie kosmetyków do katalogu
+- Kaskadowe listy kategorii budowane z definicji w modelu, więc formularz nie zaproponuje wartości, której model nie zna
+- Licznik rozpoznanych składników aktualizowany podczas wpisywania. Liczy dokładnie tym samym algorytmem co parser po stronie serwera, więc źle sformatowaną listę widać od razu
+- Parser dzieli skład na każdym przecinku poza tym stojącym między cyframi: `1,2-Hexanediol` zostaje jedną nazwą, a lista wklejona bez spacji po przecinkach nadal rozbija się poprawnie
+- Walidacja przy konkretnych polach i blokada podwójnego wysłania formularza
 
 ### Algorytm oceny bezpieczeństwa
 Kosmetyki są klasyfikowane w czasie rzeczywistym poprzez porównanie ich składu z profilem użytkownika:
@@ -121,7 +154,7 @@ Kosmetyki są klasyfikowane w czasie rzeczywistym poprzez porównanie ich skład
 | **Whitenoise** | Serwowanie plików statycznych |
 | **django-filter** | Zaawansowane filtrowanie API |
 | **django-csp** | Content Security Policy |
-| **psycopg2** | PostgreSQL adapter |
+| **psycopg2-binary** | PostgreSQL adapter |
 | **python-decouple** | Environment variables management |
 
 ### Frontend
@@ -132,15 +165,19 @@ Kosmetyki są klasyfikowane w czasie rzeczywistym poprzez porównanie ich skład
 | **Tesseract.js** | OCR w przeglądarce (WebAssembly) |
 | **Fetch API** | Asynchroniczne wywołania REST API |
 
+Arkusze stylów są podzielone wg odpowiedzialności: `style.css` (motyw i układ całego serwisu),
+`forms.css` (wspólne pola formularzy), `auth.css` (ekrany konta), `legal.css` (polityka prywatności
+i regulamin) oraz arkusze poszczególnych podstron.
+
 ### Infrastruktura i DevOps
-| Technologia | Cel |
-|------------|-----|
-| **Docker** | Konteneryzacja aplikacji (non-root user, healthcheck, `--no-install-recommends`) |
-| **Railway** | Platforma hostingowa, region Amsterdam (auto-deploy z GitHub) |
-| **Supabase** | Managed PostgreSQL z connection poolingiem (port 6543), region Sztokholm |
-| **GitHub Actions** | CI/CD pipeline (testy, security scan, Docker build) |
-| **Porkbun** | Rejestracja domeny |
-| **Cloudflare** | DNS, CDN, SSL, Email Routing |
+| Technologia        | Cel                                                                       |
+|--------------------|---------------------------------------------------------------------------|
+| **Docker**         | Konteneryzacja aplikacji: obraz 386 MB, użytkownik non-root, healthcheck. |
+| **Railway**        | Platforma hostingowa, region Amsterdam (auto-deploy z GitHub)             |
+| **Supabase**       | Managed PostgreSQL z connection poolingiem (port 6543), region Sztokholm  |
+| **GitHub Actions** | CI/CD pipeline (testy, security scan, Docker build)                       |
+| **Porkbun**        | Rejestracja domeny                                                        |
+| **Cloudflare**     | DNS, CDN, SSL, Email Routing                                              |
 
 #### Pliki statyczne
 
@@ -153,25 +190,33 @@ w GitHub Actions, który jest pomijany, dopóki sekrety R2 nie są skonfigurowan
 w `.env.example`.
 
 ### Testowanie i jakość kodu
-| Technologia | Cel                                                        |
-|------------|------------------------------------------------------------|
-| **Django TestCase** | Testy jednostkowe i integracyjne (106 testów w 4 modułach) |
-| **DRF APIClient** | Testy REST API                                             |
-| **flake8** | Linter jakości kodu                                        |
-| **bandit** | Skanowanie bezpieczeństwa kodu                             |
-| **safety** | Skanowanie zależności pod kątem CVE                        |
+| Technologia         | Cel                                                        |
+|---------------------|------------------------------------------------------------|
+| **Django TestCase** | Testy jednostkowe i integracyjne (150 testów w 4 modułach) |
+| **DRF APIClient**   | Testy REST API                                             |
+| **flake8**          | Linter jakości kodu                                        |
+| **bandit**          | Skanowanie bezpieczeństwa kodu                             |
+| **safety**          | Skanowanie zależności pod kątem CVE                        |
+
+Zależności produkcyjne są w `requirements.txt`, a narzędzia potrzebne wyłącznie lokalnie
+(`django-browser-reload`, `flake8`) w `requirements-dev.txt` - obraz produkcyjny i CI instalują
+tylko ten pierwszy plik.
 
 ### Bezpieczeństwo
 - Session-based authentication (Django Auth)
 - CSRF Protection na wszystkich formularzach i żądaniach stanowych (POST/PUT/PATCH/DELETE)
 - Password hashing: PBKDF2 z SHA256 (Django default)
+- Walidacja haseł: własny walidator złożoności (długość, mała i wielka litera, cyfra) obok wbudowanych `CommonPasswordValidator` i `UserAttributeSimilarityValidator`
+- Ochrona przed otwartym przekierowaniem: parametr `?next=` przechodzi przez `url_has_allowed_host_and_scheme`, więc nie da się nim wyprowadzić zalogowanego użytkownika na obcą domenę
+- Strony z danymi użytkownika (`/profile/`, `/favorites/`) chronione dekoratorem `@login_required`
+- Konto pokazowe zablokowane przed zmianą nazwy, hasła i usunięciem
 - XSS prevention: escapowanie danych z API przed wstawieniem do DOM (`escapeHtml`), `textContent` zamiast `innerHTML` dla treści pochodzących od użytkowników
-- Content Security Policy (CSP): whitelista ograniczona do własnej domeny i CDN wymaganego przez Tesseract.js. Skrypty i style osadzone w szablonach wymagają obecnie `'unsafe-inline'` — wyniesienie tego kodu do osobnych plików i zdjęcie wyjątku jest w planach rozwoju
+- Content Security Policy (CSP): whitelista ograniczona do własnej domeny i CDN wymaganego przez Tesseract.js. Ekrany konta, formularz dodawania kosmetyku i dokumenty prawne mają kod w osobnych plikach, ale pozostałe szablony nadal zawierają osadzone skrypty, więc wyjątek `'unsafe-inline'` jest wciąż potrzebny
 - Rate limiting: throttling API (Django REST Framework) oraz blokada logowania po nieudanych próbach
 - Kontrola dostępu do katalogu: każdy zalogowany user może dodać nowy kosmetyk/składnik, ale edycja istniejącego wpisu trafia do kolejki moderacji i wymaga akceptacji administratora; usuwanie zarezerwowane wyłącznie dla adminów
 - HTTPS wymuszony w produkcji (Let's Encrypt via Cloudflare)
 - Environment variables dla wszystkich danych wrażliwych
-- Docker non-root user, minimal image size (--no-install-recommends)
+- Docker non-root user
 
 ---
 
@@ -191,7 +236,7 @@ Automatyczny pipeline uruchamiany przy każdym push oraz pull request na branch 
 
 ### Kluczowe relacje
 
-  - `User` (Django) 1:1 `UserProfile` (extended profile z preferencjami)
+  - `User` (Django) 1:1 `UserProfile` (extended profile z preferencjami); adres e-mail jest opcjonalny i używany wyłącznie do resetu hasła
   - `UserProfile` M:N `Ingredient` (safe/moderate/unsafe, trzy niezależne relacje)
   - `UserProfile` M:N `Cosmetic` (favorites)
   - `Cosmetic` M:N `Ingredient` (skład produktu)
@@ -204,6 +249,7 @@ Automatyczny pipeline uruchamiany przy każdym push oraz pull request na branch 
 
 Zaplanowane kierunki dalszego rozwoju:
 
+  - Wyniesienie pozostałych osadzonych skryptów do plików i zdjęcie wyjątku `'unsafe-inline'` z CSP
   - Integracja z LLM (OpenAI API / Claude API): asystent kosmetyczny odpowiadający na pytania użytkowników
   - Rozszerzone algorytmy rekomendacji: collaborative filtering bazujący na preferencjach podobnych użytkowników
   - Aplikacja mobilna: React Native lub Flutter z natywnym OCR

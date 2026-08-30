@@ -1,0 +1,290 @@
+/* wspólne pola formularzy, używane przez auth.css i formularz kosmetyku */
+
+:root {
+    --form-ink: #2a2a2a;
+    --form-muted: #6a6a6a;
+    --form-border: rgba(130, 162, 132, 0.45);
+    --form-danger: #c2426c;
+    --form-danger-soft: #fdf3f6;
+    --form-mint-soft: #f3faf4;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.form-group label {
+    color: var(--form-ink);
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid var(--form-border);
+    border-radius: 12px;
+    font-size: 15px;
+    font-family: 'KineksRound', sans-serif;
+    color: var(--form-ink);
+    background: #ffffff;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 130px;
+    line-height: 1.55;
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+    color: var(--main-green);
+}
+
+.form-group input:hover,
+.form-group select:hover,
+.form-group textarea:hover {
+    border-color: var(--main-green);
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--lime);
+    box-shadow: 0 0 0 3px rgba(159, 213, 99, 0.25);
+}
+
+.form-group select {
+    cursor: pointer;
+    /* własna strzałka, bo natywna różniła się między przeglądarkami */
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%236a6a6a' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+    padding-right: 42px;
+}
+
+.field-hint {
+    color: var(--form-muted);
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.field-optional {
+    font-weight: 400;
+    font-size: 12.5px;
+    color: var(--form-muted);
+}
+
+.field-required {
+    color: var(--accent-dark);
+    font-weight: 700;
+}
+
+.field-error {
+    color: var(--form-danger);
+    font-size: 13px;
+    line-height: 1.45;
+    font-weight: 500;
+}
+
+.form-errors {
+    padding: 12px 16px;
+    background: var(--form-danger-soft);
+    border-left: 4px solid var(--accent-dark);
+    border-radius: 0 10px 10px 0;
+}
+
+.form-errors p {
+    color: var(--form-danger);
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.form-errors p + p {
+    margin-top: 4px;
+}
+
+.form-group.has-error label {
+    color: var(--form-danger);
+}
+
+.form-group.has-error input,
+.form-group.has-error select,
+.form-group.has-error textarea {
+    border-color: var(--form-danger);
+    background-color: var(--form-danger-soft);
+}
+
+.form-group.has-error input:focus,
+.form-group.has-error select:focus,
+.form-group.has-error textarea:focus {
+    border-color: var(--form-danger);
+    box-shadow: 0 0 0 3px rgba(194, 66, 108, 0.18);
+}
+
+/* zielony, po najechaniu różowy - tak jak .search-btn i .login-btn */
+.btn-primary {
+    width: 100%;
+    padding: 14px 32px;
+    background-color: var(--lime);
+    color: #ffffff;
+    border: none;
+    border-radius: 50px;
+    font-size: 16px;
+    font-weight: 700;
+    font-family: 'KineksRound', sans-serif;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background-color: var(--main-pink);
+}
+
+.btn-primary:focus-visible {
+    outline: 3px solid var(--accent-dark);
+    outline-offset: 2px;
+}
+
+.btn-primary:active:not(:disabled) {
+    background-color: var(--accent-dark);
+}
+
+.btn-primary:disabled {
+    background-color: var(--main-green);
+    cursor: progress;
+}
+
+/* jak #add-cosmetic-form w style.css. text-align jawnie, bo .main-section
+   centruje wszystko, co przy formularzu jest nieczytelne */
+.form-card {
+    max-width: 660px;
+    margin: 24px auto 0;
+    padding: 32px 36px;
+    background: var(--card-bg);
+    border: 2px solid var(--lime);
+    border-radius: 20px;
+    text-align: left;
+    color: var(--form-ink);
+}
+
+.form-card .form-group {
+    margin-bottom: 20px;
+}
+
+/* hidden to display:none z arkusza przeglądarki, więc przegrywa z display:flex */
+.form-group[hidden] {
+    display: none;
+}
+
+/* .main-section p wygrywa specyficznością z .field-hint i narzuca 18 px oraz
+   wyśrodkowanie, stąd te dodatkowe reguły */
+.form-card .field-hint,
+.form-card .field-error,
+.form-card .form-lead,
+.form-card .form-errors p {
+    max-width: none;
+    margin-left: 0;
+    margin-right: 0;
+}
+
+.form-card .field-hint,
+.form-card .field-error {
+    font-size: 13px;
+}
+
+.form-card .form-lead {
+    font-size: 14px;
+}
+
+.form-card .field-hint a,
+.form-card .form-lead a {
+    color: var(--accent-dark);
+    font-weight: 600;
+}
+
+.form-lead {
+    color: var(--form-muted);
+    font-size: 14px;
+    line-height: 1.55;
+    margin-bottom: 24px;
+}
+
+.form-card .btn-primary {
+    margin-top: 4px;
+}
+
+/* jeden składnik z całej wklejonej listy zwykle znaczy, że brak przecinków */
+.ingredient-count-warning {
+    color: var(--accent-dark);
+    font-weight: 500;
+}
+
+#result-message:not(:empty) {
+    margin-top: 18px;
+}
+
+.form-empty-state {
+    text-align: center;
+    max-width: 460px;
+}
+
+.form-card.form-empty-state p {
+    color: var(--form-ink);
+    font-size: 15px;
+    line-height: 1.55;
+    max-width: none;
+    margin: 0 auto 18px;
+}
+
+.form-empty-state .field-hint {
+    margin: 16px 0 0;
+}
+
+.form-empty-state a {
+    color: var(--accent-dark);
+    font-weight: 600;
+}
+
+/* <a> nie jest <button>, więc musi sam wyrównać tekst */
+.btn-link {
+    display: inline-block;
+    width: auto;
+    padding: 13px 34px;
+    text-align: center;
+    text-decoration: none;
+}
+
+.form-empty-state .btn-link {
+    color: #ffffff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .form-group input,
+    .form-group select,
+    .form-group textarea,
+    .btn-primary {
+        transition: none;
+    }
+}
+
+@media (max-width: 640px) {
+    .form-card {
+        padding: 24px 20px;
+        border-radius: 16px;
+    }
+
+    /* 16px zapobiega przybliżaniu widoku przez Safari przy wejściu w pole. */
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        font-size: 16px;
+    }
+}
