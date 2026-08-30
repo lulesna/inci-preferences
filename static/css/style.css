@@ -52,6 +52,8 @@
     --accent-green: #71dd99;
     --text: #000000;
     --gradient-pink: linear-gradient(135deg, var(--main-pink) 0%, var(--light-pink) 100%);
+    /* tło kart: profil, formularze, ekrany konta - wzór spod spodu ma prześwitywać */
+    --card-bg: rgba(255, 255, 255, 0.55);
 }
 
 body {
@@ -129,12 +131,6 @@ nav ul li a {
 
 nav ul li a:hover {
     color: var(--main-pink);
-}
-
-.user-greeting {
-    color: black;
-    font-weight: 600;
-    padding: 8px 16px;
 }
 
 .login-btn {
@@ -301,82 +297,10 @@ main {
     background-color: var(--main-pink);
 }
 
-#add-cosmetic-form {
-    max-width: 600px;
-    margin: 30px auto;
-    background: white;
-    padding: 30px;
-    border: 2px solid var(--lime);
-    border-radius: 20px;
-}
-
-#add-cosmetic-form > div {
-    margin-bottom: 20px;
-}
-
-#add-cosmetic-form label {
-    display: block;
-    color: black;
-    font-weight: 600;
-    margin-bottom: 8px;
-    font-size: 15px;
-}
-
-#add-cosmetic-form input[type="text"],
-#add-cosmetic-form select,
-#add-cosmetic-form textarea {
-    width: 100%;
-    padding: 12px 16px;
-    border: 2px solid var(--main-pink);
-    border-radius: 12px;
-    font-size: 15px;
-    font-family: 'KineksRound', sans-serif;
-    transition: all 0.3s;
-    background: white;
-    color: var(--text);
-}
-
-#add-cosmetic-form input[type="text"]:focus,
-#add-cosmetic-form select:focus,
-#add-cosmetic-form textarea:focus {
-    outline: none;
-    border-color: var(--lime);
-}
-
-#add-cosmetic-form textarea {
-    resize: vertical;
-    min-height: 120px;
-}
-
-#add-cosmetic-form button[type="submit"] {
-    width: 100%;
-    padding: 14px 32px;
-    background: var(--gradient-pink);
-    color: white;
-    border: none;
-    border-radius: 50px;
-    font-size: 16px;
-    font-weight: 700;
-    font-family: 'KineksRound', sans-serif;
-    cursor: pointer;
-    transition: all 0.3s;
-    margin-top: 10px;
-}
-
-#result-message {
-    margin-top: 20px;
-    text-align: center;
-    font-weight: 600;
-}
-
-#result-message p {
-    padding: 12px;
-    border-radius: 12px;
-    background: rgba(130, 162, 132, 0.1);
-}
-
+/* 600px lamalo dluzsze komunikaty na dwie linie - np. powitanie po
+   rejestracji potrzebuje ok. 700px. */
 .messages-container {
-    max-width: 600px;
+    max-width: 780px;
     margin: 20px auto;
 }
 
@@ -387,8 +311,12 @@ main {
     font-weight: 500;
 }
 
-.alert-success {;
-    color: black;
+/* Bylo puste (zabladzony srednik po klamrze i sam kolor tekstu), przez co
+   komunikat sukcesu nie wygladal jak komunikat. */
+.alert-success {
+    background: rgba(159, 213, 99, 0.18);
+    border-left: 4px solid var(--lime);
+    color: var(--dark-mint);
 }
 
 .alert-error {
@@ -532,88 +460,6 @@ main {
         left: 12px;
         font-size: 14px;
     }
-
-    #add-cosmetic-form {
-        padding: 20px;
-        margin: 20px 10px;
-    }
-
-    #add-cosmetic-form label {
-        font-size: 14px;
-    }
-
-    #add-cosmetic-form input[type="text"],
-    #add-cosmetic-form select,
-    #add-cosmetic-form textarea {
-        padding: 10px 14px;
-        font-size: 14px;
-    }
-
-    #add-cosmetic-form button[type="submit"] {
-        padding: 12px 24px;
-        font-size: 15px;
-    }
-}
-
-.search-page-form {
-    max-width: 700px;
-    margin: 30px auto;
-    background: white;
-    padding: 30px;
-    border-radius: 20px;
-    box-shadow: 0 4px 12px rgba(130, 162, 132, 0.25);
-}
-
-.search-page-form > div {
-    margin-bottom: 20px;
-}
-
-.search-page-form label {
-    display: block;
-    color: var(--text);
-    font-weight: 600;
-    margin-bottom: 8px;
-    font-size: 15px;
-}
-
-.search-page-form input[type="text"],
-.search-page-form select {
-    width: 100%;
-    padding: 12px 16px;
-    border: 2px solid rgba(130, 162, 132, 0.3);
-    border-radius: 12px;
-    font-size: 15px;
-    font-family: 'KineksRound', sans-serif;
-    transition: all 0.3s;
-    background: white;
-    color: var(--text);
-}
-
-.search-page-form input[type="text"]:focus,
-.search-page-form select:focus {
-    outline: none;
-    border-color: var(--main-pink);
-    box-shadow: 0 0 0 3px rgba(228, 174, 197, 0.2);
-}
-
-.search-page-form button[type="submit"] {
-    width: 100%;
-    padding: 14px 32px;
-    background: var(--gradient-pink);
-    color: white;
-    border: none;
-    border-radius: 50px;
-    font-size: 16px;
-    font-weight: 700;
-    font-family: 'KineksRound', sans-serif;
-    cursor: pointer;
-    transition: all 0.3s;
-    box-shadow: 0 4px 12px rgba(228, 174, 197, 0.4);
-    margin-top: 10px;
-}
-
-.search-page-form button[type="submit"]:hover {
-    box-shadow: 0 6px 16px rgba(228, 174, 197, 0.6);
 }
 
 #search-results {
@@ -769,33 +615,8 @@ main {
     background-color: var(--main-pink);
 }
 
-.ingredients-preview {
-    margin-top: 15px;
-    padding: 15px;
-    background: rgba(193, 207, 161, 0.1);
-    border-radius: 12px;
-    border-left: 4px solid var(--lime);
-}
-
-.ingredients-preview h4 {
-    color: black;
-    font-size: 16px;
-    margin-bottom: 10px;
-}
-
-.ingredients-preview ul {
-    list-style: none;
-    padding-left: 0;
-}
-
-.ingredients-preview li {
-    color: var(--text);
-    padding: 4px 0;
-    font-size: 14px;
-}
-
 .profile-container {
-    background: rgba(255, 255, 255, 0.45);
+    background: var(--card-bg);
     border-radius: 40px;
     padding: 35px;
     box-shadow: none;
@@ -1139,7 +960,6 @@ main {
     transition: all 0.3s;
 }
 
-
 .preferences-list li button {
     padding: 6px 16px;
     background-color: var(--accent-dark);
@@ -1232,25 +1052,6 @@ main {
 }
 
 @media (max-width: 768px) {
-    .search-page-form {
-        padding: 20px;
-        margin: 20px 10px;
-    }
-
-    .search-page-form label {
-        font-size: 14px;
-    }
-
-    .search-page-form input[type="text"],
-    .search-page-form select {
-        padding: 10px 14px;
-        font-size: 14px;
-    }
-
-    .search-page-form button[type="submit"] {
-        padding: 12px 24px;
-        font-size: 15px;
-    }
 
      .cosmetic-result-card {
         aspect-ratio: unset;
@@ -1426,19 +1227,6 @@ main {
     margin: 0 5px;
 }
 
-.safety-analysis-section {
-    background: white;
-    border-radius: 20px;
-    padding: 30px;
-    box-shadow: 0 4px 12px rgba(130, 162, 132, 0.25);
-}
-
-.safety-analysis-section h3 {
-    color: var(--lime);
-    font-size: 22px;
-    margin-bottom: 20px;
-}
-
 .safety-verdict {
     padding: 20px;
     border-radius: 12px;
@@ -1465,33 +1253,6 @@ main {
     color: var(--accent-dark);
 }
 
-.safety-breakdown {
-    background: rgba(193, 207, 161, 0.1);
-    padding: 20px;
-    border-radius: 12px;
-}
-
-.safety-breakdown h4 {
-    color: black;
-    font-size: 18px;
-    margin-bottom: 15px;
-}
-
-.safety-breakdown ul {
-    list-style: none;
-    padding: 0;
-}
-
-.safety-breakdown li {
-    padding: 8px 0;
-    color: var(--text);
-    font-size: 15px;
-}
-
-.safety-breakdown li strong {
-    color: black;
-}
-
 @media (max-width: 768px) {
     .cosmetic-detail-header h2 {
         font-size: 22px;
@@ -1508,7 +1269,6 @@ main {
     }
 
     .ingredients-section,
-    .safety-analysis-section,
     .cosmetic-detail-header {
         padding: 20px;
     }

@@ -1,9 +1,10 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Login INCI Preferences{% endblock %}
+{% block title %}Log in - INCI Preferences{% endblock %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/forms.css' %}">
 <link rel="stylesheet" href="{% static 'css/auth.css' %}">
 {% endblock %}
 
@@ -12,22 +13,62 @@
     <div class="auth-form">
         <h2>Log in</h2>
 
-        <form method="post">
+        <form method="post" novalidate>
             {% csrf_token %}
-            <div class="form-group">
-                <label for="username">Username:</label>
-                <input type="text" name="username" id="username" required>
+            {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+
+            {% if form.non_field_errors %}
+                <div class="form-errors" role="alert">
+                    {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+                </div>
+            {% endif %}
+
+            <div class="form-group{% if form.username.errors or form.non_field_errors %} has-error{% endif %}">
+                <label for="{{ form.username.id_for_label }}">Username</label>
+                <input type="text"
+                       name="{{ form.username.html_name }}"
+                       id="{{ form.username.id_for_label }}"
+                       value="{{ form.username.value|default:'' }}"
+                       autocomplete="username"
+                       autocapitalize="none"
+                       autofocus
+                       required>
+                {% for error in form.username.errors %}
+                    <p class="field-error">{{ error }}</p>
+                {% endfor %}
             </div>
-            <div class="form-group">
-                <label for="password">Password:</label>
-                <input type="password" name="password" id="password" required>
+
+            <div class="form-group{% if form.password.errors or form.non_field_errors %} has-error{% endif %}">
+                <label for="{{ form.password.id_for_label }}">Password</label>
+                <div class="password-field">
+                    <input type="password"
+                           name="{{ form.password.html_name }}"
+                           id="{{ form.password.id_for_label }}"
+                           autocomplete="current-password"
+                           required>
+                    <button type="button" class="password-toggle" data-toggle-password="{{ form.password.id_for_label }}" aria-label="Show password">
+                        Show
+                    </button>
+                </div>
+                {% for error in form.password.errors %}
+                    <p class="field-error">{{ error }}</p>
+                {% endfor %}
             </div>
+
             <button type="submit" class="btn-primary">Log in</button>
         </form>
+
+        <p class="auth-link">
+            <a href="{% url 'users:password_reset' %}">Forgot your password?</a>
+        </p>
 
         <p class="auth-link">
             You don't have an account yet? <a href="{% url 'users:register' %}">Register here</a>
         </p>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/auth.js' %}" defer></script>
 {% endblock %}

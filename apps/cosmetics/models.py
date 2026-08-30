@@ -1,3 +1,5 @@
+import re
+
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
@@ -101,17 +103,19 @@ class Cosmetic(models.Model):
 
     def parse_and_add_ingredients(self, auto_create=True):
         if not self.ingredients_text:
-            return {'matched': [], 'not_found': []}
+            return {'matched': [], 'created': [], 'not_found': []}
 
-        # potrzebne do składników typu '1,2-Hexanediol'
-        import re
-        ingredients = re.split(r',\s+', self.ingredients_text)
+        # przecinek między cyframi to część nazwy ('1,2-Hexanediol'), reszta to
+        # separatory. wcześniej wzorzec wymagał spacji, więc lista wklejona bez
+        # spacji szła do bazy jako jeden składnik
+        ingredients = re.split(r'(?<!\d),|,(?!\d)', self.ingredients_text)
 
         matched = []
+        created = []
         not_found = []
 
-        for ingredient in ingredients:
-            clean_name = ingredient.strip().strip('.')
+        for raw_name in ingredients:
+            clean_name = raw_name.strip().strip('.')
 
             if not clean_name:
                 continue
@@ -122,20 +126,20 @@ class Cosmetic(models.Model):
                 self.ingredients.add(ingredient)
                 matched.append(ingredient.inci_name)
             except Ingredient.DoesNotExist:
-                not_found.append(clean_name)
                 if auto_create:
                     ingredient = Ingredient.objects.create(
                         inci_name=clean_name,
                         purpose='Unknown'
                     )
                     self.ingredients.add(ingredient)
-                    matched.append(ingredient.inci_name)
+                    created.append(ingredient.inci_name)
                 else:
                     not_found.append(clean_name)
 
         return {
             'matched': matched,
-            'not_found': not_found
+            'created': created,
+            'not_found': not_found,
         }
 
 

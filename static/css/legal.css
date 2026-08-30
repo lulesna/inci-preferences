@@ -1,6 +1,5 @@
-/* Styl dokumentów prawnych (polityka prywatności, regulamin).
-   Numeracja sekcji i spisu treści idzie z liczników CSS, żeby numery
-   nie rozjechały się przy dodaniu lub usunięciu punktu. */
+/* polityka prywatności i regulamin. numery sekcji z liczników CSS, żeby nie
+   rozjechały się przy dodaniu punktu w środku */
 
 .legal {
     max-width: 46rem;
@@ -10,9 +9,8 @@
     border-radius: 18px;
     box-shadow: 0 2px 18px rgba(0, 0, 0, 0.06);
 
-    /* Dokument jest wyspą typograficzną: globalne style serwisu wyśrodkowują
-       tekst i kolorują go na różowo, co dla kilkunastu ekranów treści prawnej
-       jest nieczytelne. Ustawiamy wyrównanie i kolor jawnie. */
+    /* .main-section wyśrodkowuje tekst i koloruje na różowo, co przy
+       kilkunastu ekranach treści prawnej jest nieczytelne */
     text-align: left;
     color: #2b2b2b;
     font-size: 1rem;
@@ -26,9 +24,8 @@
 }
 
 .legal-header {
-    /* Reset po globalnym `header { position: sticky; ... }` ze style.css,
-       który przykleiłby nagłówek dokumentu do góry ekranu i nadał mu
-       zaokrąglenia oraz rozmycie tła przeznaczone dla paska nawigacji. */
+    /* reset po globalnym header {} ze style.css, który przykleiłby nagłówek
+       dokumentu do góry ekranu */
     position: static;
     z-index: auto;
     border-radius: 0;
@@ -68,11 +65,8 @@
     color: var(--main-pink);
 }
 
-/* Spis treści */
-
 .legal-toc {
-    /* display jawnie, bo globalna reguła `nav { display: flex }` z style.css
-       układałaby nagłówek spisu obok listy. */
+    /* display jawnie, bo nav { display: flex } układa nagłówek obok listy */
     display: block;
     padding: 1.25rem 1.5rem;
     margin-bottom: 2.5rem;
@@ -122,8 +116,6 @@
     border-bottom-color: var(--main-pink);
 }
 
-/* Treść */
-
 .legal-body {
     counter-reset: section;
 }
@@ -164,8 +156,6 @@
 .legal-section a {
     color: var(--accent-dark);
 }
-
-/* Tabela cookies i podobne zestawienia */
 
 .legal-table-wrap {
     overflow-x: auto;
@@ -208,8 +198,6 @@
     border-radius: 4px;
 }
 
-/* Blok kontaktowy */
-
 .legal-contact {
     padding: 1.1rem 1.35rem;
     background: #fdf6fa;
@@ -232,8 +220,6 @@
 .legal-contact dd {
     margin: 0.15rem 0 0;
 }
-
-/* Wyróżnione zastrzeżenie */
 
 .legal-callout {
     padding: 1.1rem 1.35rem;

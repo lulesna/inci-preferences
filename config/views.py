@@ -1,3 +1,4 @@
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 
 
@@ -41,8 +42,30 @@ def skincare_serum(request):
     return render(request, 'categories/skincare/skincare_serum.html')
 
 
+def _choices_to_options(choices):
+    return [{'value': value, 'label': label} for value, label in choices]
+
+
+# kategorie z modelu, nie z kopii w szablonie — te dwie listy zdążyły się już
+# rozjechać, formularz wysyłał 'BROWS' zamiast 'BROW_PENCIL'
 def add_cosmetic(request):
-    return render(request, 'addcosmetic.html')
+    from apps.cosmetics.models import Cosmetic
+
+    return render(request, 'addcosmetic.html', {
+        'category_data': {
+            'subcategories': {
+                'FACE': _choices_to_options(Cosmetic.FACE_SUBCATEGORIES),
+                'MAKEUP': _choices_to_options(Cosmetic.MAKEUP_SUBCATEGORIES),
+                'BODY': [],
+            },
+            'productTypes': {
+                'EYES': _choices_to_options(Cosmetic.MAKEUP_EYES_SUBCATEGORIES),
+                'FACE': _choices_to_options(Cosmetic.MAKEUP_FACE_SUBCATEGORIES),
+                'LIPS': _choices_to_options(Cosmetic.MAKEUP_LIPS_SUBCATEGORIES),
+            },
+        },
+        'main_categories': _choices_to_options(Cosmetic.MAIN_CATEGORIES),
+    })
 
 def search(request):
     return render(request, 'search.html')
@@ -50,8 +73,13 @@ def search(request):
 def cosmetic_detail(request, pk):
     return render(request, 'cosmetic_detail.html', {'cosmetic_id': pk})
 
+# obie strony pokazują tylko dane zalogowanego, bez dekoratora anonim dostawał
+# pustą stronę zamiast logowania
+@login_required
 def profile(request):
     return render(request, 'profile.html')
 
+
+@login_required
 def favorites(request):
     return render(request, 'favorites.html')

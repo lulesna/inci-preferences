@@ -1,36 +1,26 @@
 FROM python:3.12-slim
 
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
-    libpq-dev \
-    curl \
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
 RUN SECRET_KEY="dummy-key-for-build" \
-    DEBUG=False \
     DB_NAME="dummy" \
     DB_USER="dummy" \
     DB_PASSWORD="dummy" \
     DB_HOST="localhost" \
-    DB_PORT="5432" \
-    ALLOWED_HOSTS="localhost" \
     python manage.py collectstatic --noinput
 
-RUN chmod +x /app/entrypoint.sh
-
-RUN groupadd -r appuser && useradd -r -m -g appuser appuser \
-    && chown -R appuser:appuser /app
+RUN useradd -r -m appuser && chown -R appuser:appuser /app
 
 USER appuser
 
@@ -39,5 +29,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 
 EXPOSE 8000
 
-ENTRYPOINT ["/app/entrypoint.sh"]
+# Uruchamiane przez "sh", nie bezposrednio - dzieki temu nie zalezy od bitu
+# wykonywalnosci, ktory na Windowsie i tak sie nie przenosi.
+ENTRYPOINT ["/bin/sh", "/app/entrypoint.sh"]
 CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000"]

@@ -1,7 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils.functional import cached_property
-from apps import cosmetics
 from apps.ingredients.models import Ingredient
 
 

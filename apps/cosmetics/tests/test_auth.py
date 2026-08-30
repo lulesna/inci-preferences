@@ -44,7 +44,7 @@ class UserAuthenticationTest(TestCase):
         self.assertFalse(response.wsgi_request.user.is_authenticated)
 
     def test_register_new_user(self):
-        response = self.client.post(reverse('users:register'), {
+        self.client.post(reverse('users:register'), {
             'username': 'newuser',
             'password1': 'Pass123!',
             'password2': 'Pass123!',
@@ -54,7 +54,7 @@ class UserAuthenticationTest(TestCase):
 
     def test_register_without_accepting_terms(self):
         """rejestracja nie powinna się udać bez zaznaczenia zgody na regulamin"""
-        response = self.client.post(reverse('users:register'), {
+        self.client.post(reverse('users:register'), {
             'username': 'newuser3',
             'password1': 'Pass123!',
             'password2': 'Pass123!'
@@ -62,7 +62,7 @@ class UserAuthenticationTest(TestCase):
         self.assertFalse(User.objects.filter(username='newuser3').exists())
 
     def test_register_password_mismatch(self):
-        response = self.client.post(reverse('users:register'), {
+        self.client.post(reverse('users:register'), {
             'username': 'newuser2',
             'password1': 'Pass123!',
             'password2': 'Pass1234!'
@@ -71,7 +71,7 @@ class UserAuthenticationTest(TestCase):
 
     def test_change_password_authenticated(self):
         self.client.login(username='authuser', password='Pass123!')
-        response = self.client.post(reverse('users:change_password'), {
+        self.client.post(reverse('users:change_password'), {
             'old_password': 'Pass123!',
             'new_password1': 'Pass456!',
             'new_password2': 'Pass456!'
@@ -84,7 +84,7 @@ class UserAuthenticationTest(TestCase):
     def test_change_password_wrong_old(self):
         """nie można zmienić hasła bez znajomości starego"""
         self.client.login(username='authuser', password='Pass123!')
-        response = self.client.post(reverse('users:change_password'), {
+        self.client.post(reverse('users:change_password'), {
             'old_password': 'WrongOldPass',
             'new_password1': 'Pass456!',
             'new_password2': 'Pass456!'

@@ -1,14 +1,23 @@
 from django import forms
 from django.conf import settings
-from django.contrib.auth.forms import PasswordChangeForm, UserCreationForm, UsernameField
-from django.shortcuts import render, redirect
-from django.contrib.auth import login, authenticate, logout
+from django.contrib.auth.forms import (
+    AuthenticationForm,
+    PasswordChangeForm,
+    UserCreationForm,
+    UsernameField,
+)
+from django.shortcuts import render, redirect, resolve_url
+from django.contrib.auth import login, logout
 from django.contrib import messages
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import update_session_auth_hash
 from django.views.decorators.http import require_POST
 from django.core.cache import cache
+from django.utils.http import url_has_allowed_host_and_scheme
+
+from .password_rules import rules_for_template
+from .validators import USERNAME_HELP_TEXT, username_characters_validator
 
 LOGIN_ATTEMPT_LIMIT = 5
 LOGIN_ATTEMPT_WINDOW = 300  # sekundy
@@ -21,85 +30,164 @@ DEMO_LOCKED_MESSAGE = (
 
 
 def is_demo_account(user):
-    """Czy to konto pokazowe, którego dane logowania są publiczne.
-
-    Login i hasło konta demo są podane w README, więc każdy odwiedzający mógłby
-    je przejąć, zmieniając hasło, albo zepsuć link w dokumentacji, zmieniając
-    nazwę. Widoki modyfikujące konto sprawdzają ten warunek przed zapisem.
-    """
     demo_username = getattr(settings, 'DEMO_USERNAME', '')
     return bool(demo_username) and user.username.lower() == demo_username.lower()
 
 
 class CustomUserCreationForm(UserCreationForm):
 
+    email = forms.EmailField(
+        required=False,
+        label='Email (optional)',
+        help_text='Only used to reset your password. Without it a forgotten '
+                  'password cannot be recovered.',
+        widget=forms.EmailInput(attrs={'autocomplete': 'email'}),
+    )
+
+    accept_terms = forms.BooleanField(
+        required=True,
+        label='I have read and accept the Terms of Service and Privacy Policy',
+        error_messages={
+            'required': 'You must accept the Terms of Service and Privacy Policy.'
+        },
+    )
+
     class Meta(UserCreationForm.Meta):
         model = User
-        fields = ('username',)
+        fields = ('username', 'email')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['username'].validators.append(username_characters_validator)
+        self.fields['username'].help_text = USERNAME_HELP_TEXT
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+
+        if email and User.objects.filter(email__iexact=email).exists():
+            raise forms.ValidationError(
+                'An account with this email address already exists.'
+            )
+
+        return email
 
 
-class UsernameChangeForm(forms.ModelForm):
+class AccountDetailsForm(forms.ModelForm):
+
+    email = forms.EmailField(
+        required=False,
+        label='Email (optional)',
+        help_text='Used only to reset your password.',
+        widget=forms.EmailInput(attrs={'autocomplete': 'email'}),
+    )
 
     class Meta:
         model = User
-        fields = ('username',)
+        fields = ('username', 'email')
         field_classes = {'username': UsernameField}
 
     def clean_username(self):
         username = self.cleaned_data.get('username')
 
-        if username and User.objects.filter(
+        if not username:
+            return username
+
+        # nowy zestaw znaków tylko przy zmianie nazwy
+        if username != self.instance.username:
+            username_characters_validator(username)
+
+        if User.objects.filter(
             username__iexact=username
         ).exclude(pk=self.instance.pk).exists():
             raise forms.ValidationError('This username is already taken.')
 
         return username
 
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+
+        if email and User.objects.filter(
+            email__iexact=email
+        ).exclude(pk=self.instance.pk).exists():
+            raise forms.ValidationError(
+                'An account with this email address already exists.'
+            )
+
+        return email
+
+
+def _safe_redirect_target(request):
+    # bez sprawdzenia hosta next byłby otwartym przekierowaniem
+    target = request.POST.get('next') or request.GET.get('next')
+
+    if target and url_has_allowed_host_and_scheme(
+        target,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        return target
+
+    return resolve_url(settings.LOGIN_REDIRECT_URL)
+
 
 def register_view(request):
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
 
-        if not request.POST.get('accept_terms'):
-            messages.error(request, 'You must accept the Terms of Service and Privacy Policy.')
-        elif form.is_valid():
+        if form.is_valid():
             user = form.save()
 
             from apps.preferences.models import UserProfile
             UserProfile.objects.create(user=user)
 
-            username = form.cleaned_data.get('username')
-            messages.success(request, f'Account created for {username}! You can now log in.')
-            return redirect('users:login')
+            # konto właśnie powstało, więc nie ma po co odsyłać na logowanie
+            login(request, user)
+            messages.success(
+                request,
+                f'Welcome, {user.username}! Start by marking ingredients you '
+                f'want to avoid.'
+            )
+            return redirect('profile')
     else:
         form = CustomUserCreationForm()
 
-    return render(request, 'users/register.html', {'form': form})
+    return render(request, 'users/register.html', {
+        'form': form,
+        'password_rules': rules_for_template(),
+    })
 
 
 def login_view(request):
+    cache_key = f"login_attempts_{request.META.get('REMOTE_ADDR', 'unknown')}"
+    form = AuthenticationForm(request)
+
     if request.method == 'POST':
-        ip = request.META.get('REMOTE_ADDR', 'unknown')
-        cache_key = f'login_attempts_{ip}'
         attempts = cache.get(cache_key, 0)
 
         if attempts >= LOGIN_ATTEMPT_LIMIT:
-            messages.error(request, 'Too many failed login attempts. Please try again in a few minutes.')
-            return render(request, 'users/login.html')
+            minutes = LOGIN_ATTEMPT_WINDOW // 60
+            messages.error(
+                request,
+                f'Too many failed login attempts. Please try again in {minutes} minutes.'
+            )
+            return render(request, 'users/login.html', {
+                'form': AuthenticationForm(request, data=request.POST),
+                'next': request.POST.get('next', ''),
+            })
 
-        username = request.POST.get('username')
-        password = request.POST.get('password')
-        user = authenticate(request, username=username, password=password)
+        form = AuthenticationForm(request, data=request.POST)
 
-        if user is not None:
+        if form.is_valid():
             cache.delete(cache_key)
-            login(request, user)
-            return redirect('index')
-        else:
-            cache.set(cache_key, attempts + 1, LOGIN_ATTEMPT_WINDOW)
-            messages.error(request, 'Invalid username or password')
+            login(request, form.get_user())
+            return redirect(_safe_redirect_target(request))
 
-    return render(request, 'users/login.html')
+        cache.set(cache_key, attempts + 1, LOGIN_ATTEMPT_WINDOW)
+
+    return render(request, 'users/login.html', {
+        'form': form,
+        'next': request.POST.get('next') or request.GET.get('next', ''),
+    })
 
 
 def logout_view(request):
@@ -136,7 +224,7 @@ def update_account(request):
             messages.error(request, DEMO_LOCKED_MESSAGE)
             return redirect('profile')
 
-        form = UsernameChangeForm(request.POST, instance=request.user)
+        form = AccountDetailsForm(request.POST, instance=request.user)
 
         if form.is_valid():
             form.save()

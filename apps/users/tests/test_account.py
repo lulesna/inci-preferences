@@ -1,3 +1,6 @@
+import re
+
+from django.core import mail
 from django.test import TestCase, Client, override_settings
 from django.contrib.auth.models import User
 from django.core.cache import cache
@@ -12,13 +15,28 @@ class RegistrationTest(TestCase):
         cache.clear()
         self.client = Client()
 
-    def post_registration(self, password, username='nowyuser'):
-        return self.client.post(reverse('users:register'), {
+    def post_registration(self, password, username='nowyuser', **extra):
+        data = {
             'username': username,
             'password1': password,
             'password2': password,
             'accept_terms': 'on',
-        })
+        }
+        data.update(extra)
+        return self.client.post(reverse('users:register'), data)
+
+    def test_registration_logs_the_user_in(self):
+        response = self.post_registration('ZlozoneHaslo123')
+
+        self.assertRedirects(response, reverse('profile'))
+        self.assertIn('_auth_user_id', self.client.session)
+
+    def test_registration_stores_optional_email(self):
+        self.post_registration('ZlozoneHaslo123', email='ktos@example.com')
+
+        self.assertEqual(
+            User.objects.get(username='nowyuser').email, 'ktos@example.com'
+        )
 
     def test_registration_creates_user_with_profile(self):
         response = self.post_registration('ZlozoneHaslo123')
@@ -42,6 +60,67 @@ class RegistrationTest(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertFalse(User.objects.filter(username='nowyuser').exists())
+
+
+class LoginFlowTest(TestCase):
+
+    def setUp(self):
+        cache.clear()
+        self.client = Client()
+        User.objects.create_user(username='user1', password='ZlozoneHaslo123')
+
+    def test_failed_login_keeps_the_username(self):
+        # widok renderował szablon bez kontekstu, więc po literówce w haśle
+        # użytkownik przepisywał również login
+        response = self.client.post(reverse('users:login'), {
+            'username': 'user1',
+            'password': 'zle-haslo',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['form']['username'].value(), 'user1')
+
+    def test_login_redirects_to_next(self):
+        response = self.client.post(
+            reverse('users:login') + '?next=/favorites/',
+            {'username': 'user1', 'password': 'ZlozoneHaslo123', 'next': '/favorites/'},
+        )
+
+        self.assertRedirects(response, '/favorites/')
+
+    def test_login_ignores_external_next(self):
+        # bez sprawdzenia hosta ten link wyrzuciłby zalogowanego na obcą domenę
+        response = self.client.post(
+            reverse('users:login'),
+            {
+                'username': 'user1',
+                'password': 'ZlozoneHaslo123',
+                'next': 'https://zlosliwa-domena.example/phish',
+            },
+        )
+
+        self.assertRedirects(response, reverse('index'))
+
+    def test_login_required_redirects_to_our_login_page(self):
+        # bez LOGIN_URL Django kierowało na nieistniejące /accounts/login/
+        response = self.client.get(reverse('profile'))
+
+        self.assertRedirects(
+            response, f"{reverse('users:login')}?next={reverse('profile')}"
+        )
+
+    def test_lockout_message_states_the_wait(self):
+        for _ in range(5):
+            self.client.post(reverse('users:login'), {
+                'username': 'user1', 'password': 'zle-haslo',
+            })
+
+        response = self.client.post(reverse('users:login'), {
+            'username': 'user1', 'password': 'ZlozoneHaslo123',
+        })
+
+        wiadomosci = [str(m) for m in response.context['messages']]
+        self.assertTrue(any('5 minutes' in m for m in wiadomosci), wiadomosci)
 
 
 class LogoutTest(TestCase):
@@ -134,6 +213,37 @@ class UpdateAccountTest(TestCase):
         self.user.refresh_from_db()
         self.assertEqual(self.user.username, 'user1')
 
+    def test_new_username_must_use_allowed_characters(self):
+        self.client.login(username='user1', password='pass12345')
+
+        self.client.post(reverse('users:update_account'), {'username': 'jan.kowalski'})
+
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.username, 'user1')
+
+    def test_hyphen_and_underscore_accepted(self):
+        self.client.login(username='user1', password='pass12345')
+
+        self.client.post(reverse('users:update_account'), {'username': 'lucja_lesna-99'})
+
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.username, 'lucja_lesna-99')
+
+    def test_legacy_username_can_still_save_other_fields(self):
+        # konto sprzed zawężenia znaków musi móc zapisać e-mail bez zmiany
+        # nazwy, inaczej byłoby zablokowane
+        stary = User.objects.create_user(username='jan.kowalski', password='pass12345')
+        self.client.login(username='jan.kowalski', password='pass12345')
+
+        self.client.post(reverse('users:update_account'), {
+            'username': 'jan.kowalski',
+            'email': 'jan@example.com',
+        })
+
+        stary.refresh_from_db()
+        self.assertEqual(stary.username, 'jan.kowalski')
+        self.assertEqual(stary.email, 'jan@example.com')
+
     def test_username_with_illegal_characters_rejected(self):
         self.client.login(username='user1', password='pass12345')
 
@@ -145,8 +255,6 @@ class UpdateAccountTest(TestCase):
 
 @override_settings(DEMO_USERNAME='testuser')
 class DemoAccountProtectionTest(TestCase):
-    """Konto pokazowe ma publiczne dane logowania (README), więc nikt nie może
-    go przejąć ani usunąć."""
 
     def setUp(self):
         cache.clear()
@@ -176,8 +284,6 @@ class DemoAccountProtectionTest(TestCase):
         self.assertTrue(User.objects.filter(username='testuser').exists())
 
     def test_protection_is_case_insensitive(self):
-        # Nazwy różniące się wielkością liter to to samo konto, więc ochrona
-        # nie może zależeć od tego, jak zapisano ją w ustawieniach.
         User.objects.filter(pk=self.demo.pk).update(username='TestUser')
 
         self.client.post(reverse('users:update_account'), {'username': 'przejete'})
@@ -208,6 +314,79 @@ class DemoProtectionDisabledTest(TestCase):
 
         user.refresh_from_db()
         self.assertEqual(user.username, 'nowanazwa')
+
+
+class PasswordResetTest(TestCase):
+
+    def setUp(self):
+        cache.clear()
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username='user1', password='ZlozoneHaslo123', email='user1@example.com'
+        )
+        mail.outbox = []
+
+    def request_reset(self, email):
+        return self.client.post(reverse('users:password_reset'), {'email': email})
+
+    def test_reset_email_sent_with_working_link(self):
+        response = self.request_reset('user1@example.com')
+
+        self.assertRedirects(response, reverse('users:password_reset_done'))
+        self.assertEqual(len(mail.outbox), 1)
+
+        link = re.search(r'/users/password-reset/[\w-]+/[\w-]+/', mail.outbox[0].body)
+        self.assertIsNotNone(link, mail.outbox[0].body)
+
+        # Django przekierowuje z tokenu w URL-u na adres z 'set-password'
+        response = self.client.get(link.group(), follow=True)
+        self.assertTrue(response.context['validlink'])
+
+    def test_full_reset_lets_user_log_in_with_new_password(self):
+        self.request_reset('user1@example.com')
+        link = re.search(
+            r'/users/password-reset/[\w-]+/[\w-]+/', mail.outbox[0].body
+        ).group()
+
+        self.client.get(link, follow=True)
+        response = self.client.post(
+            self.client.get(link).headers['Location'],
+            {'new_password1': 'CalkiemNoweHaslo9', 'new_password2': 'CalkiemNoweHaslo9'},
+        )
+
+        self.assertRedirects(response, reverse('users:password_reset_complete'))
+        self.assertTrue(
+            self.client.login(username='user1', password='CalkiemNoweHaslo9')
+        )
+
+    def test_unknown_email_does_not_reveal_anything(self):
+        response = self.request_reset('nieznany@example.com')
+
+        self.assertRedirects(response, reverse('users:password_reset_done'))
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_account_without_email_gets_no_message(self):
+        User.objects.create_user(username='bezmaila', password='ZlozoneHaslo123')
+
+        response = self.request_reset('')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_new_password_must_pass_validators(self):
+        self.request_reset('user1@example.com')
+        link = re.search(
+            r'/users/password-reset/[\w-]+/[\w-]+/', mail.outbox[0].body
+        ).group()
+
+        response = self.client.post(
+            self.client.get(link).headers['Location'],
+            {'new_password1': '12345', 'new_password2': '12345'},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password('ZlozoneHaslo123'))
 
 
 class DeleteAccountTest(TestCase):

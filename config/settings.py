@@ -53,6 +53,20 @@ MIDDLEWARE = [
     'csp.middleware.CSPMiddleware',
 ]
 
+# odświeżanie przeglądarki przy zmianie plików, tylko lokalnie i tylko gdy
+# pakiet jest zainstalowany (requirements-dev.txt)
+if DEBUG:
+    try:
+        import django_browser_reload  # noqa: F401
+    except ImportError:
+        BROWSER_RELOAD_ENABLED = False
+    else:
+        BROWSER_RELOAD_ENABLED = True
+        INSTALLED_APPS.append('django_browser_reload')
+        MIDDLEWARE.append('django_browser_reload.middleware.BrowserReloadMiddleware')
+else:
+    BROWSER_RELOAD_ENABLED = False
+
 USE_R2 = config('USE_R2', default=False, cast=bool)
 R2_PUBLIC_URL = config('R2_PUBLIC_URL', default='') if USE_R2 else ''
 
@@ -127,7 +141,8 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        # w miejsce MinimumLengthValidator, patrz apps/users/password_rules.py
+        'NAME': 'apps.users.password_rules.PasswordComplexityValidator',
     },
     {
         'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
@@ -161,12 +176,30 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+LOGIN_URL = 'users:login'
 LOGIN_REDIRECT_URL = "index"
 LOGOUT_REDIRECT_URL = "index"
 
-# Konto pokazowe opisane w README. Jego login i hasło są publiczne, więc widok
-# profilu blokuje na nim zmianę nazwy, zmianę hasła i usunięcie konta.
-# Pusta wartość wyłącza tę ochronę.
+# poczta wychodząca, wyłącznie do resetu hasła. lokalnie wiadomości lądują
+# w konsoli serwera, więc link da się przetestować bez SMTP
+EMAIL_BACKEND = config(
+    'EMAIL_BACKEND',
+    default='django.core.mail.backends.console.EmailBackend' if DEBUG
+    else 'django.core.mail.backends.smtp.EmailBackend',
+)
+EMAIL_HOST = config('EMAIL_HOST', default='')
+EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
+DEFAULT_FROM_EMAIL = config(
+    'DEFAULT_FROM_EMAIL', default='INCI Preferences <noreply@incipreferences.app>'
+)
+
+PASSWORD_RESET_TIMEOUT = 60 * 60 * 24  # doba zamiast domyslnych 3 dni
+
+# konto pokazowe z README — login i hasło są publiczne, więc profil blokuje na
+# nim zmianę nazwy, hasła i usunięcie. pusta wartość wyłącza ochronę
 DEMO_USERNAME = config('DEMO_USERNAME', default='testuser')
 
 if USE_R2:

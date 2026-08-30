@@ -25,14 +25,23 @@
                 </div>
 
                 <div id="edit-account-form" class="edit-account-form" style="display: none;">
-                    <h4>Change Username</h4>
+                    <h4>Account details</h4>
                     <form method="post" action="{% url 'users:update_account' %}">
                         {% csrf_token %}
                         <div>
-                            <label for="username">New Username:</label>
-                            <input type="text" name="username" id="username" value="{{ user.username }}" required maxlength="150">
+                            <label for="username">Username:</label>
+                            <input type="text" name="username" id="username" value="{{ user.username }}" required maxlength="150" autocapitalize="none">
+                            <small>Letters, digits, hyphen and underscore only.</small>
                         </div>
-                        <button type="submit">Update Username</button>
+                        <div>
+                            <label for="email">Email (optional):</label>
+                            <input type="email" name="email" id="email" value="{{ user.email }}" autocomplete="email">
+                            <small>
+                                Used only to reset your password. Without it a forgotten
+                                password cannot be recovered.
+                            </small>
+                        </div>
+                        <button type="submit">Save changes</button>
                         <button type="button" onclick="toggleEditAccount()">Cancel</button>
                     </form>
 

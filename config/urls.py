@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib import admin
 from django.urls import path, include
 from . import views
@@ -36,3 +37,7 @@ urlpatterns = [
     path('api/', include('apps.cosmetics.urls')),
     path('api/', include('apps.preferences.urls')),
 ]
+
+# nasłuch automatycznego odświeżania przeglądarki, tylko lokalnie
+if settings.BROWSER_RELOAD_ENABLED:
+    urlpatterns.append(path('__reload__/', include('django_browser_reload.urls')))

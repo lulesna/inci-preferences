@@ -68,7 +68,7 @@ class CosmeticModelTest(TestCase):
 
         initial_count = Ingredient.objects.count()
 
-        result = self.cosmetic.parse_and_add_ingredients(auto_create=True)
+        self.cosmetic.parse_and_add_ingredients(auto_create=True)
 
         self.assertEqual(Ingredient.objects.count(), initial_count + 1)
         self.assertTrue(Ingredient.objects.filter(inci_name="XYZUnknownIngredient123").exists())
@@ -90,3 +90,45 @@ class CosmeticModelTest(TestCase):
         ingredient_names = list(self.cosmetic.ingredients.values_list('inci_name', flat=True))
         self.assertIn("Aqua", ingredient_names)
         self.assertEqual(self.cosmetic.ingredients.count(), 3)
+
+    def test_parse_list_pasted_without_spaces(self):
+        # wzorzec wymagał spacji po przecinku, więc taki wklej szedł do bazy
+        # jako jeden składnik o nazwie całej listy
+        self.cosmetic.ingredients_text = "Aqua,Glycerin,Niacinamide"
+        self.cosmetic.save()
+
+        result = self.cosmetic.parse_and_add_ingredients(auto_create=False)
+
+        self.assertEqual(len(result['matched']), 3)
+
+    def test_parse_keeps_numeric_prefixed_names_intact(self):
+        # cyfra po przecinku nie jest separatorem
+        self.cosmetic.ingredients_text = "Aqua, 1,2-Hexanediol, Glycerin"
+        self.cosmetic.save()
+
+        result = self.cosmetic.parse_and_add_ingredients(auto_create=True)
+
+        wszystkie = result['matched'] + result['created']
+        self.assertIn('1,2-Hexanediol', wszystkie)
+        self.assertEqual(len(wszystkie), 3)
+
+    def test_parse_separates_matched_from_created(self):
+        # nowy składnik lądował wcześniej i w 'matched', i w 'not_found'
+        self.cosmetic.ingredients_text = "Aqua, ZupelnieNowySkladnik"
+        self.cosmetic.save()
+
+        result = self.cosmetic.parse_and_add_ingredients(auto_create=True)
+
+        self.assertEqual(result['matched'], ['Aqua'])
+        self.assertEqual(result['created'], ['ZupelnieNowySkladnik'])
+        self.assertEqual(result['not_found'], [])
+
+    def test_parse_reports_unknown_when_not_creating(self):
+        self.cosmetic.ingredients_text = "Aqua, ZupelnieNowySkladnik"
+        self.cosmetic.save()
+
+        result = self.cosmetic.parse_and_add_ingredients(auto_create=False)
+
+        self.assertEqual(result['matched'], ['Aqua'])
+        self.assertEqual(result['created'], [])
+        self.assertEqual(result['not_found'], ['ZupelnieNowySkladnik'])

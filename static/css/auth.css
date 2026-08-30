@@ -1,201 +1,261 @@
+/* ekrany konta, wymaga wcześniej wczytanego forms.css */
+
 .container {
     display: flex;
     justify-content: center;
-    align-items: center;
-    min-height: calc(100vh - 200px);
-    padding: 10px;
+    padding: 40px 20px 56px;
+    min-height: calc(100vh - 260px);
 }
 
 .auth-form {
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    padding: 30px 35px;
-    border-radius: 30px;
-    border-style: dotted;
+    /* margin:auto zamiast align-items:center, bo flex ucinał górę długiego
+       formularza rejestracji poza obszar przewijania */
+    margin: auto;
     width: 100%;
-    max-width: 520px;
-    border-color: var(--main-pink);
+    max-width: 600px;
+    padding: 40px 48px 34px;
+    background: var(--card-bg);
+    border: 2px solid var(--lime);
+    border-radius: 20px;
+    color: var(--form-ink);
+    text-align: left;
 }
 
 .auth-form h2 {
-    color: var(--main-pink);
+    color: var(--accent-dark);
     text-align: center;
-    margin-bottom: 20px;
-    font-size: 28px;
+    font-size: 30px;
     font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 26px;
 }
 
 .auth-form form {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 20px;
 }
 
-.form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
+.auth-form .btn-primary {
+    margin-top: 6px;
 }
 
-.form-group label {
-    color: var(--text);
-    font-weight: 500;
-    font-size: 14px;
+.auth-intro {
+    color: var(--form-muted);
+    font-size: 14.5px;
+    line-height: 1.55;
+    margin: -8px 0 24px;
 }
 
-.form-group input {
-    padding: 10px 14px;
-    border: 2px solid rgba(130, 162, 132, 0.3);
-    border-radius: 12px;
-    font-size: 16px;
-    font-family: 'KineksRound', sans-serif;
-    transition: all 0.3s;
-    background: white;
-}
-
-.form-group input:focus {
-    outline: none;
-    border-color: var(--main-pink);
-    box-shadow: 0 0 0 3px rgba(228, 174, 197, 0.2);
-}
-
-.auth-form form p {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    margin-bottom: 6px;
-}
-
-.auth-form form p label {
-    color: var(--text);
-    font-weight: 500;
-    font-size: 14px;
-}
-
-.auth-form form p input {
-    padding: 10px 14px;
-    border: 2px solid rgba(130, 162, 132, 0.3);
-    border-radius: 12px;
-    font-size: 16px;
-    font-family: 'KineksRound', sans-serif;
-    transition: all 0.3s;
-    background: white;
-}
-
-.auth-form form p input:focus {
-    outline: none;
-    border-color: var(--main-pink);
-    box-shadow: 0 0 0 3px rgba(228, 174, 197, 0.2);
-}
-
-.auth-form form ul.helptext {
-    list-style: none;
-    padding-left: 0;
-    margin: 2px 0 0 0;
-    font-size: 9px;
-}
-
-.auth-form form ul.helptext li {
-    padding: 0.5px 0;
-    color: var(--text);
-    opacity: 0.6;
-    line-height: 1.1;
-    font-size: 12px;
-}
-
-.auth-form form ul.helptext li:before {
-    content: "• ";
-    color: var(--main-green);
-    margin-right: 4px;
-}
-
-.auth-form form .helptext {
-    font-size: 12px;
-    color: var(--text);
-    opacity: 0.6;
-    margin-top: 2px;
-    line-height: 1.2;
-    display: block;
-}
-
-.auth-form form .errorlist {
-    list-style: none;
-    padding: 6px 10px;
-    background: var(--gradient-pink);
-    border-left: 3px solid var(--light-pink);
-    border-radius: 6px;
-    margin-top: 4px;
-}
-
-.auth-form form .errorlist li {
-    color: white;
+.auth-note {
+    color: var(--form-muted);
     font-size: 13px;
+    line-height: 1.5;
+    margin-top: 18px;
 }
 
-.btn-primary {
-    padding: 12px 32px;
-    background: var(--gradient-pink);
-    color: white;
+.password-field {
+    position: relative;
+    display: flex;
+}
+
+.password-field input {
+    padding-right: 72px;
+}
+
+.password-toggle {
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    transform: translateY(-50%);
+    padding: 6px 11px;
+    background: transparent;
     border: none;
     border-radius: 50px;
-    font-size: 16px;
-    font-weight: 700;
+    color: var(--accent-dark);
     font-family: 'KineksRound', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
     cursor: pointer;
-    transition: all 0.3s;
-    box-shadow: 0 4px 12px rgba(228, 174, 197, 0.4);
-    margin-top: 8px;
+    transition: background 0.2s, color 0.2s;
 }
 
-.btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(228, 174, 197, 0.6);
+.password-toggle:hover {
+    background: var(--lime);
+    color: #ffffff;
 }
 
-.btn-primary:active {
-    transform: translateY(0);
+.password-toggle:focus-visible {
+    outline: 2px solid var(--lime);
+    outline-offset: 1px;
+}
+
+.password-rules {
+    list-style: none;
+    display: grid;
+    gap: 6px;
+    padding: 13px 16px;
+    margin: 3px 0 0;
+    background: var(--form-mint-soft);
+    border: 2px solid rgba(159, 213, 99, 0.35);
+    border-radius: 12px;
+}
+
+.password-rule {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    color: var(--form-muted);
+    font-size: 13px;
+    line-height: 1.4;
+    transition: color 0.2s;
+}
+
+.password-rule-mark {
+    flex: 0 0 auto;
+    width: 15px;
+    height: 15px;
+    position: relative;
+    border: 2px solid var(--main-green);
+    border-radius: 50%;
+    background: #ffffff;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.password-rule.is-met {
+    color: var(--dark-mint);
+    font-weight: 500;
+}
+
+.password-rule.is-met .password-rule-mark {
+    background: var(--dark-mint);
+    border-color: var(--dark-mint);
+}
+
+/* ptaszek rysowany w CSS, bez dodatkowego pliku */
+.password-rule.is-met .password-rule-mark::after {
+    content: '';
+    position: absolute;
+    left: 4px;
+    top: 1px;
+    width: 3px;
+    height: 7px;
+    border: solid #ffffff;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.form-group-check {
+    margin-top: 2px;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 11px;
+    color: var(--form-ink);
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.55;
+    cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+    flex: 0 0 auto;
+    width: 17px;
+    height: 17px;
+    margin-top: 2px;
+    accent-color: var(--lime);
+    cursor: pointer;
+}
+
+.checkbox-label a {
+    color: var(--accent-dark);
+    font-weight: 600;
+    text-decoration: none;
+    border-bottom: 1px solid rgba(214, 67, 134, 0.4);
+}
+
+.checkbox-label a:hover {
+    border-bottom-color: currentColor;
+}
+
+/* checkbox nie ma ramki do pokolorowania, więc obrys całego wiersza */
+.form-group-check.has-error {
+    padding: 12px 14px;
+    margin: 0 -14px;
+    background: var(--form-danger-soft);
+    border: 2px solid rgba(194, 66, 108, 0.35);
+    border-radius: 12px;
+}
+
+.form-group-check.has-error input[type="checkbox"] {
+    outline: 2px solid var(--form-danger);
+    outline-offset: 2px;
+    border-radius: 3px;
 }
 
 .auth-link {
     text-align: center;
-    margin-top: 16px;
-    color: var(--text);
+    color: var(--form-ink);
     font-size: 14px;
+    margin-top: 16px;
+}
+
+form + .auth-link {
+    padding-top: 20px;
+    margin-top: 24px;
+    border-top: 2px solid rgba(159, 213, 99, 0.3);
+}
+
+.auth-link + .auth-link {
+    margin-top: 10px;
 }
 
 .auth-link a {
-    color: var(--main-pink);
+    color: var(--accent-dark);
     text-decoration: none;
     font-weight: 600;
-    transition: color 0.3s;
+    transition: color 0.2s;
 }
 
 .auth-link a:hover {
-    color: var(--dark-green);
+    color: var(--main-pink);
+    text-decoration: underline;
 }
 
-@media (max-width: 768px) {
+.auth-link a:focus-visible {
+    outline: 2px solid var(--lime);
+    outline-offset: 2px;
+    border-radius: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .password-rule,
+    .password-rule-mark,
+    .password-toggle,
+    .auth-link a {
+        transition: none;
+    }
+}
+
+@media (max-width: 640px) {
+    .container {
+        padding: 24px 14px 40px;
+        min-height: 0;
+    }
+
     .auth-form {
-        padding: 25px 20px;
-        max-width: 100%;
+        padding: 28px 22px 24px;
+        border-radius: 16px;
     }
 
     .auth-form h2 {
         font-size: 24px;
     }
 
-    .form-group input,
-    .auth-form form p input {
-        font-size: 14px;
-        padding: 10px 14px;
-    }
-
-    .btn-primary {
-        padding: 12px 24px;
-        font-size: 14px;
-    }
-
-    .auth-form form .helptext {
-        font-size: 9px;
+    /* 16px zapobiega przybliżaniu widoku przez Safari przy wejściu w pole. */
+    .form-group input {
+        font-size: 16px;
     }
 }
