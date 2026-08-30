@@ -29,7 +29,7 @@
     border: 2px solid var(--form-border);
     border-radius: 12px;
     font-size: 15px;
-    font-family: 'KineksRound', sans-serif;
+    font-family: 'Nunito Sans', 'Segoe UI', system-ui, sans-serif;
     color: var(--form-ink);
     background: #ffffff;
     transition: border-color 0.2s, box-shadow 0.2s;

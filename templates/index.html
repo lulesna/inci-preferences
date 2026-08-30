@@ -9,10 +9,12 @@
 <link rel="stylesheet" href="{% static 'css/home.css' %}">
 {% endblock %}
 
+{% block main_class %}main-wide{% endblock %}
+
 {% block content %}
 <section class="home-top">
     <div>
-        <h2 class="home-headline">Ingredient safety judged by your skin, not by an average</h2>
+        <h2 class="home-headline">Ingredient safety <br>judged by your skin,<br> not by an average</h2>
 
         <p class="home-lead">
             Most ingredient databases give every substance one rating that everyone sees.
@@ -40,29 +42,63 @@
     </div>
 
     <div class="demo-card">
-        <p class="demo-title">One product, one person's profile</p>
-        <p class="demo-product">Hydrating Cream, ingredient list</p>
+        <p class="demo-eyebrow">Sample product</p>
+        <p class="demo-title">Face moisturiser</p>
 
-        <div class="demo-inci">
-            <span class="inci inci-safe">Aqua</span>
-            <span class="inci inci-safe">Glycerin</span>
-            <span class="inci inci-moderate">Niacinamide</span>
-            <span class="inci inci-neutral">Panthenol</span>
-            <span class="inci inci-unsafe">Parfum</span>
-            <span class="inci inci-neutral">Tocopherol</span>
+        <div class="demo-switch" role="tablist" aria-label="Example profiles">
+            <button type="button" class="demo-tab is-active" role="tab"
+                    aria-selected="true" data-profile="atopic">Atopic skin</button>
+            <button type="button" class="demo-tab" role="tab"
+                    aria-selected="false" data-profile="acne">Acne-prone skin</button>
+        </div>
+        <p class="demo-switch-note">
+            Two example profiles, not real accounts. Same list, different verdicts.
+        </p>
+
+        <div class="demo-profile" data-profile="atopic">
+            <div class="demo-inci">
+                <span class="inci inci-safe">Aqua</span>
+                <span class="inci inci-safe">Glycerin</span>
+                <span class="inci inci-moderate">Niacinamide</span>
+                <span class="inci inci-safe">Panthenol</span>
+                <span class="inci inci-safe">Squalane</span>
+                <span class="inci inci-neutral">Butyrospermum Parkii</span>
+                <span class="inci inci-unsafe">Parfum</span>
+                <span class="inci inci-safe">Tocopherol</span>
+                <span class="inci inci-unsafe">Limonene</span>
+                <span class="inci inci-safe">Xanthan Gum</span>
+            </div>
+            <p class="demo-reading">
+                Fragrance and its components are marked red here, and niacinamide sits
+                on amber after a few bad reactions.
+            </p>
+        </div>
+
+        <div class="demo-profile" data-profile="acne" hidden>
+            <div class="demo-inci">
+                <span class="inci inci-safe">Aqua</span>
+                <span class="inci inci-safe">Glycerin</span>
+                <span class="inci inci-safe">Niacinamide</span>
+                <span class="inci inci-safe">Panthenol</span>
+                <span class="inci inci-moderate">Squalane</span>
+                <span class="inci inci-unsafe">Butyrospermum Parkii</span>
+                <span class="inci inci-neutral">Parfum</span>
+                <span class="inci inci-safe">Tocopherol</span>
+                <span class="inci inci-neutral">Limonene</span>
+                <span class="inci inci-safe">Xanthan Gum</span>
+            </div>
+            <p class="demo-reading">
+                Here niacinamide is fine and the rich emollients are the problem. Shea
+                butter is red, squalane amber. Fragrance simply has not been rated yet.
+            </p>
         </div>
 
         <ul class="demo-legend">
-            <li><span class="legend-dot legend-safe"></span> Green: works for you</li>
-            <li><span class="legend-dot legend-moderate"></span> Amber: you use it carefully</li>
-            <li><span class="legend-dot legend-unsafe"></span> Red: you avoid it</li>
-            <li><span class="legend-dot legend-neutral"></span> Grey: you haven't decided yet</li>
+            <li><span class="legend-dot legend-safe"></span> Safe for you</li>
+            <li><span class="legend-dot legend-moderate"></span> Use with care</li>
+            <li><span class="legend-dot legend-unsafe"></span> Best avoided</li>
+            <li><span class="legend-dot legend-neutral"></span> Not yet rated</li>
         </ul>
-
-        <p class="demo-note">
-            Open the same cream on someone else's account and the colours can look completely
-            different. That is the whole idea: the catalogue is shared, the verdict is yours.
-        </p>
     </div>
 </section>
 
@@ -76,21 +112,27 @@
 </section>
 {% else %}
 <section class="start-here">
-    <p>
-        Marking ingredients needs an account. If you would rather look around first, log in as
-        <code>testuser</code> with the password <code>testuser</code>. It is a shared demo profile
-        with preferences already set, so you can see the colours straight away.
-    </p>
-    <div class="start-actions">
-        <a class="start-primary" href="{% url 'users:register' %}">Create an account</a>
-        <a class="start-secondary" href="{% url 'users:login' %}">Log in</a>
+    <div class="start-text">
+        <p class="start-lead">Want to see it with real colours before signing up?</p>
+        <p>
+            Log in to the shared demo account. It already has a preference list set, so the
+            catalogue is coloured from the first click.
+        </p>
     </div>
+    <dl class="start-credentials">
+        <div>
+            <dt>Login</dt>
+            <dd><code>testuser</code></dd>
+        </div>
+        <div>
+            <dt>Password</dt>
+            <dd><code>testuser</code></dd>
+        </div>
+    </dl>
 </section>
 {% endif %}
 {% endblock %}
 
 {% block extra_js %}
-{% if user.is_authenticated %}
 <script src="{% static 'js/home.js' %}" defer></script>
-{% endif %}
 {% endblock %}

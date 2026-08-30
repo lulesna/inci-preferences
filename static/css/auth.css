@@ -1,10 +1,20 @@
 /* ekrany konta, wymaga wcześniej wczytanego forms.css */
 
+main:has(> .container) {
+    display: flex;
+    flex-direction: column;
+    /* własny margines main dublowałby padding kontenera */
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
 .container {
     display: flex;
     justify-content: center;
-    padding: 40px 20px 56px;
-    min-height: calc(100vh - 260px);
+    /* odstep zalezny od wysokosci okna: na niskim ekranie sciaga sie sam,
+       zeby karta zmiescila sie bez przewijania */
+    padding: clamp(10px, 2.2vh, 26px) 20px;
+    flex: 1;
 }
 
 .auth-form {
@@ -13,7 +23,7 @@
     margin: auto;
     width: 100%;
     max-width: 600px;
-    padding: 40px 48px 34px;
+    padding: 32px 48px 28px;
     background: var(--card-bg);
     border: 2px solid var(--lime);
     border-radius: 20px;
@@ -24,16 +34,16 @@
 .auth-form h2 {
     color: var(--accent-dark);
     text-align: center;
-    font-size: 30px;
+    font-size: 28px;
     font-weight: 700;
     line-height: 1.2;
-    margin-bottom: 26px;
+    margin-bottom: 18px;
 }
 
 .auth-form form {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 17px;
 }
 
 .auth-form .btn-primary {
@@ -132,7 +142,6 @@
     border-color: var(--dark-mint);
 }
 
-/* ptaszek rysowany w CSS, bez dodatkowego pliku */
 .password-rule.is-met .password-rule-mark::after {
     content: '';
     position: absolute;
@@ -180,7 +189,6 @@
     border-bottom-color: currentColor;
 }
 
-/* checkbox nie ma ramki do pokolorowania, więc obrys całego wiersza */
 .form-group-check.has-error {
     padding: 12px 14px;
     margin: 0 -14px;
@@ -203,8 +211,8 @@
 }
 
 form + .auth-link {
-    padding-top: 20px;
-    margin-top: 24px;
+    padding-top: 16px;
+    margin-top: 18px;
     border-top: 2px solid rgba(159, 213, 99, 0.3);
 }
 
@@ -242,7 +250,6 @@ form + .auth-link {
 @media (max-width: 640px) {
     .container {
         padding: 24px 14px 40px;
-        min-height: 0;
     }
 
     .auth-form {

@@ -49,7 +49,7 @@
             <h1><a href="{% url 'index' %}">
                 <img src="{% static 'images/logo.png' %}" alt="Logo" style="height: 2rem; vertical-align: middle; margin-bottom:8px;">INCI Preferences
             </a></h1>
-            <button class="hamburger" onclick="toggleMenu()" aria-label="Menu">
+            <button class="hamburger" type="button" aria-label="Menu" aria-expanded="false" aria-controls="nav-links">
                 <span></span>
                 <span></span>
                 <span></span>
@@ -61,18 +61,27 @@
 
             {% if user.is_authenticated %}
                 <li><a href="{% url 'addcosmetic' %}">Add</a></li>
-                <li><a href="/scan/">Scan</a></li>
-                <li><a href="{% url 'favorites' %}">Favorites</a></li>
-                <li><a href="{% url 'profile' %}">Profile</a></li>
-                <li><a href="{% url 'users:logout' %}" class="logout-btn">Logout</a></li>
+                <li><a href="{% url 'scan' %}">Scan</a></li>
+
+                <li class="account-menu">
+                    <details>
+                        <summary>{{ user.username }}</summary>
+                        <div class="account-dropdown">
+                            <a href="{% url 'favorites' %}">Favorites</a>
+                            <a href="{% url 'profile' %}">Profile</a>
+                            <a href="{% url 'users:logout' %}">Log out</a>
+                        </div>
+                    </details>
+                </li>
             {% else %}
-                <li><a href="{% url 'users:login' %}" class="login-btn">Login</a></li>
+                <li><a href="{% url 'users:login' %}" class="nav-btn nav-btn-ghost">Log in</a></li>
+                <li><a href="{% url 'users:register' %}" class="nav-btn nav-btn-solid">Create an account</a></li>
             {% endif %}
         </ul>
     </nav>
 </header>
 
-    <main>
+    <main class="{% block main_class %}{% endblock %}">
         {% if messages %}
             <div class="messages-container">
                 {% for message in messages %}
@@ -87,22 +96,17 @@
         {% endblock %}
     </main>
 
-    <footer style="text-align: center; padding: 20px; color: var(--text); font-size: 14px; border-top: 1px solid #eee; margin-top: 40px;">
+    <footer>
         <p>
-            <a href="{% url 'privacy' %}" style="color: var(--main-pink); margin: 0 10px;">Privacy Policy</a>
-            <a href="{% url 'terms' %}" style="color: var(--main-pink); margin: 0 10px;">Terms of Service</a>
-            <a href="mailto:contact@incipreferences.app" style="color: var(--main-pink); margin: 0 10px;">Contact</a>
+            <a href="{% url 'privacy' %}">Privacy Policy</a>
+            <a href="{% url 'terms' %}">Terms of Service</a>
+            <a href="mailto:contact@incipreferences.app">Contact</a>
         </p>
         <p>© 2026 INCI Preferences</p>
     </footer>
 
     {% block extra_js %}{% endblock %}
 
-<script>
-function toggleMenu() {
-    document.getElementById('nav-links').classList.toggle('open');
-    document.querySelector('.hamburger').classList.toggle('active');
-}
-</script>
+<script src="{% static 'js/nav.js' %}" defer></script>
 </body>
 </html>
