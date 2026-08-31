@@ -95,11 +95,11 @@
 
         function getSafetyBadge(safetyClass) {
             if (safetyClass === 'unsafe') {
-                return '<span class="safety-badge">🚫</span>';
+                return '<span class="safety-badge">Unsafe</span>';
             } else if (safetyClass === 'moderate') {
-                return '<span class="safety-badge">⚠️</span>';
+                return '<span class="safety-badge">Moderate</span>';
             } else if (safetyClass === 'safe') {
-                return '<span class="safety-badge">✅</span>';
+                return '<span class="safety-badge">Safe</span>';
             }
             return '';
         }

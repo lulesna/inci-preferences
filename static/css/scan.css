@@ -1,273 +1,418 @@
-.scan-container {
-    max-width: 80%;
+/* Skanowanie składu ze zdjęcia. Ten sam układ co widok szczegółów produktu:
+   jedna kolumna, sekcje jedna pod drugą, ramki tylko tam, gdzie coś naprawdę
+   jest osobnym elementem (pole na zdjęcie, werdykt, podgląd). */
+
+.sc-page {
+    max-width: 1400px;
     margin: 0 auto;
-}
-
-.upload-section {
-    margin-bottom: 30px;
-}
-
-.upload-box {
-    border: 3px dashed #e0e0e0;
-    border-radius: 16px;
-    padding: 60px 20px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.3s;
-    background: white;
-    max-width: 75%;
-    margin: 0 auto;
-}
-
-.upload-box:hover {
-    border-color: var(--lime);
-    background: rgba(159, 213, 99, 0.05);
-}
-
-.upload-icon {
-    font-size: 64px;
-    margin-bottom: 20px;
-}
-
-.upload-placeholder p {
-    color: var(--text);
-    font-weight: 600;
-    font-size: 18px;
-    margin-bottom: 5px;
-}
-
-.upload-placeholder small {
+    text-align: left;
     color: var(--text);
 }
 
-.preview-actions {
-    display: flex;
-    gap: 15px;
-    justify-content: center;
+.sc-page p {
+    max-width: none;
 }
 
-.change-photo-btn,
-.analyze-btn {
-    padding: 12px 24px;
-    border: none;
-    border-radius: 50px;
-    font-weight: 600;
+.sc-head {
+    padding-bottom: 22px;
+    border-bottom: 2px solid rgba(193, 207, 161, 0.5);
+    margin-bottom: 38px;
+}
+
+.sc-title {
     font-family: 'KineksRound', sans-serif;
-    cursor: pointer;
-    transition: all 0.3s;
+    font-size: 40px;
+    font-weight: 700;
+    line-height: 1.15;
+    /* --main-pink na jasnym tle daje kontrast poniżej 3:1, stąd ciemniejszy róż */
+    color: var(--accent-dark);
+    margin-bottom: 8px;
 }
 
-.change-photo-btn {
-    background: #e0e0e0;
-    color: var(--text);
+.sc-lead {
+    font-size: 16px;
+    color: var(--text-soft);
 }
 
-.change-photo-btn:hover {
-    background: #d0d0d0;
+/* Wgrywanie zdjęcia */
+
+.sc-upload {
+    margin-bottom: 40px;
 }
 
-.analyze-btn {
-    background: var(--lime);
-    color: white;
-}
-
-.analyze-btn:hover {
-    background: var(--main-pink);
-    transform: translateY(-2px);
-}
-
-.processing-box {
-    background: white;
-    border-radius: 16px;
-    padding: 40px;
-    text-align: center;
-}
-
-.spinner {
-    width: 60px;
-    height: 60px;
-    border: 4px solid #f3f3f3;
-    border-top: 4px solid var(--lime);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin: 0 auto 20px;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-#processing-text {
-    color: var(--text);
-    font-weight: 600;
-    margin-bottom: 20px;
-}
-
-.progress-bar {
+.sc-upload-inner {
+    display: block;
     width: 100%;
-    height: 8px;
-    background: #f0f0f0;
+    padding: 60px 24px;
+    border: 2px dashed var(--main-green);
+    border-radius: 22px;
+    background: var(--card-bg);
+    /* przyciski nie dziedziczą po body ani kroju, ani koloru tekstu */
+    font-family: 'KineksRound', sans-serif;
+    color: var(--text);
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background-color 0.2s;
+}
+
+.sc-upload-inner:hover,
+.sc-upload-inner:focus-visible {
+    border-color: var(--main-pink);
+    background: rgba(255, 255, 255, 0.7);
+}
+
+.sc-upload.dragging .sc-upload-inner {
+    border-color: var(--lime);
+    border-style: solid;
+    background: rgba(255, 255, 255, 0.8);
+}
+
+.sc-upload-title {
+    display: block;
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.sc-upload-note {
+    display: block;
+    font-family: 'Nunito Sans', 'Segoe UI', system-ui, sans-serif;
+    font-size: 14px;
+    color: var(--text-soft);
+}
+
+.sc-preview {
+    margin-bottom: 40px;
+}
+
+.sc-preview-image {
+    display: block;
+    max-width: 100%;
+    max-height: 460px;
+    margin-bottom: 20px;
+    border: 2px solid var(--main-green);
+    border-radius: 18px;
+}
+
+.sc-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.sc-btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 12px 24px;
+    border: 2px solid var(--main-green);
+    border-radius: 50px;
+    background: rgba(255, 255, 255, 0.6);
+    font-family: 'KineksRound', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s, background-color 0.2s;
+}
+
+.sc-btn:hover {
+    border-color: var(--main-pink);
+    color: var(--accent-dark);
+}
+
+.sc-btn-solid {
+    border-color: var(--lime);
+    background: var(--lime);
+    color: #ffffff;
+    font-weight: 700;
+}
+
+.sc-btn-solid:hover {
+    border-color: var(--main-pink);
+    background: var(--main-pink);
+    color: #ffffff;
+}
+
+/* Przetwarzanie */
+
+.sc-processing {
+    border: 2px solid var(--main-green);
+    border-radius: 22px;
+    background: var(--card-bg);
+    padding: 28px 32px;
+    margin-bottom: 40px;
+}
+
+.sc-processing-text {
+    font-family: 'KineksRound', sans-serif;
+    font-size: 17px;
+    font-weight: 600;
+    margin-bottom: 16px;
+}
+
+.sc-progress {
+    width: 100%;
+    height: 10px;
     border-radius: 10px;
+    background: rgba(255, 255, 255, 0.75);
     overflow: hidden;
 }
 
-.progress-fill {
+.sc-progress-fill {
+    width: 0;
     height: 100%;
     background: var(--lime);
-    width: 0%;
     transition: width 0.3s ease;
 }
 
-.result-card {
-    background: white;
-    border-radius: 16px;
-    padding: 25px;
-    margin-bottom: 20px;
-    box-shadow: 0 2px 8px rgba(130, 162, 132, 0.15);
+/* Sekcje wyniku */
+
+.sc-section {
+    margin-bottom: 46px;
 }
 
-.result-card h3 {
-    color: var(--main-pink);
-    margin-bottom: 20px;
+.sc-section-title {
+    font-family: 'KineksRound', sans-serif;
+    font-size: 25px;
+    font-weight: 700;
+    color: var(--accent-dark);
 }
 
-.recognized-text {
-    background: #f9f9f9;
-    padding: 20px;
-    border-radius: 12px;
-    margin-bottom: 15px;
+.sc-section-note {
+    margin-top: 6px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    color: var(--text-soft);
+}
+
+.sc-text {
+    margin-bottom: 16px;
+    padding: 20px 22px;
+    border: 2px solid rgba(193, 207, 161, 0.65);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.62);
     line-height: 1.8;
     color: var(--text);
 }
 
-.edit-text-btn {
-    padding: 8px 16px;
-    background: var(--lime);
-    color: white;
-    border: none;
-    border-radius: 50px;
-    font-weight: 600;
-    font-family: 'KineksRound', sans-serif;
-    cursor: pointer;
-    transition: all 0.3s;
-    font-size: 13px;
-}
-
-.edit-text-btn:hover {
-    background: var(--main-pink);
-}
-
-.verdict-icon {
-    font-size: 32px;
-}
-
-.verdict-text {
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--text);
-}
-
-.safety-stats {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 15px;
-    margin-bottom: 20px;
-}
-
-.stat-item {
-    text-align: center;
+.sc-editor {
+    width: 100%;
+    min-height: 170px;
     padding: 15px;
+    border: 2px solid var(--lime);
     border-radius: 12px;
-    background: #f9f9f9;
-}
-
-.stat-item.safe {
-    border: 2px solid var(--accent-green);
-}
-
-.stat-item.moderate {
-    border: 2px solid #f0ad4e;
-}
-
-.stat-item.unsafe {
-    border: 2px solid var(--accent-dark);
-}
-
-.stat-item.unknown {
-    border: 2px solid #ccc;
-}
-
-.stat-number {
-    font-size: 28px;
-    font-weight: 700;
-    color: var(--lime);
-}
-
-.stat-label {
-    font-size: 13px;
+    font-family: 'Nunito Sans', 'Segoe UI', system-ui, sans-serif;
+    font-size: 15px;
     color: var(--text);
-    margin-top: 5px;
+    resize: vertical;
+    outline: none;
 }
 
-.ingredient-category {
-    margin-bottom: 20px;
+.sc-editor:focus {
+    border-color: var(--main-pink);
 }
 
-.ingredient-category h5 {
+/* Werdykt, ten sam język co na stronie produktu */
+
+.sc-verdict {
+    border: 2px solid var(--main-green);
+    border-radius: 22px;
+    background: var(--card-bg);
+    padding: 28px 32px;
+    margin-bottom: 34px;
+}
+
+.sc-verdict-eyebrow {
+    font-family: 'KineksRound', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+}
+
+.sc-verdict-title {
+    font-family: 'KineksRound', sans-serif;
+    font-size: 30px;
+    font-weight: 700;
     color: var(--text);
     margin-bottom: 10px;
 }
 
-.ingredient-tags {
+.sc-verdict-lead {
+    font-size: 16px;
+    color: var(--text-soft);
+}
+
+.sc-verdict.safe {
+    border-color: var(--accent-green);
+    /* prawie biel z odcieniem, bo pełna zieleń na różowym tle robi się błotnista */
+    background: rgba(228, 250, 237, 0.82);
+}
+
+.sc-verdict.safe .sc-verdict-title {
+    color: #2d8659;
+}
+
+.sc-verdict.moderate {
+    border-color: #f0ad4e;
+    background: rgba(253, 243, 227, 0.86);
+}
+
+.sc-verdict.moderate .sc-verdict-title {
+    color: #a86a12;
+}
+
+.sc-verdict.unsafe {
+    border-color: var(--accent-dark);
+    background: rgba(253, 234, 242, 0.88);
+}
+
+.sc-verdict.unsafe .sc-verdict-title {
+    color: var(--accent-dark);
+}
+
+.sc-verdict a {
+    color: var(--accent-dark);
+    font-weight: 600;
+}
+
+.sc-counts {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 10px;
+    list-style: none;
+    margin-top: 22px;
 }
 
-.scan-another-btn {
-    width: 50%;
-    padding: 15px;
-    background: var(--main-pink);
-    color: white;
-    border: none;
+.sc-count {
+    padding: 6px 15px;
+    border: 2px solid rgba(193, 207, 161, 0.7);
     border-radius: 50px;
-    font-weight: 600;
-    font-family: 'KineksRound', sans-serif;
-    cursor: pointer;
-    transition: all 0.3s;
-    font-size: 16px;
-    margin: 0 auto;
+    background: rgba(255, 255, 255, 0.75);
+    font-size: 14px;
+    color: var(--text-soft);
 }
 
-.scan-another-btn:hover {
-    background: var(--accent-dark);
-    transform: translateY(-2px);
+.sc-count b {
+    font-weight: 700;
+    color: var(--text);
+}
+
+.sc-count.safe {
+    border-color: var(--accent-green);
+}
+
+.sc-count.moderate {
+    border-color: #f0ad4e;
+}
+
+.sc-count.unsafe {
+    border-color: var(--accent-dark);
+}
+
+/* Rozbicie na grupy */
+
+.sc-group {
+    margin-bottom: 30px;
+}
+
+.sc-group-title {
+    font-family: 'KineksRound', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 12px;
+}
+
+.sc-group-count {
+    font-family: 'Nunito Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-left: 8px;
+}
+
+.sc-group-note {
+    margin-top: 12px;
+    font-size: 14px;
+    color: var(--text-soft);
+}
+
+.sc-group-note a {
+    color: var(--accent-dark);
+    font-weight: 600;
+}
+
+.sc-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.sc-chip {
+    padding: 8px 14px;
+    border: 2px solid rgba(193, 207, 161, 0.65);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.62);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.sc-chip.safe {
+    border-color: var(--accent-green);
+    background: rgba(113, 221, 153, 0.2);
+}
+
+.sc-chip.moderate {
+    border-color: #f0ad4e;
+    background: rgba(240, 173, 78, 0.2);
+}
+
+.sc-chip.unsafe {
+    border-color: var(--accent-dark);
+    background: rgba(214, 67, 134, 0.14);
 }
 
 @media (max-width: 768px) {
-    .scan-container {
-        max-width: 100%;
-        padding: 0 5px;
+    .sc-title {
+        font-size: 28px;
     }
 
-    .result-card {
-        padding: 15px;
+    .sc-head {
+        margin-bottom: 28px;
     }
 
-    .safety-stats {
-        grid-template-columns: repeat(2, 1fr);
+    .sc-upload-inner {
+        padding: 40px 16px;
     }
 
-    .preview-actions {
-        flex-direction: column;
+    .sc-upload-title {
+        font-size: 17px;
     }
 
-    .upload-box {
-        padding: 40px 15px;
+    .sc-actions .sc-btn {
+        flex: 1;
+        justify-content: center;
+        padding: 12px 14px;
     }
 
-    .upload-icon {
-        font-size: 48px;
+    .sc-processing,
+    .sc-verdict {
+        padding: 22px 20px;
+    }
+
+    .sc-verdict-title {
+        font-size: 24px;
+    }
+
+    .sc-section {
+        margin-bottom: 36px;
+    }
+
+    .sc-section-title {
+        font-size: 21px;
     }
 }

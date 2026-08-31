@@ -1,77 +1,81 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Scan Ingredients - INCI Preferences{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="/static/css/scan.css">
+    <link rel="stylesheet" href="{% static 'css/scan.css' %}">
 {% endblock %}
 
+{% block main_class %}main-wide{% endblock %}
+
 {% block content %}
-    <section class="main-section">
-        <div class="scan-container">
-            <h2>Scan Ingredients from Photo</h2>
-            <p style="color: var(--text); text-align: center; margin-bottom: 30px;">
-                Upload a photo of product ingredients and get instant analysis
+    <section class="sc-page">
+        <div class="sc-head">
+            <h2 class="sc-title">Scan ingredients from a photo</h2>
+            <p class="sc-lead">
+                Photograph the ingredient list on the packaging. The text is read in your browser,
+                the photo never leaves your device, and the result is coloured against your own list.
             </p>
+        </div>
 
-            <div class="upload-section">
-                <div class="upload-box" id="upload-box">
-                    <input type="file" id="image-input" accept="image/*" style="display: none;" onchange="handleImageUpload(event)">
-                    <div class="upload-placeholder" onclick="document.getElementById('image-input').click()">
-                        <div class="upload-icon">📷</div>
-                        <p>Click to upload or drag & drop</p>
-                        <small>Supports JPG, PNG, HEIC</small>
-                    </div>
-                </div>
+        <div class="sc-upload" id="upload-box">
+            <input type="file" id="image-input" accept="image/*" hidden onchange="handleImageUpload(event)">
+            <button type="button" class="sc-upload-inner" onclick="document.getElementById('image-input').click()">
+                <span class="sc-upload-title">Choose a photo or drop it here</span>
+                <span class="sc-upload-note">JPG, PNG or HEIC, up to 10 MB</span>
+            </button>
+        </div>
 
-                <div id="preview-section" style="display: none;">
-                    <img id="image-preview" style="max-width: 100%; border-radius: 12px; margin-bottom: 20px;">
-                    <div class="preview-actions">
-                        <button class="change-photo-btn" onclick="document.getElementById('image-input').click()">
-                            Change Photo
-                        </button>
-                        <button class="analyze-btn" onclick="analyzeImage()">
-                            Analyze Ingredients
-                        </button>
-                    </div>
-                </div>
+        <div class="sc-preview" id="preview-section" style="display: none;">
+            <img class="sc-preview-image" id="image-preview" alt="Photo of the ingredient list">
+            <div class="sc-actions">
+                <button type="button" class="sc-btn sc-btn-solid" onclick="analyzeImage()">Read the ingredients</button>
+                <button type="button" class="sc-btn" onclick="document.getElementById('image-input').click()">Change photo</button>
             </div>
+        </div>
 
-            <div id="processing-section" style="display: none;">
-                <div class="processing-box">
-                    <div class="spinner"></div>
-                    <p id="processing-text">Reading ingredients from image...</p>
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="progress-fill"></div>
-                    </div>
-                </div>
+        <div class="sc-processing" id="processing-section" style="display: none;">
+            <p class="sc-processing-text" id="processing-text" role="status">Reading the ingredients from the photo...</p>
+            <div class="sc-progress">
+                <div class="sc-progress-fill" id="progress-fill"></div>
             </div>
+        </div>
 
-            <div id="results-section" style="display: none;">
-                <div class="result-card">
-                    <h3>Recognized Text</h3>
-                    <div class="recognized-text" id="recognized-text"></div>
-                    <button class="edit-text-btn" onclick="toggleEditMode()">Edit Text</button>
-                </div>
+        <div id="results-section" style="display: none;">
+            <section class="sc-section">
+                <h3 class="sc-section-title">Recognized text</h3>
+                <p class="sc-section-note">
+                    Reading from a photo goes wrong now and then. Correct the list before the analysis
+                    if something looks off.
+                </p>
+                <div class="sc-text" id="recognized-text"></div>
+                <button type="button" class="sc-btn" id="edit-text-btn" onclick="toggleEditMode()">Edit text</button>
+            </section>
 
-                {% if user.is_authenticated %}
-                <div class="result-card" id="analysis-card">
-                    <h3>Safety Analysis</h3>
-                    <div id="safety-summary"></div>
-                    <div id="ingredients-breakdown"></div>
-                </div>
-                {% else %}
-                <div class="result-card">
-                    <p style="text-align: center; color: var(--text);">
-                        <a href="{% url 'users:login' %}" style="color: var(--main-pink); font-weight: 600;">Log in</a>
-                        to see personalized safety analysis
+            {% if user.is_authenticated %}
+            <section class="sc-section" id="analysis-card">
+                <h3 class="sc-section-title">Safety analysis</h3>
+                <div id="safety-summary"></div>
+                <div id="ingredients-breakdown"></div>
+            </section>
+            {% else %}
+            <section class="sc-section">
+                <h3 class="sc-section-title">Safety analysis</h3>
+                <div class="sc-verdict">
+                    <p class="sc-verdict-eyebrow">Your own colour code</p>
+                    <p class="sc-verdict-title">Log in to see this list in your colours</p>
+                    <p class="sc-verdict-lead">
+                        Each recognised ingredient gets coloured against your personal list of safe,
+                        moderate and unsafe ingredients.
+                        <a href="{% url 'users:login' %}?next={{ request.path }}">Log in</a> to see it.
                     </p>
                 </div>
-                {% endif %}
+            </section>
+            {% endif %}
 
-                <div class="result-actions">
-                    <button class="scan-another-btn" onclick="resetScanner()">Scan Another Product</button>
-                </div>
+            <div class="sc-section">
+                <button type="button" class="sc-btn sc-btn-solid" onclick="resetScanner()">Scan another product</button>
             </div>
         </div>
     </section>
@@ -79,11 +83,15 @@
     <script src='https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js'></script>
 
     <script>
-    function escapeHtml(text) {
-        if (text === null || text === undefined) return '';
-        const div = document.createElement('div');
-        div.textContent = String(text);
-        return div.innerHTML;
+    function el(tag, className, text) {
+        const node = document.createElement(tag);
+        if (className) node.className = className;
+        if (text !== undefined && text !== null) node.textContent = text;
+        return node;
+    }
+
+    function plural(count, singular, many) {
+        return count === 1 ? singular : many;
     }
 
     let uploadedImage = null;
@@ -96,9 +104,6 @@
             const response = await fetch('/api/preferences/my_preferences/');
             const data = await response.json();
             userPreferences = {
-                safe: data.safe_ingredients.map(ing => ing.id),
-                moderate: data.moderate_ingredients.map(ing => ing.id),
-                unsafe: data.unsafe_ingredients.map(ing => ing.id),
                 safeNames: data.safe_ingredients.map(ing => ing.inci_name.toLowerCase()),
                 moderateNames: data.moderate_ingredients.map(ing => ing.inci_name.toLowerCase()),
                 unsafeNames: data.unsafe_ingredients.map(ing => ing.inci_name.toLowerCase())
@@ -129,7 +134,7 @@
         reader.onload = function(e) {
             uploadedImage = e.target.result;
             document.getElementById('image-preview').src = uploadedImage;
-            document.querySelector('.upload-box').style.display = 'none';
+            document.getElementById('upload-box').style.display = 'none';
             document.getElementById('preview-section').style.display = 'block';
             document.getElementById('results-section').style.display = 'none';
         };
@@ -138,26 +143,24 @@
 
     const uploadBox = document.getElementById('upload-box');
 
+    // podświetlenie pola sterowane klasą, wcześniej szło przez style inline
+    // i po upuszczeniu zdjęcia wracało do koloru wpisanego na sztywno
     uploadBox.addEventListener('dragover', (e) => {
         e.preventDefault();
-        uploadBox.style.borderColor = 'var(--lime)';
-        uploadBox.style.background = 'rgba(159, 213, 99, 0.1)';
+        uploadBox.classList.add('dragging');
     });
 
-    uploadBox.addEventListener('dragleave', (e) => {
-        uploadBox.style.borderColor = '#e0e0e0';
-        uploadBox.style.background = 'white';
+    uploadBox.addEventListener('dragleave', () => {
+        uploadBox.classList.remove('dragging');
     });
 
     uploadBox.addEventListener('drop', (e) => {
         e.preventDefault();
-        uploadBox.style.borderColor = '#e0e0e0';
-        uploadBox.style.background = 'white';
+        uploadBox.classList.remove('dragging');
 
         const file = e.dataTransfer.files[0];
         if (file && file.type.startsWith('image/')) {
-            const fakeEvent = { target: { files: [file] } };
-            handleImageUpload(fakeEvent);
+            handleImageUpload({ target: { files: [file] } });
         }
     });
 
@@ -174,12 +177,12 @@
             await worker.loadLanguage('eng');
             await worker.initialize('eng');
 
-            document.getElementById('processing-text').textContent = 'Processing image...';
+            document.getElementById('processing-text').textContent = 'Processing the photo...';
             document.getElementById('progress-fill').style.width = '30%';
 
             const { data: { text } } = await worker.recognize(uploadedImage);
 
-            document.getElementById('processing-text').textContent = 'Parsing ingredients...';
+            document.getElementById('processing-text').textContent = 'Splitting the list into ingredients...';
             document.getElementById('progress-fill').style.width = '60%';
 
             await worker.terminate();
@@ -187,7 +190,7 @@
             const cleanedText = cleanText(text);
             parseIngredients(cleanedText);
 
-            document.getElementById('processing-text').textContent = 'Analyzing safety...';
+            document.getElementById('processing-text').textContent = 'Comparing with your list...';
             document.getElementById('progress-fill').style.width = '90%';
 
             await new Promise(resolve => setTimeout(resolve, 500));
@@ -236,50 +239,23 @@
             .filter(ing => /^[A-Za-z\s\-\(\)0-9]+$/.test(ing));
     }
 
-    async function displayResults(rawText) {
-        const recognizedTextContainer = document.getElementById('recognized-text');
-        recognizedTextContainer.innerHTML = '';
+    function displayResults(rawText) {
+        const container = document.getElementById('recognized-text');
+        container.innerHTML = '';
 
-        const textDisplay = document.createElement('div');
-        textDisplay.className = 'text-display';
+        const textDisplay = el('div', 'text-display', rawText);
         textDisplay.id = 'text-display';
-        textDisplay.textContent = rawText;
-        recognizedTextContainer.appendChild(textDisplay);
+        container.appendChild(textDisplay);
 
-        const textEditor = document.createElement('textarea');
+        const textEditor = el('textarea', 'sc-editor');
         textEditor.id = 'text-editor';
         textEditor.style.display = 'none';
-        textEditor.style.width = '100%';
-        textEditor.style.minHeight = '150px';
-        textEditor.style.padding = '15px';
-        textEditor.style.border = '2px solid var(--lime)';
-        textEditor.style.borderRadius = '12px';
-        textEditor.style.fontFamily = "'KineksRound', sans-serif";
         textEditor.value = rawText;
-        recognizedTextContainer.appendChild(textEditor);
+        container.appendChild(textEditor);
 
         {% if user.is_authenticated %}
         if (!userPreferences) {
-            const analysisCard = document.getElementById('analysis-card');
-            analysisCard.innerHTML = '';
-
-            const h3 = document.createElement('h3');
-            h3.textContent = 'Safety Analysis';
-            analysisCard.appendChild(h3);
-
-            const p = document.createElement('p');
-            p.style.textAlign = 'center';
-            p.style.color = 'var(--text)';
-
-            const link = document.createElement('a');
-            link.href = '/profile/';
-            link.style.color = 'var(--main-pink)';
-            link.style.fontWeight = '600';
-            link.textContent = 'Set up your preferences';
-
-            p.appendChild(link);
-            p.appendChild(document.createTextNode(' to get personalized analysis'));
-            analysisCard.appendChild(p);
+            showPreferencesPrompt();
         } else {
             analyzeIngredients();
         }
@@ -289,158 +265,154 @@
     }
 
     {% if user.is_authenticated %}
-    function analyzeIngredients() {
-        let safeCount = 0;
-        let moderateCount = 0;
-        let unsafeCount = 0;
-        let unknownCount = 0;
+    function showPreferencesPrompt() {
+        const summary = document.getElementById('safety-summary');
+        summary.innerHTML = '';
+        document.getElementById('ingredients-breakdown').innerHTML = '';
 
-        const categorized = {
-            safe: [],
-            moderate: [],
-            unsafe: [],
-            unknown: []
-        };
+        const verdict = el('div', 'sc-verdict');
+        verdict.appendChild(el('p', 'sc-verdict-eyebrow', 'Your own colour code'));
+        verdict.appendChild(el('p', 'sc-verdict-title', 'Your list is still empty'));
 
-        recognizedIngredients.forEach(ing => {
-            const lowerIng = ing.toLowerCase();
+        const lead = el('p', 'sc-verdict-lead');
+        lead.appendChild(document.createTextNode('Mark a few ingredients as safe, moderate or unsafe and the scan starts colouring itself. '));
 
-            if (userPreferences.safeNames.some(safe => lowerIng.includes(safe) || safe.includes(lowerIng))) {
-                safeCount++;
-                categorized.safe.push(ing);
-            } else if (userPreferences.moderateNames.some(mod => lowerIng.includes(mod) || mod.includes(lowerIng))) {
-                moderateCount++;
-                categorized.moderate.push(ing);
-            } else if (userPreferences.unsafeNames.some(unsafe => lowerIng.includes(unsafe) || unsafe.includes(lowerIng))) {
-                unsafeCount++;
-                categorized.unsafe.push(ing);
-            } else {
-                unknownCount++;
-                categorized.unknown.push(ing);
-            }
-        });
+        const link = el('a', null, 'Set up your preferences');
+        link.href = '/profile/';
+        lead.appendChild(link);
+        lead.appendChild(document.createTextNode('.'));
 
-        let verdictClass = 'safe';
-        let verdictText = 'This product looks safe for you!';
-        let verdictIcon = '✅';
+        verdict.appendChild(lead);
+        summary.appendChild(verdict);
+    }
 
-        if (unsafeCount > 0) {
-            verdictClass = 'unsafe';
-            verdictText = `WARNING! Contains ${unsafeCount} unsafe ingredient${unsafeCount > 1 ? 's' : ''} for you`;
-            verdictIcon = '🚫';
-        } else if (moderateCount > 0) {
-            verdictClass = 'moderate';
-            verdictText = `CAUTION! Contains ${moderateCount} ingredient${moderateCount > 1 ? 's' : ''} to watch`;
-            verdictIcon = '⚠️';
-        }
+    // dopasowanie po nazwie, nie po id: skan nie wie, który składnik z bazy
+    // trzyma w ręku, ma tylko tekst odczytany ze zdjęcia
+    function matchIngredient(name) {
+        const lower = name.toLowerCase();
+        const hits = list => list.some(entry => lower.includes(entry) || entry.includes(lower));
 
-        const safetySummary = document.getElementById('safety-summary');
-        safetySummary.innerHTML = '';
+        if (hits(userPreferences.unsafeNames)) return 'unsafe';
+        if (hits(userPreferences.moderateNames)) return 'moderate';
+        if (hits(userPreferences.safeNames)) return 'safe';
+        return 'unknown';
+    }
 
-        const verdict = document.createElement('div');
-        verdict.className = `safety-verdict ${verdictClass}`;
-
-        const iconDiv = document.createElement('div');
-        iconDiv.className = 'verdict-icon';
-        iconDiv.textContent = verdictIcon;
-
-        const textDiv = document.createElement('div');
-        textDiv.className = 'verdict-text';
-        textDiv.textContent = verdictText;
-
-        verdict.appendChild(iconDiv);
-        verdict.appendChild(textDiv);
-        safetySummary.appendChild(verdict);
-
-        const stats = document.createElement('div');
-        stats.className = 'safety-stats';
-
-        const statsData = [
-            { className: 'safe', number: safeCount, label: 'Safe' },
-            { className: 'moderate', number: moderateCount, label: 'Moderate' },
-            { className: 'unsafe', number: unsafeCount, label: 'Unsafe' },
-            { className: 'unknown', number: unknownCount, label: 'Unknown' }
+    function buildCounts(groups) {
+        const list = el('ul', 'sc-counts');
+        const rows = [
+            {key: 'unsafe', tone: 'unsafe', label: 'unsafe'},
+            {key: 'moderate', tone: 'moderate', label: 'moderate'},
+            {key: 'safe', tone: 'safe', label: 'safe'},
+            {key: 'unknown', tone: '', label: 'not on your list'}
         ];
 
-        statsData.forEach(stat => {
-            const item = document.createElement('div');
-            item.className = `stat-item ${stat.className}`;
+        rows.forEach(row => {
+            const count = groups[row.key].length;
+            if (!count) return;
 
-            const num = document.createElement('div');
-            num.className = 'stat-number';
-            num.textContent = stat.number;
-
-            const label = document.createElement('div');
-            label.className = 'stat-label';
-            label.textContent = stat.label;
-
-            item.appendChild(num);
-            item.appendChild(label);
-            stats.appendChild(item);
+            const item = el('li', row.tone ? `sc-count ${row.tone}` : 'sc-count');
+            item.appendChild(el('b', null, String(count)));
+            item.appendChild(document.createTextNode(' ' + row.label));
+            list.appendChild(item);
         });
 
-        safetySummary.appendChild(stats);
+        return list;
+    }
+
+    function buildVerdict(groups) {
+        const verdict = el('div', 'sc-verdict');
+        verdict.appendChild(el('p', 'sc-verdict-eyebrow', 'Based on your ingredient list'));
+
+        const rated = groups.safe.length + groups.moderate.length + groups.unsafe.length;
+
+        if (rated === 0) {
+            verdict.appendChild(el('p', 'sc-verdict-title', 'Nothing to compare yet'));
+            verdict.appendChild(el('p', 'sc-verdict-lead',
+                'None of the recognised ingredients is on your list. Rate a few of them and the same photo will start colouring itself.'));
+            verdict.appendChild(buildCounts(groups));
+            return verdict;
+        }
+
+        // ta sama kolejność co na stronie produktu: jeden czerwony składnik
+        // przeważa nad wszystkimi żółtymi
+        if (groups.unsafe.length) {
+            verdict.classList.add('unsafe');
+            verdict.appendChild(el('p', 'sc-verdict-title', 'Best avoided'));
+            verdict.appendChild(el('p', 'sc-verdict-lead',
+                `The photo contains ${groups.unsafe.length} ${plural(groups.unsafe.length, 'ingredient', 'ingredients')} you marked as unsafe.`));
+        } else if (groups.moderate.length) {
+            verdict.classList.add('moderate');
+            verdict.appendChild(el('p', 'sc-verdict-title', 'Use with care'));
+            verdict.appendChild(el('p', 'sc-verdict-lead',
+                `Nothing from your avoid list, but ${groups.moderate.length} ${plural(groups.moderate.length, 'ingredient', 'ingredients')} you marked as moderate showed up.`));
+        } else {
+            verdict.classList.add('safe');
+            verdict.appendChild(el('p', 'sc-verdict-title', 'Looks good for you'));
+            verdict.appendChild(el('p', 'sc-verdict-lead',
+                'Everything the scan recognised and you have already rated is on your safe list.'));
+        }
+
+        verdict.appendChild(buildCounts(groups));
+
+        if (groups.unknown.length) {
+            verdict.appendChild(el('p', 'sc-verdict-lead',
+                `${groups.unknown.length} ${plural(groups.unknown.length, 'ingredient is', 'ingredients are')} not on your list yet, so the picture can still change.`));
+        }
+
+        return verdict;
+    }
+
+    function buildGroup(title, names, tone) {
+        if (!names.length) return null;
+
+        const group = el('div', 'sc-group');
+
+        const heading = el('h4', 'sc-group-title', title);
+        heading.appendChild(el('span', 'sc-group-count', String(names.length)));
+        group.appendChild(heading);
+
+        const chips = el('div', 'sc-chips');
+        names.forEach(name => chips.appendChild(el('span', tone ? `sc-chip ${tone}` : 'sc-chip', name)));
+        group.appendChild(chips);
+
+        return group;
+    }
+
+    function analyzeIngredients() {
+        const groups = {safe: [], moderate: [], unsafe: [], unknown: []};
+        recognizedIngredients.forEach(name => groups[matchIngredient(name)].push(name));
+
+        const summary = document.getElementById('safety-summary');
+        summary.innerHTML = '';
+        summary.appendChild(buildVerdict(groups));
 
         const breakdown = document.getElementById('ingredients-breakdown');
         breakdown.innerHTML = '';
 
-        const h4 = document.createElement('h4');
-        h4.textContent = 'Ingredients Breakdown:';
-        breakdown.appendChild(h4);
+        const sections = [
+            {title: 'Best avoided', names: groups.unsafe, tone: 'unsafe'},
+            {title: 'Use with care', names: groups.moderate, tone: 'moderate'},
+            {title: 'Safe for you', names: groups.safe, tone: 'safe'}
+        ];
 
-        const createIngredientCategory = (title, ingredients, categoryClass, tagClass) => {
-            if (ingredients.length === 0) return null;
+        sections.forEach(section => {
+            const group = buildGroup(section.title, section.names, section.tone);
+            if (group) breakdown.appendChild(group);
+        });
 
-            const category = document.createElement('div');
-            category.className = `ingredient-category ${categoryClass}`;
+        const unknownGroup = buildGroup('Not on your list', groups.unknown, '');
+        if (unknownGroup) {
+            const note = el('p', 'sc-group-note');
+            note.appendChild(document.createTextNode('These are not in your preferences yet. '));
 
-            const h5 = document.createElement('h5');
-            h5.textContent = `${title} (${ingredients.length})`;
-            category.appendChild(h5);
-
-            const tags = document.createElement('div');
-            tags.className = 'ingredient-tags';
-
-            ingredients.forEach(ing => {
-                const tag = document.createElement('span');
-                tag.className = `ingredient-tag ${tagClass}`;
-                tag.textContent = ing;
-                tags.appendChild(tag);
-            });
-
-            category.appendChild(tags);
-            return category;
-        };
-
-        const unsafeCategory = createIngredientCategory('🚫 Unsafe', categorized.unsafe, 'unsafe-category', 'unsafe');
-        if (unsafeCategory) breakdown.appendChild(unsafeCategory);
-
-        const moderateCategory = createIngredientCategory('⚠️ Moderate', categorized.moderate, 'moderate-category', 'moderate');
-        if (moderateCategory) breakdown.appendChild(moderateCategory);
-
-        const safeCategory = createIngredientCategory('✅ Safe', categorized.safe, 'safe-category', 'safe');
-        if (safeCategory) breakdown.appendChild(safeCategory);
-
-        if (categorized.unknown.length > 0) {
-            const unknownCategory = createIngredientCategory('Unknown', categorized.unknown, 'unknown-category', '');
-
-            const p = document.createElement('p');
-            p.style.fontSize = '13px';
-            p.style.color = 'var(--text)';
-            p.style.marginTop = '10px';
-
-            p.appendChild(document.createTextNode('These ingredients are not in your preferences. '));
-
-            const link = document.createElement('a');
+            const link = el('a', null, 'Add them');
             link.href = '/profile/';
-            link.style.color = 'var(--main-pink)';
-            link.textContent = 'Add them';
-            p.appendChild(link);
+            note.appendChild(link);
 
-            p.appendChild(document.createTextNode(' for more accurate analysis.'));
-            unknownCategory.appendChild(p);
-
-            breakdown.appendChild(unknownCategory);
+            note.appendChild(document.createTextNode(' to get a fuller picture next time.'));
+            unknownGroup.appendChild(note);
+            breakdown.appendChild(unknownGroup);
         }
     }
     {% endif %}
@@ -448,14 +420,14 @@
     function toggleEditMode() {
         const display = document.getElementById('text-display');
         const editor = document.getElementById('text-editor');
-        const btn = document.querySelector('.edit-text-btn');
+        const btn = document.getElementById('edit-text-btn');
 
         if (display.style.display === 'none') {
             const newText = editor.value;
             display.textContent = newText;
             display.style.display = 'block';
             editor.style.display = 'none';
-            btn.textContent = 'Edit Text';
+            btn.textContent = 'Edit text';
 
             parseIngredients(newText);
             {% if user.is_authenticated %}
@@ -464,19 +436,18 @@
         } else {
             display.style.display = 'none';
             editor.style.display = 'block';
-            btn.textContent = 'Save & Re-analyze';
+            btn.textContent = 'Save and analyse again';
         }
     }
 
     function resetScanner() {
         uploadedImage = null;
         recognizedIngredients = [];
-        document.querySelector('.upload-box').style.display = 'block';
+        document.getElementById('upload-box').style.display = 'block';
         document.getElementById('preview-section').style.display = 'none';
         document.getElementById('processing-section').style.display = 'none';
         document.getElementById('results-section').style.display = 'none';
         document.getElementById('image-input').value = '';
     }
     </script>
-
 {% endblock %}

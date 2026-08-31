@@ -1,12 +1,17 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Cosmetic Details - INCI Preferences{% endblock %}
 
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/detail.css' %}">
+{% endblock %}
+
+{% block main_class %}main-wide{% endblock %}
+
 {% block content %}
-    <section class="main-section">
-        <div class="cosmetic-detail-container" id="cosmetic-details">
-            <p>Loading cosmetic details...</p>
-        </div>
+    <section class="pd-page" id="cosmetic-details">
+        <p class="pd-loading">Loading cosmetic details...</p>
     </section>
 
     {% if user.is_authenticated %}
@@ -14,17 +19,17 @@
         <div class="modal-overlay" onclick="closeIngredientModal()"></div>
         <div class="modal-content">
             <h3 id="modal-ingredient-name"></h3>
-            <p style="color: var(--text); margin-bottom: 20px;">Set your preference for this ingredient:</p>
+            <p class="modal-lead">How does this ingredient work for your skin?</p>
 
             <div class="preference-buttons">
                 <button class="preference-btn safe" onclick="setIngredientPreference('GREEN')">
-                    ✅ Safe
+                    Safe
                 </button>
                 <button class="preference-btn moderate" onclick="setIngredientPreference('YELLOW')">
-                    ⚠️ Moderate
+                    Moderate
                 </button>
                 <button class="preference-btn unsafe" onclick="setIngredientPreference('RED')">
-                    🚫 Unsafe
+                    Unsafe
                 </button>
             </div>
 
@@ -111,11 +116,72 @@
     {% endif %}
 
     <script>
-    function escapeHtml(text) {
-        if (text === null || text === undefined) return '';
-        const div = document.createElement('div');
-        div.textContent = String(text);
-        return div.innerHTML;
+    function el(tag, className, text) {
+        const node = document.createElement(tag);
+        if (className) node.className = className;
+        if (text !== undefined && text !== null) node.textContent = text;
+        return node;
+    }
+
+    // Etykiety i adresy kategorii w jednym miejscu, bo korzysta z nich i ścieżka
+    // nad nazwą produktu, i selecty w zgłoszeniu poprawki.
+    const cosmeticCategories = {
+        'FACE': {label: 'Skincare', url: '{% url "skincare" %}'},
+        'MAKEUP': {label: 'Make-up', url: '{% url "makeup" %}'},
+        'BODY': {label: 'Bodycare', url: '{% url "bodycare" %}'}
+    };
+
+    const cosmeticSubcategories = {
+        'FACE': [
+            {value: 'CLEANSER', label: 'Cleanser', url: '{% url "skincare_cleanser" %}'},
+            {value: 'TONER', label: 'Toner', url: '{% url "skincare_toner" %}'},
+            {value: 'SERUM', label: 'Serum', url: '{% url "skincare_serum" %}'},
+            {value: 'MOISTURIZER', label: 'Moisturizer', url: '{% url "skincare_moisturizer" %}'},
+            {value: 'SPF', label: 'SPF & Sun Protection', url: '{% url "skincare_sunscreen" %}'}
+        ],
+        'MAKEUP': [
+            {value: 'EYES', label: 'Eyes', url: '{% url "makeup_eyes" %}'},
+            {value: 'FACE', label: 'Face', url: '{% url "makeup_face" %}'},
+            {value: 'LIPS', label: 'Lips', url: '{% url "makeup_lips" %}'}
+        ],
+        'BODY': []
+    };
+
+    const cosmeticProductTypes = {
+        'EYES': [
+            {value: 'MASCARA', label: 'Mascara'},
+            {value: 'EYESHADOW', label: 'Eyeshadow'},
+            {value: 'EYELINER', label: 'Eyeliner'},
+            // model ma BROW_PENCIL, a ta lista własne 'BROWS', więc wybór nie zapisywał się
+            {value: 'BROW_PENCIL', label: 'Brow Pencil'}
+        ],
+        'FACE': [
+            {value: 'FOUNDATION', label: 'Foundation'},
+            {value: 'CONCEALER', label: 'Concealer'},
+            {value: 'POWDER', label: 'Powder'},
+            {value: 'BLUSH', label: 'Blush'},
+            {value: 'BRONZER', label: 'Bronzer'},
+            {value: 'HIGHLIGHTER', label: 'Highlighter'},
+            {value: 'CONTOUR', label: 'Contour'},
+            {value: 'PRIMER', label: 'Face Primer'},
+            {value: 'SETTING_SPRAY', label: 'Setting Spray'}
+        ],
+        'LIPS': [
+            {value: 'LIPSTICK', label: 'Lipstick'},
+            {value: 'LIP_GLOSS', label: 'Lip Gloss'},
+            {value: 'LIP_LINER', label: 'Lip Liner'},
+            {value: 'LIP_BALM', label: 'Lip Balm'},
+            {value: 'LIP_STAIN', label: 'Lip Stain'}
+        ]
+    };
+
+    function optionFor(options, value) {
+        if (!Array.isArray(options) || !value) return null;
+        return options.find(item => item.value === value) || null;
+    }
+
+    function plural(count, singular, many) {
+        return count === 1 ? singular : many;
     }
 
     const rawId = window.location.pathname.split('/').filter(Boolean).pop();
@@ -155,9 +221,16 @@
     }
 
     {% if user.is_authenticated %}
-    function openIngredientModal(ingredientId, ingredientName, ingredientPurpose) {
+    function openIngredientModal(ingredientId, ingredientName, ingredientPurpose, currentColour) {
         selectedIngredient = ingredientId;
         document.getElementById('modal-ingredient-name').textContent = ingredientName;
+
+        // obecna ocena podświetlona, żeby było widać, że kliknięcie ją zmienia,
+        // a nie ustawia od zera
+        document.querySelectorAll('.preference-btn').forEach(btn => {
+            btn.classList.toggle('current', !!currentColour && btn.classList.contains(currentColour));
+        });
+
         resetProposeForm(ingredientPurpose);
         document.getElementById('ingredient-modal').style.display = 'block';
     }
@@ -171,7 +244,9 @@
     // żeby użytkownik poprawiał tekst, a nie pisał go od zera.
     function resetProposeForm(ingredientPurpose) {
         const field = document.getElementById('propose-purpose');
-        field.value = ingredientPurpose || '';
+        // 'Unknown' to zapchajdziura parsera, nie ma co kazać jej kasować
+        const known = ingredientPurpose && ingredientPurpose.trim().toLowerCase() !== 'unknown';
+        field.value = known ? ingredientPurpose : '';
         field.disabled = false;
 
         document.getElementById('propose-form').style.display = 'none';
@@ -256,49 +331,6 @@
             submitBtn.disabled = false;
         }
     }
-
-    const cosmeticSubcategories = {
-        'FACE': [
-            {value: 'CLEANSER', label: 'Cleanser'},
-            {value: 'TONER', label: 'Toner'},
-            {value: 'SERUM', label: 'Serum'},
-            {value: 'MOISTURIZER', label: 'Moisturizer'},
-            {value: 'SPF', label: 'SPF & Sun Protection'}
-        ],
-        'MAKEUP': [
-            {value: 'EYES', label: 'Eyes'},
-            {value: 'FACE', label: 'Face'},
-            {value: 'LIPS', label: 'Lips'}
-        ],
-        'BODY': []
-    };
-
-    const cosmeticProductTypes = {
-        'EYES': [
-            {value: 'MASCARA', label: 'Mascara'},
-            {value: 'EYESHADOW', label: 'Eyeshadow'},
-            {value: 'EYELINER', label: 'Eyeliner'},
-            {value: 'BROWS', label: 'Products For Brows'}
-        ],
-        'FACE': [
-            {value: 'FOUNDATION', label: 'Foundation'},
-            {value: 'CONCEALER', label: 'Concealer'},
-            {value: 'POWDER', label: 'Powder'},
-            {value: 'BLUSH', label: 'Blush'},
-            {value: 'BRONZER', label: 'Bronzer'},
-            {value: 'HIGHLIGHTER', label: 'Highlighter'},
-            {value: 'CONTOUR', label: 'Contour'},
-            {value: 'PRIMER', label: 'Face Primer'},
-            {value: 'SETTING_SPRAY', label: 'Setting Spray'}
-        ],
-        'LIPS': [
-            {value: 'LIPSTICK', label: 'Lipstick'},
-            {value: 'LIP_GLOSS', label: 'Lip Gloss'},
-            {value: 'LIP_LINER', label: 'Lip Liner'},
-            {value: 'LIP_BALM', label: 'Lip Balm'},
-            {value: 'LIP_STAIN', label: 'Lip Stain'}
-        ]
-    };
 
     function fillSelect(select, options, placeholder, selectedValue) {
         select.innerHTML = '';
@@ -470,181 +502,349 @@
     }
     {% endif %}
 
+    function groupIngredients(ingredients) {
+        const groups = {safe: [], moderate: [], unsafe: [], none: []};
+        ingredients.forEach(ing => groups[getIngredientColor(ing.id)].push(ing.inci_name));
+        return groups;
+    }
+
+    function describeProduct(cosmetic) {
+        const category = cosmeticCategories[cosmetic.main_category];
+        const sub = optionFor(cosmeticSubcategories[cosmetic.main_category], cosmetic.subcategory);
+        const type = optionFor(cosmeticProductTypes[cosmetic.subcategory], cosmetic.product_type);
+
+        const parts = [cosmetic.brand];
+        parts.push(category ? category.label : formatCategory(cosmetic.main_category));
+        if (cosmetic.subcategory) parts.push(sub ? sub.label : formatCategory(cosmetic.subcategory));
+        if (cosmetic.product_type) parts.push(type ? type.label : formatCategory(cosmetic.product_type));
+
+        return parts.filter(Boolean).join(' \u00b7 ');
+    }
+
+    function buildCrumbs(cosmetic) {
+        // znowu div zamiast <nav>: goły selektor nav w style.css układa menu
+        // serwisu w kolumnę i wyśrodkowuje je
+        const nav = el('div', 'pd-crumbs');
+
+        const catalogue = el('a', null, 'Catalogue');
+        catalogue.href = '{% url "categories" %}';
+        nav.appendChild(catalogue);
+
+        const category = cosmeticCategories[cosmetic.main_category];
+        if (category) {
+            nav.appendChild(el('span', null, '\u203a'));
+            const link = el('a', null, category.label);
+            link.href = category.url;
+            nav.appendChild(link);
+        }
+
+        const sub = optionFor(cosmeticSubcategories[cosmetic.main_category], cosmetic.subcategory);
+        if (sub) {
+            nav.appendChild(el('span', null, '\u203a'));
+            if (sub.url) {
+                const link = el('a', null, sub.label);
+                link.href = sub.url;
+                nav.appendChild(link);
+            } else {
+                nav.appendChild(document.createTextNode(sub.label));
+            }
+        }
+
+        return nav;
+    }
+
+    function buildHero(cosmetic) {
+        // div, nie <header>: goły selektor header w style.css to przyklejony
+        // pasek nawigacji, więc nagłówek produktu łapał jego tło i sticky
+        const hero = el('div', 'pd-hero');
+
+        const text = el('div', 'pd-hero-text');
+        text.appendChild(el('h2', 'pd-title', cosmetic.name));
+        text.appendChild(el('p', 'pd-meta', describeProduct(cosmetic)));
+        hero.appendChild(text);
+
+        {% if user.is_authenticated %}
+        const actions = el('div', 'pd-actions');
+
+        const favBtn = el('button', 'pd-action');
+        favBtn.id = 'favorite-btn';
+        favBtn.type = 'button';
+        favBtn.setAttribute('aria-pressed', 'false');
+        favBtn.appendChild(el('span', 'pd-action-label', 'Save product'));
+        favBtn.onclick = toggleFavorite;
+        actions.appendChild(favBtn);
+
+        const editBtn = el('button', 'pd-action', 'Suggest an edit');
+        editBtn.id = 'edit-cosmetic-btn';
+        editBtn.type = 'button';
+        editBtn.onclick = openCosmeticModal;
+        actions.appendChild(editBtn);
+
+        hero.appendChild(actions);
+        {% endif %}
+
+        return hero;
+    }
+
+    function buildCounts(groups) {
+        const list = el('ul', 'pd-counts');
+        const rows = [
+            {key: 'unsafe', tone: 'unsafe', label: 'unsafe'},
+            {key: 'moderate', tone: 'moderate', label: 'moderate'},
+            {key: 'safe', tone: 'safe', label: 'safe'},
+            {key: 'none', tone: '', label: 'not rated yet'}
+        ];
+
+        rows.forEach(row => {
+            const count = groups[row.key].length;
+            if (!count) return;
+
+            const item = el('li', row.tone ? `pd-count ${row.tone}` : 'pd-count');
+            item.appendChild(el('b', null, String(count)));
+            item.appendChild(document.createTextNode(' ' + row.label));
+            list.appendChild(item);
+        });
+
+        return list;
+    }
+
+    // z nazwy wymieniamy kilka pierwszych składników, reszta schodzi do "and N more".
+    // przy liście z dwudziestoma czerwonymi zdanie rozrastało się na pół ekranu
+    function appendNames(target, names, limit) {
+        const shown = names.slice(0, limit);
+        const rest = names.length - shown.length;
+
+        shown.forEach((name, index) => {
+            if (index > 0) {
+                const lastOne = index === shown.length - 1 && rest === 0;
+                target.appendChild(document.createTextNode(lastOne ? ' and ' : ', '));
+            }
+            target.appendChild(el('b', null, name));
+        });
+
+        if (rest > 0) {
+            target.appendChild(document.createTextNode(` and ${rest} more`));
+        }
+    }
+
+    function buildFlags(groups) {
+        if (!groups.unsafe.length && !groups.moderate.length) return null;
+
+        const paragraph = el('p', 'pd-flags');
+
+        if (groups.unsafe.length) {
+            appendNames(paragraph, groups.unsafe, 3);
+            paragraph.appendChild(document.createTextNode(
+                plural(groups.unsafe.length, ' is on your avoid list.', ' are on your avoid list.')));
+        }
+
+        if (groups.moderate.length) {
+            if (groups.unsafe.length) paragraph.appendChild(document.createTextNode(' '));
+            appendNames(paragraph, groups.moderate, 3);
+            paragraph.appendChild(document.createTextNode(
+                plural(groups.moderate.length, ' is marked moderate.', ' are marked moderate.')));
+        }
+
+        return paragraph;
+    }
+
+    function buildVerdict(groups) {
+        const section = el('section', 'pd-verdict');
+
+        {% if user.is_authenticated %}
+        const rated = groups.safe.length + groups.moderate.length + groups.unsafe.length;
+
+        section.appendChild(el('p', 'pd-verdict-eyebrow', 'Based on your ingredient list'));
+
+        if (rated === 0) {
+            section.appendChild(el('h3', 'pd-verdict-title', 'Nothing rated here yet'));
+            section.appendChild(el('p', 'pd-verdict-lead',
+                'None of these ingredients is on your list. Mark any of them below as safe, moderate or unsafe and the whole catalogue starts colouring itself for you.'));
+            return section;
+        }
+
+        // ta sama kolejność co get_cosmetic_safety_color po stronie serwera:
+        // jeden czerwony składnik przeważa nad wszystkimi żółtymi
+        if (groups.unsafe.length) {
+            section.classList.add('unsafe');
+            section.appendChild(el('h3', 'pd-verdict-title', 'Best avoided'));
+            section.appendChild(el('p', 'pd-verdict-lead',
+                'This product contains ingredients you marked as unsafe. The colours come from your own list, not from a general rating.'));
+        } else if (groups.moderate.length) {
+            section.classList.add('moderate');
+            section.appendChild(el('h3', 'pd-verdict-title', 'Use with care'));
+            section.appendChild(el('p', 'pd-verdict-lead',
+                'Nothing from your avoid list here, but a few ingredients you marked as moderate are in the composition.'));
+        } else {
+            section.classList.add('safe');
+            section.appendChild(el('h3', 'pd-verdict-title', 'Looks good for you'));
+            section.appendChild(el('p', 'pd-verdict-lead',
+                'Every ingredient you have rated so far is on your safe list.'));
+        }
+
+        section.appendChild(buildCounts(groups));
+
+        const flags = buildFlags(groups);
+        if (flags) section.appendChild(flags);
+
+        if (groups.none.length) {
+            section.appendChild(el('p', 'pd-verdict-hint',
+                `${groups.none.length} ${plural(groups.none.length, 'ingredient is', 'ingredients are')} still unrated, so this can change once you rate them.`));
+        }
+        {% else %}
+        section.appendChild(el('p', 'pd-verdict-eyebrow', 'Your own colour code'));
+        section.appendChild(el('h3', 'pd-verdict-title', 'Log in to see this product in your colours'));
+        section.appendChild(el('p', 'pd-verdict-lead',
+            'Every ingredient below gets coloured against your personal list of safe, moderate and unsafe ingredients. There is no single score for everyone, because no two skins agree.'));
+
+        const hint = el('p', 'pd-verdict-hint');
+        const loginLink = el('a', null, 'Log in');
+        loginLink.href = '{% url "users:login" %}?next=' + encodeURIComponent(window.location.pathname);
+        hint.appendChild(loginLink);
+        hint.appendChild(document.createTextNode(' or try the demo account '));
+        hint.appendChild(el('code', null, 'testuser'));
+        hint.appendChild(document.createTextNode(' / '));
+        hint.appendChild(el('code', null, 'testuser'));
+        hint.appendChild(document.createTextNode(', it already has a preference list set.'));
+        section.appendChild(hint);
+        {% endif %}
+
+        return section;
+    }
+
+    function buildChip(ing) {
+        const colour = getIngredientColor(ing.id);
+        const ingredientId = typeof ing.id === 'number' ? ing.id : 0;
+
+        {% if user.is_authenticated %}
+        const chip = el('button', `pd-chip ${colour}`);
+        chip.type = 'button';
+        chip.title = 'Click to change how this ingredient is rated for you';
+        chip.onclick = () => openIngredientModal(ingredientId, ing.inci_name, ing.purpose, colour);
+        {% else %}
+        const chip = el('span', `pd-chip ${colour}`);
+        {% endif %}
+
+        chip.appendChild(el('span', 'pd-chip-name', ing.inci_name));
+
+        // 'Unknown' wpisuje parser przy składniku spoza bazy, nie ma czego pokazywać
+        if (ing.purpose && ing.purpose.trim().toLowerCase() !== 'unknown') {
+            chip.appendChild(el('span', 'pd-chip-purpose', ing.purpose));
+        }
+
+        return chip;
+    }
+
+    function buildIngredients(ingredients) {
+        const section = el('section', 'pd-section');
+
+        const title = el('h3', 'pd-section-title', 'Full ingredient list');
+        title.appendChild(el('span', 'pd-section-count', String(ingredients.length)));
+        section.appendChild(title);
+
+        if (!ingredients.length) {
+            section.appendChild(el('p', 'pd-section-note', 'This product has no ingredients in the catalogue yet.'));
+            return section;
+        }
+
+        {% if user.is_authenticated %}
+        section.appendChild(el('p', 'pd-section-note',
+            'In the order printed on the packaging, so the first entries make up most of the product. Click any ingredient to change how it is rated for you.'));
+        {% else %}
+        section.appendChild(el('p', 'pd-section-note',
+            'In the order printed on the packaging, so the first entries make up most of the product.'));
+        {% endif %}
+
+        const list = el('div', 'pd-inci');
+        ingredients.forEach(ing => list.appendChild(buildChip(ing)));
+        section.appendChild(list);
+
+        return section;
+    }
+
+    function buildColourKey() {
+        const section = el('section', 'pd-section');
+
+        section.appendChild(el('h3', 'pd-section-title', 'Your colour key'));
+        section.appendChild(el('p', 'pd-section-note',
+            'These colours belong to your account. The same product can look completely different for someone else.'));
+
+        const items = [
+            {tone: 'safe', label: 'Safe for you', note: 'you marked it as fine'},
+            {tone: 'moderate', label: 'Use with care', note: 'worth keeping an eye on'},
+            {tone: 'unsafe', label: 'Best avoided', note: 'on your avoid list'},
+            {tone: '', label: 'Not rated yet', note: 'still up to you'}
+        ];
+
+        const list = el('ul', 'pd-key-list');
+        items.forEach(item => {
+            const row = el('li', 'pd-key-item');
+            row.appendChild(el('span', item.tone ? `pd-dot ${item.tone}` : 'pd-dot'));
+            row.appendChild(el('b', null, item.label));
+            row.appendChild(document.createTextNode(' ' + item.note));
+            list.appendChild(row);
+        });
+        section.appendChild(list);
+
+        return section;
+    }
+
+    function buildDupes(cosmetic) {
+        const section = el('section', 'pd-section pd-cta');
+
+        section.appendChild(el('h3', 'pd-section-title', 'Looking for another option?'));
+        section.appendChild(el('p', 'pd-section-note',
+            'Products with a composition close to this one, coloured against the same list of yours.'));
+
+        const link = el('a', 'pd-cta-btn', 'Find similar products');
+        link.href = `{% url 'dupes' %}?id=${typeof cosmetic.id === 'number' ? cosmetic.id : 0}`;
+        section.appendChild(link);
+
+        return section;
+    }
+
+    function showDetailError(message) {
+        const container = document.getElementById('cosmetic-details');
+        container.innerHTML = '';
+        container.appendChild(el('p', 'pd-error', message));
+    }
+
     async function loadCosmeticDetails() {
         await loadUserPreferences();
 
         try {
             const response = await fetch(`/api/cosmetics/${encodeURIComponent(cosmeticId)}/`);
+
+            // przy 404 API oddaje {"detail": ...} i bez tej gałęzi strona rysowała
+            // nagłówek z "undefined" zamiast powiedzieć, że produktu nie ma
+            if (!response.ok) {
+                showDetailError(response.status === 404
+                    ? 'This product is not in the catalogue any more.'
+                    : 'Could not load this product. Please refresh the page.');
+                return;
+            }
+
             const cosmetic = await response.json();
             currentCosmetic = cosmetic;
 
+            const ingredients = Array.isArray(cosmetic.ingredients) ? cosmetic.ingredients : [];
+            const groups = groupIngredients(ingredients);
+
             const container = document.getElementById('cosmetic-details');
             container.innerHTML = '';
-
-            const header = document.createElement('div');
-            header.className = 'cosmetic-detail-header';
-
-            const h2 = document.createElement('h2');
-            h2.textContent = cosmetic.name;
-            header.appendChild(h2);
-
-            {% if user.is_authenticated %}
-            const favBtn = document.createElement('button');
-            favBtn.id = 'favorite-btn';
-            favBtn.onclick = toggleFavorite;
-            favBtn.title = 'Add to favorites';
-            favBtn.textContent = '☆';
-            header.appendChild(favBtn);
-
-            const editBtn = document.createElement('button');
-            editBtn.id = 'edit-cosmetic-btn';
-            editBtn.onclick = openCosmeticModal;
-            editBtn.title = 'Suggest an edit';
-            editBtn.textContent = 'Suggest an edit';
-            header.appendChild(editBtn);
-            {% endif %}
-
-            const brandP = document.createElement('p');
-            const brandStrong = document.createElement('strong');
-            brandStrong.textContent = 'Brand:';
-            brandP.appendChild(brandStrong);
-            brandP.appendChild(document.createTextNode(' ' + cosmetic.brand));
-            header.appendChild(brandP);
-
-            const categoryP = document.createElement('p');
-            const categoryStrong = document.createElement('strong');
-            categoryStrong.textContent = 'Category:';
-            categoryP.appendChild(categoryStrong);
-            categoryP.appendChild(document.createTextNode(' ' + formatCategory(cosmetic.main_category)));
-            header.appendChild(categoryP);
-
-            if (cosmetic.subcategory) {
-                const subP = document.createElement('p');
-                const subStrong = document.createElement('strong');
-                subStrong.textContent = 'Subcategory:';
-                subP.appendChild(subStrong);
-                subP.appendChild(document.createTextNode(' ' + formatCategory(cosmetic.subcategory)));
-                header.appendChild(subP);
-            }
-
-            if (cosmetic.product_type) {
-                const typeP = document.createElement('p');
-                const typeStrong = document.createElement('strong');
-                typeStrong.textContent = 'Product Type:';
-                typeP.appendChild(typeStrong);
-                typeP.appendChild(document.createTextNode(' ' + formatCategory(cosmetic.product_type)));
-                header.appendChild(typeP);
-            }
-
-            container.appendChild(header);
-
-            const ingredientsSection = document.createElement('div');
-            ingredientsSection.className = 'ingredients-section';
-
-            const ingredientsCount = Array.isArray(cosmetic.ingredients) ? cosmetic.ingredients.length : 0;
-
-            const h3 = document.createElement('h3');
-            h3.textContent = `Full Ingredients List (${ingredientsCount})`;
-            ingredientsSection.appendChild(h3);
-
-            if (ingredientsCount > 0) {
-                const list = document.createElement('div');
-                list.className = 'ingredients-list';
-
-                cosmetic.ingredients.forEach((ing, index) => {
-                    const color = getIngredientColor(ing.id);
-                    const ingredientId = typeof ing.id === 'number' ? ing.id : 0;
-
-                    const span = document.createElement('span');
-                    span.className = `ingredient-tag ${color}`;
-                    span.textContent = ing.inci_name;
-
-                    {% if user.is_authenticated %}
-                    span.classList.add('clickable');
-                    span.title = 'Click to set preference';
-                    span.onclick = () => openIngredientModal(ingredientId, ing.inci_name, ing.purpose);
-                    {% else %}
-                    span.title = ing.purpose || 'No purpose listed';
-                    {% endif %}
-
-                    list.appendChild(span);
-
-                    if (index < cosmetic.ingredients.length - 1) {
-                        list.appendChild(document.createTextNode(' '));
-                    }
-                });
-
-                ingredientsSection.appendChild(list);
-
-                {% if user.is_authenticated %}
-                if (userPreferences) {
-                    const legend = document.createElement('div');
-                    legend.className = 'ingredient-legend';
-
-                    const safeSpan = document.createElement('span');
-                    safeSpan.className = 'ingredient-tag safe';
-                    safeSpan.textContent = '✅ Safe';
-                    legend.appendChild(safeSpan);
-
-                    const moderateSpan = document.createElement('span');
-                    moderateSpan.className = 'ingredient-tag moderate';
-                    moderateSpan.textContent = '⚠️ Moderate';
-                    legend.appendChild(moderateSpan);
-
-                    const unsafeSpan = document.createElement('span');
-                    unsafeSpan.className = 'ingredient-tag unsafe';
-                    unsafeSpan.textContent = '🚫 Unsafe';
-                    legend.appendChild(unsafeSpan);
-
-                    const legendText = document.createElement('span');
-                    legendText.style.color = 'var(--text)';
-                    legendText.style.fontSize = '12px';
-                    legendText.textContent = 'based on your preferences - click ingredient to change';
-                    legend.appendChild(legendText);
-
-                    ingredientsSection.appendChild(legend);
-                }
-                {% endif %}
-            } else {
-                const p = document.createElement('p');
-                p.textContent = 'No ingredients listed.';
-                ingredientsSection.appendChild(p);
-            }
-
-            container.appendChild(ingredientsSection);
-
-            const cosmeticIdForLink = typeof cosmetic.id === 'number' ? cosmetic.id : 0;
-            const dupesDiv = document.createElement('div');
-            dupesDiv.style.textAlign = 'center';
-            dupesDiv.style.marginTop = '30px';
-
-            const dupesLink = document.createElement('a');
-            dupesLink.href = `/dupes/?id=${cosmeticIdForLink}`;
-            dupesLink.style.display = 'inline-block';
-            dupesLink.style.padding = '12px 24px';
-            dupesLink.style.backgroundColor = 'var(--main-pink)';
-            dupesLink.style.color = 'white';
-            dupesLink.style.textDecoration = 'none';
-            dupesLink.style.borderRadius = '50px';
-            dupesLink.style.fontWeight = '600';
-            dupesLink.style.transition = 'all 0.3s';
-            dupesLink.textContent = 'Find Similar Products';
-            dupesLink.onmouseover = function() { this.style.transform = 'translateY(-2px)'; };
-            dupesLink.onmouseout = function() { this.style.transform = 'translateY(0)'; };
-
-            dupesDiv.appendChild(dupesLink);
-            container.appendChild(dupesDiv);
+            container.appendChild(buildCrumbs(cosmetic));
+            container.appendChild(buildHero(cosmetic));
+            container.appendChild(buildVerdict(groups));
+            container.appendChild(buildIngredients(ingredients));
+            container.appendChild(buildColourKey());
+            container.appendChild(buildDupes(cosmetic));
 
             {% if user.is_authenticated %}
             checkIfFavorite();
             {% endif %}
 
         } catch (error) {
-            const container = document.getElementById('cosmetic-details');
-            container.innerHTML = '';
-            const p = document.createElement('p');
-            p.textContent = 'Error loading cosmetic details.';
-            container.appendChild(p);
+            showDetailError('Could not load this product. Please refresh the page.');
         }
     }
 
@@ -664,17 +864,11 @@
 
     function updateFavoriteButton() {
         const btn = document.getElementById('favorite-btn');
-        if (btn) {
-            if (isFavorite) {
-                btn.textContent = '★';
-                btn.classList.add('favorited');
-                btn.title = 'Remove from favorites';
-            } else {
-                btn.textContent = '☆';
-                btn.classList.remove('favorited');
-                btn.title = 'Add to favorites';
-            }
-        }
+        if (!btn) return;
+
+        btn.classList.toggle('favorited', isFavorite);
+        btn.setAttribute('aria-pressed', isFavorite ? 'true' : 'false');
+        btn.querySelector('.pd-action-label').textContent = isFavorite ? 'Saved' : 'Save product';
     }
 
     async function toggleFavorite() {
@@ -717,303 +911,7 @@
     if (cosmeticId) {
         loadCosmeticDetails();
     } else {
-        const container = document.getElementById('cosmetic-details');
-        container.innerHTML = '';
-        const p = document.createElement('p');
-        p.textContent = 'Invalid cosmetic ID.';
-        container.appendChild(p);
+        showDetailError('Invalid cosmetic ID.');
     }
     </script>
-
-    <style>
-    #ingredient-modal {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        z-index: 1000;
-    }
-
-    .modal-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.5);
-        backdrop-filter: blur(4px);
-    }
-
-    .modal-content {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: white;
-        border-radius: 20px;
-        padding: 30px;
-        max-width: 400px;
-        width: 90%;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-    }
-
-    .modal-content h3 {
-        color: var(--main-pink);
-        font-size: 22px;
-        margin-bottom: 10px;
-    }
-
-    .preference-buttons {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        margin-bottom: 20px;
-    }
-
-    .preference-btn {
-        padding: 15px 20px;
-        border: 3px solid;
-        border-radius: 12px;
-        font-size: 16px;
-        font-weight: 600;
-        font-family: 'KineksRound', sans-serif;
-        cursor: pointer;
-        transition: all 0.3s;
-        background: white;
-    }
-
-    .preference-btn.safe {
-        border-color: var(--accent-green);
-        color: #2d8659;
-    }
-
-    .preference-btn.safe:hover {
-        background: rgba(113, 221, 153, 0.1);
-        transform: scale(1.02);
-    }
-
-    .preference-btn.moderate {
-        border-color: #f0ad4e;
-        color: #d89736;
-    }
-
-    .preference-btn.moderate:hover {
-        background: rgba(240, 173, 78, 0.1);
-        transform: scale(1.02);
-    }
-
-    .preference-btn.unsafe {
-        border-color: var(--accent-dark);
-        color: var(--accent-dark);
-    }
-
-    .preference-btn.unsafe:hover {
-        background: rgba(197, 78, 163, 0.1);
-        transform: scale(1.02);
-    }
-
-    #cosmetic-modal {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        z-index: 1000;
-    }
-
-    .modal-content.modal-wide {
-        max-width: 520px;
-        max-height: 85vh;
-        overflow-y: auto;
-    }
-
-    #edit-cosmetic-btn {
-        margin-left: 12px;
-        padding: 8px 16px;
-        background: none;
-        border: 2px solid var(--main-pink);
-        border-radius: 50px;
-        color: var(--main-pink);
-        font-size: 13px;
-        font-weight: 600;
-        font-family: 'KineksRound', sans-serif;
-        cursor: pointer;
-        transition: all 0.3s;
-        vertical-align: middle;
-    }
-
-    #edit-cosmetic-btn:hover {
-        background: var(--main-pink);
-        color: white;
-    }
-
-    .edit-field {
-        text-align: left;
-        margin-bottom: 14px;
-    }
-
-    .edit-field label {
-        display: block;
-        font-size: 13px;
-        font-weight: 600;
-        color: var(--text);
-        margin-bottom: 6px;
-    }
-
-    .edit-field input,
-    .edit-field select,
-    .edit-field textarea {
-        width: 100%;
-        padding: 10px;
-        border: 2px solid var(--lime);
-        border-radius: 10px;
-        font-size: 14px;
-        font-family: 'KineksRound', sans-serif;
-        outline: none;
-        background: white;
-    }
-
-    .edit-field textarea {
-        resize: vertical;
-    }
-
-    .edit-field input:focus,
-    .edit-field select:focus,
-    .edit-field textarea:focus {
-        border-color: var(--main-pink);
-    }
-
-    .edit-field .propose-hint {
-        margin: 6px 0 0;
-    }
-
-    .propose-section {
-        border-top: 1px solid #e8e8e8;
-        padding-top: 16px;
-        margin-bottom: 16px;
-    }
-
-    .propose-toggle {
-        width: 100%;
-        padding: 10px;
-        background: none;
-        border: 2px dashed var(--main-pink);
-        border-radius: 12px;
-        color: var(--main-pink);
-        font-size: 14px;
-        font-weight: 600;
-        font-family: 'KineksRound', sans-serif;
-        cursor: pointer;
-        transition: all 0.3s;
-    }
-
-    .propose-toggle:hover {
-        background: rgba(223, 150, 180, 0.1);
-    }
-
-    #propose-form {
-        margin-top: 14px;
-        text-align: left;
-    }
-
-    #propose-form label {
-        display: block;
-        font-size: 13px;
-        font-weight: 600;
-        color: var(--text);
-        margin-bottom: 6px;
-    }
-
-    #propose-purpose {
-        width: 100%;
-        padding: 10px;
-        border: 2px solid var(--lime);
-        border-radius: 10px;
-        font-size: 14px;
-        font-family: 'KineksRound', sans-serif;
-        resize: vertical;
-        outline: none;
-    }
-
-    #propose-purpose:focus {
-        border-color: var(--main-pink);
-    }
-
-    #propose-purpose:disabled {
-        background: #f4f4f4;
-        color: #888;
-    }
-
-    .propose-hint {
-        font-size: 12px;
-        color: #777;
-        margin: 8px 0 12px;
-    }
-
-    .propose-submit {
-        width: 100%;
-        padding: 12px;
-        background-color: var(--lime);
-        color: white;
-        border: none;
-        border-radius: 12px;
-        font-size: 14px;
-        font-weight: bold;
-        font-family: 'KineksRound', sans-serif;
-        cursor: pointer;
-        transition: all 0.3s;
-    }
-
-    .propose-submit:hover:not(:disabled) {
-        background-color: var(--main-pink);
-    }
-
-    .propose-submit:disabled {
-        background-color: #ccc;
-        cursor: not-allowed;
-    }
-
-    .propose-status {
-        font-size: 13px;
-        margin-top: 10px;
-        min-height: 1em;
-    }
-
-    .propose-status.success {
-        color: #2d8659;
-        font-weight: 600;
-    }
-
-    .propose-status.error {
-        color: var(--accent-dark);
-        font-weight: 600;
-    }
-
-    .cancel-btn {
-        width: 100%;
-        padding: 12px;
-        background: #e0e0e0;
-        border: none;
-        border-radius: 12px;
-        font-size: 14px;
-        font-weight: 600;
-        font-family: 'KineksRound', sans-serif;
-        cursor: pointer;
-        transition: all 0.3s;
-    }
-
-    .cancel-btn:hover {
-        background: #d0d0d0;
-    }
-
-    .ingredient-tag.clickable {
-        cursor: pointer;
-    }
-
-    .ingredient-tag.clickable:hover {
-        transform: scale(1.05);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-    }
-    </style>
 {% endblock %}
