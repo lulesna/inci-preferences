@@ -1,0 +1,60 @@
+{% load static %}
+{# Okno oceny składnika. Wstawiane na stronie produktu i w skanerze, obsługę niesie ingredient-modal.js #}
+<div id="ingredient-modal" style="display: none;">
+    <div class="modal-overlay" data-modal-close></div>
+    <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="modal-ingredient-name">
+        <p class="modal-eyebrow">Your rating</p>
+        <h3 id="modal-ingredient-name"></h3>
+        <p class="modal-purpose" id="modal-ingredient-purpose"></p>
+        <p class="modal-lead">
+            How does it work for your skin? The choice colours this ingredient everywhere in the catalogue.
+        </p>
+
+        <div class="preference-buttons">
+            <button type="button" class="preference-btn safe" data-color="GREEN">
+                <span class="preference-dot"></span>
+                <span class="preference-text">
+                    <span class="preference-label">Safe for you</span>
+                    <span class="preference-hint">comfortable match</span>
+                </span>
+                <span class="preference-state"></span>
+            </button>
+
+            <button type="button" class="preference-btn moderate" data-color="YELLOW">
+                <span class="preference-dot"></span>
+                <span class="preference-text">
+                    <span class="preference-label">Use with care</span>
+                    <span class="preference-hint">worth keeping an eye on</span>
+                </span>
+                <span class="preference-state"></span>
+            </button>
+
+            <button type="button" class="preference-btn unsafe" data-color="RED">
+                <span class="preference-dot"></span>
+                <span class="preference-text">
+                    <span class="preference-label">Best avoided</span>
+                    <span class="preference-hint">goes on your avoid list</span>
+                </span>
+                <span class="preference-state"></span>
+            </button>
+        </div>
+
+        <div class="propose-section">
+            <button type="button" class="propose-toggle" id="propose-toggle">Suggest a correction</button>
+
+            <div id="propose-form" style="display: none;">
+                <label for="propose-purpose">Purpose</label>
+                <textarea id="propose-purpose" rows="3" maxlength="100"></textarea>
+                <p class="propose-hint">
+                    Suggestions go to moderation, so the catalogue changes only after an admin approves.
+                </p>
+                <button type="button" id="propose-submit-btn" class="propose-submit">Submit for review</button>
+                <p id="propose-status" class="propose-status" role="status"></p>
+            </div>
+        </div>
+
+        <button type="button" class="cancel-btn" data-modal-close>Close</button>
+    </div>
+</div>
+
+<script src="{% static 'js/ingredient-modal.js' %}"></script>
