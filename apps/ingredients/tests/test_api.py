@@ -43,6 +43,70 @@ class IngredientAPITest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['results']), 0)
 
+    def test_lookup_matches_names_regardless_of_case(self):
+        response = self.client.post('/api/ingredients/lookup/', {
+            'names': ['aqua', 'GLYCERIN', 'Sodium Chloride']
+        }, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        found = sorted(item['ingredient']['inci_name'] for item in response.data)
+        self.assertEqual(found, ['Aqua', 'Glycerin'])
+        self.assertTrue(all(item['match'] == 'exact' for item in response.data))
+        self.assertEqual(response.data[0]['ingredient']['purpose'], 'Solvent')
+
+    def test_lookup_repairs_ocr_typos(self):
+        """literówki OCR mają trafiać w katalog, bo inaczej skan jest bezużyteczny"""
+        Ingredient.objects.create(inci_name='Butyrospermum Parkii Butter')
+        Ingredient.objects.create(inci_name='Parfum')
+
+        response = self.client.post('/api/ingredients/lookup/', {
+            'names': ['Agua', 'Butyrospermum Parkn Butter', 'Arfum']
+        }, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        matched = {item['query']: item['ingredient']['inci_name'] for item in response.data}
+        self.assertEqual(matched['agua'], 'Aqua')
+        self.assertEqual(matched['butyrospermum parkn butter'], 'Butyrospermum Parkii Butter')
+        self.assertEqual(matched['arfum'], 'Parfum')
+        self.assertTrue(all(item['match'] == 'fuzzy' for item in response.data))
+
+    def test_lookup_keeps_similar_ingredients_apart(self):
+        """nazwy różniące się o kilka znaków to osobne składniki, nie literówki"""
+        Ingredient.objects.create(inci_name='Citric Acid')
+        Ingredient.objects.create(inci_name='Glyceryl Stearate')
+        Ingredient.objects.create(inci_name='Cetearyl Alcohol')
+
+        response = self.client.post('/api/ingredients/lookup/', {
+            'names': ['Lactic Acid', 'Glyceryl Stearate SE', 'Cetyl Alcohol']
+        }, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, [])
+
+    def test_lookup_rejects_payload_without_list(self):
+        response = self.client.post('/api/ingredients/lookup/', {
+            'names': 'Aqua'
+        }, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_lookup_prefers_exact_match_over_similar_name(self):
+        Ingredient.objects.create(inci_name='Aqua Marina')
+
+        response = self.client.post('/api/ingredients/lookup/', {'names': ['Aqua']}, format='json')
+
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['ingredient']['inci_name'], 'Aqua')
+        self.assertEqual(response.data[0]['match'], 'exact')
+
+    def test_lookup_with_empty_list_returns_nothing(self):
+        response = self.client.post('/api/ingredients/lookup/', {'names': []}, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, [])
+
     def test_create_ingredient_requires_authentication(self):
         response = self.client.post('/api/ingredients/', {
             'inci_name': 'New Ingredient',

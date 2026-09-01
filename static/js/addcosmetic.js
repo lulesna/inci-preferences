@@ -183,7 +183,7 @@
         }
 
         licznik.textContent = ile === 1
-            ? '1 ingredient detected — if you pasted a full list, check that entries are separated by commas'
+            ? '1 ingredient detected, so if you pasted a full list, check that entries are separated by commas'
             : ile + ' ingredients detected';
         licznik.className = ile === 1 ? 'field-hint ingredient-count-warning' : 'field-hint';
     }

@@ -59,7 +59,7 @@ Frontend to SPA-like aplikacja w vanilla JavaScript: asynchroniczne wywołania `
 
 ## Uruchomienie lokalne
 
-Baza w kontenerze, Django na hoście — `.env.example` jest już pod to skonfigurowany.
+Baza w kontenerze, Django na hoście. Plik `.env.example` jest już pod to skonfigurowany.
 
 ```bash
 cp .env.example .env          # oczywiście do uzupełnienia
@@ -82,7 +82,7 @@ serwera zamiast iść przez SMTP.
 
 ### System kont użytkowników
 - Rejestracja i logowanie oparte o Django Authentication
-- Rejestracja wymaga akceptacji Regulaminu i Polityki Prywatności — zgoda jest polem formularza, więc wszystkie błędy pojawiają się w jednym przejściu, a nie po jednym na zgłoszenie
+- Rejestracja wymaga akceptacji Regulaminu i Polityki Prywatności. Zgoda jest polem formularza, więc wszystkie błędy pojawiają się w jednym przejściu, a nie po jednym na zgłoszenie
 - Nazwa użytkownika: litery (również z ogonkami), cyfry, `-` i `_`; zajętość sprawdzana bez rozróżniania wielkości liter
 - Wymagania hasła odhaczają się na żywo podczas pisania: minimum 8 znaków, mała litera, wielka litera, cyfra. Lista pod polem i walidator po stronie serwera korzystają z tej samej definicji reguł, więc nie mogą się rozjechać
 - Podgląd wpisywanego hasła, zachowanie loginu po nieudanej próbie, powrót pod adres z `?next=` po zalogowaniu
@@ -121,23 +121,45 @@ serwera zamiast iść przez SMTP.
 ### Algorytm oceny bezpieczeństwa
 Kosmetyki są klasyfikowane w czasie rzeczywistym poprzez porównanie ich składu z profilem użytkownika:
 
-| Kolor | Warunek |
-|-------|---------|
-| 🟢 Zielony | Kosmetyk zawiera wyłącznie składniki neutralne lub oznaczone jako bezpieczne |
-| 🟡 Żółty | Kosmetyk zawiera co najmniej jeden składnik oznaczony jako umiarkowany |
-| 🔴 Czerwony | Kosmetyk zawiera co najmniej jeden składnik oznaczony jako niebezpieczny |
+| Kolor       | Warunek                                                                      |
+|-------------|------------------------------------------------------------------------------|
+| 🟢 Zielony  | Kosmetyk zawiera wyłącznie składniki neutralne lub oznaczone jako bezpieczne |
+| 🟡 Żółty    | Kosmetyk zawiera co najmniej jeden składnik oznaczony jako umiarkowany       |
+| 🔴 Czerwony | Kosmetyk zawiera co najmniej jeden składnik oznaczony jako niebezpieczny     |
 
 ### Algorytmy rekomendacji i wyszukiwania zamienników
 - Top-N recommendations: ranking maksymalnie 10 kosmetyków bez składników oznaczonych jako umiarkowane i niebezpieczne, posortowanych wg liczby dopasowanych bezpiecznych składników
 - Dupes finder: porównanie zbiorów składników w obrębie tej samej kategorii głównej; miarą jest udział składników oryginału obecnych w produkcie porównywanym, próg 50%, zwracane top 10
 - Sortowanie wyników wg similarity score
 
+### Strona produktu
+- Werdykt liczony względem listy użytkownika: nagłówek (bezpieczny, do ostrożności, lepiej unikać), liczniki w rozbiciu na oceny i wskazanie z nazwy tych składników, które o werdykcie decydują
+- Pełny skład w kolejności z opakowania, każdy składnik z zastosowaniem obok nazwy
+- Legenda kolorów mówiąca wprost, że oceny należą do konta i u innej osoby ten sam produkt może wyglądać inaczej
+- Niezalogowany widzi ten sam układ w wersji neutralnej, z zaproszeniem do logowania i danymi konta pokazowego
+
+### Okno oceny składnika
+Wspólne dla strony produktu i skanera, wstawiane przez `templates/partials/ingredient_modal.html`
+wraz z obsługą w `static/js/ingredient-modal.js`:
+
+- Trzy opcje z kropką koloru i krótkim wyjaśnieniem, obecna ocena wyróżniona
+- Ponowne kliknięcie w zaznaczoną ocenę zdejmuje ją i składnik wraca do stanu nieocenionego (`color: NONE`)
+- Zgłoszenie poprawki zastosowania trafia do kolejki moderacji, API odpowiada kodem 202
+- Po zapisie widok przelicza się bez przeładowania strony: na stronie produktu wraca werdykt, w skanerze grupy składników
+
 ### Skanowanie składów ze zdjęć (OCR)
-- Upload zdjęcia z drag & drop lub file picker
-- Rozpoznawanie tekstu przez Tesseract.js (WebAssembly, on-device)
-- Automatyczne czyszczenie i parsowanie tekstu (usuwanie markerów `Ingredients:`, `INCI:`, normalizacja białych znaków)
-- Możliwość edycji rozpoznanego tekstu przed analizą
-- Pełna analiza bezpieczeństwa z podziałem na kategorie
+Rozpoznawanie tekstu robi Tesseract.js w WebAssembly, więc zdjęcie nie opuszcza przeglądarki.
+Na surowym zdjęciu z telefonu sam silnik OCR daje słabe wyniki, dlatego liczy się cała ścieżka:
+
+- Wgranie zdjęcia przez wybór pliku albo przeciągnięcie na pole
+- **Kadrowanie**: przeciągnięciem palcem lub myszą zaznacza się sam blok składu, reszta zdjęcia jest pomijana. Nad podglądem stoi instrukcja i linijka stanu mówiąca, czy zaznaczenie zostało zrobione
+- **Obróbka przed odczytem**: wycinek skalowany w górę, skala szarości, delikatne odszumienie i próg liczony lokalnie, w oknie wokół piksela. Globalny próg gubi tekst po ciemniejszej stronie opakowania, a progowanie bez odszumienia zamienia ziarno matowej etykiety w czarne kropki. Pomiar na zaszumionym zdjęciu testowym: bez odszumienia zero trafionych nazw z 23, po odszumieniu dwanaście
+- **Ustawienia silnika**: tryb jednolitego bloku tekstu, biała lista znaków ograniczona do tych występujących w składach i jawne `user_defined_dpi`, bo kadr z canvasu nie ma metadanych
+- **Cięcie listy**: markery początku (`Ingredients`, `INCI`, `Skład`, `Zutaten`, `Composition`) i końca (`Made in`, `Best before`, `www.`, numer partii), sklejanie nazw łamanych myślnikiem na końcu linii, podział po przecinkach z pominięciem tego między cyframi oraz rozbijanie zapisu synonimicznego `AQUA / WATER` do pierwszej nazwy
+- **Dopasowanie do katalogu**: jedno zapytanie `POST /api/ingredients/lookup/` dla całej odczytanej listy. Trafienia dokładne uzupełniane są dopasowaniem przybliżonym, które naprawia literówki OCR (`PARKN` do `Parkii`, `ARFUM` do `Parfum`). Próg to ta sama liczba słów i dystans edycyjny najwyżej 1 dla nazw krótszych niż 12 znaków, najwyżej 2 dla dłuższych, więc `Citric Acid` i `Lactic Acid` (dystans 4) zostają osobnymi składnikami. Pozycje dopasowane przybliżeniem mają przerywaną ramkę i podpowiedź z tym, co faktycznie odczytano
+- Możliwość poprawienia rozpoznanego tekstu przed analizą
+- Wynik w tej samej formie co na stronie produktu: werdykt, liczniki i rozbicie na grupy, przy czym składniki obecne w katalogu można ocenić jednym kliknięciem
+- Niepowodzenie odczytu kończy się komunikatem z podpowiedzią, jak zrobić lepsze zdjęcie. Wywołania silnika mają limit czasu, bo zablokowana kompilacja WebAssembly potrafi nie zwrócić ani wyniku, ani błędu
 
 ---
 
@@ -158,16 +180,18 @@ Kosmetyki są klasyfikowane w czasie rzeczywistym poprzez porównanie ich skład
 | **python-decouple** | Environment variables management |
 
 ### Frontend
-| Technologia | Cel |
-|------------|-----|
-| **HTML5 / CSS3** | Struktura i stylowanie (Grid, Flexbox, Custom Properties) |
-| **Vanilla JavaScript** | Interakcja z API, dynamiczne renderowanie DOM |
-| **Tesseract.js** | OCR w przeglądarce (WebAssembly) |
-| **Fetch API** | Asynchroniczne wywołania REST API |
+| Technologia            | Cel                                                       |
+|------------------------|-----------------------------------------------------------|
+| **HTML5 / CSS3**       | Struktura i stylowanie (Grid, Flexbox, Custom Properties) |
+| **Vanilla JavaScript** | Interakcja z API, dynamiczne renderowanie DOM             |
+| **Tesseract.js**       | OCR w przeglądarce (WebAssembly)                          |
+| **Fetch API**          | Asynchroniczne wywołania REST API                         |
 
 Arkusze stylów są podzielone wg odpowiedzialności: `style.css` (motyw, nagłówek, stopka i wspólne
 karty produktów), `forms.css` (pola formularzy), `auth.css` (ekrany konta), `home.css` (strona
-główna), `legal.css` (polityka prywatności i regulamin) oraz arkusze poszczególnych podstron.
+główna), `legal.css` (polityka prywatności i regulamin), `detail.css` (strona produktu),
+`scan.css` (skaner), `search.css` i `categories.css` (listy) oraz `ingredient-modal.css`, który
+niesie okno oceny składnika współdzielone przez stronę produktu i skaner.
 
 Typografia jest rozdzielona wg roli: KineksRound w nagłówkach, nawigacji i przyciskach, Nunito Sans
 w tekście ciągłym i polach formularzy. Oba kroje są hostowane lokalnie, bo CSP dopuszcza w
@@ -197,14 +221,14 @@ w `.env.example`.
 ### Testowanie i jakość kodu
 | Technologia         | Cel                                                        |
 |---------------------|------------------------------------------------------------|
-| **Django TestCase** | Testy jednostkowe i integracyjne (150 testów w 4 modułach) |
+| **Django TestCase** | Testy jednostkowe i integracyjne (156 testów w 4 modułach) |
 | **DRF APIClient**   | Testy REST API                                             |
 | **flake8**          | Linter jakości kodu                                        |
 | **bandit**          | Skanowanie bezpieczeństwa kodu                             |
 | **safety**          | Skanowanie zależności pod kątem CVE                        |
 
 Zależności produkcyjne są w `requirements.txt`, a narzędzia potrzebne wyłącznie lokalnie
-(`django-browser-reload`, `flake8`) w `requirements-dev.txt` - obraz produkcyjny i CI instalują
+(`django-browser-reload`, `flake8`) w `requirements-dev.txt`. Obraz produkcyjny i CI instalują
 tylko ten pierwszy plik.
 
 ### Bezpieczeństwo
@@ -215,8 +239,8 @@ tylko ten pierwszy plik.
 - Ochrona przed otwartym przekierowaniem: parametr `?next=` przechodzi przez `url_has_allowed_host_and_scheme`, więc nie da się nim wyprowadzić zalogowanego użytkownika na obcą domenę
 - Strony z danymi użytkownika (`/profile/`, `/favorites/`) chronione dekoratorem `@login_required`
 - Konto pokazowe zablokowane przed zmianą nazwy, hasła i usunięciem
-- XSS prevention: escapowanie danych z API przed wstawieniem do DOM (`escapeHtml`), `textContent` zamiast `innerHTML` dla treści pochodzących od użytkowników
-- Content Security Policy (CSP): whitelista ograniczona do własnej domeny i CDN wymaganego przez Tesseract.js. Strona główna, nawigacja, ekrany konta, formularz dodawania kosmetyku i dokumenty prawne mają kod w osobnych plikach; 17 pozostałych szablonów nadal zawiera osadzone skrypty, więc wyjątek `'unsafe-inline'` jest wciąż potrzebny
+- XSS prevention: dane z API trafiają do DOM przez `textContent` i budowane elementy, a tam gdzie szablon składa HTML z tekstu, przechodzi on przez `escapeHtml`
+- Content Security Policy (CSP): whitelista ograniczona do własnej domeny i CDN wymaganego przez Tesseract.js. W `script-src` jest `'wasm-unsafe-eval'`, bez którego przeglądarka odmawia kompilacji modułu WebAssembly i skaner zatrzymuje się bez żadnego komunikatu. Strona główna, nawigacja, ekrany konta, formularz dodawania kosmetyku i dokumenty prawne mają kod w osobnych plikach; 17 pozostałych szablonów nadal zawiera osadzone skrypty, więc wyjątek `'unsafe-inline'` jest wciąż potrzebny
 - Rate limiting: throttling API (Django REST Framework) oraz blokada logowania po nieudanych próbach
 - Kontrola dostępu do katalogu: każdy zalogowany user może dodać nowy kosmetyk/składnik, ale edycja istniejącego wpisu trafia do kolejki moderacji i wymaga akceptacji administratora; usuwanie zarezerwowane wyłącznie dla adminów
 - HTTPS wymuszony w produkcji (Let's Encrypt via Cloudflare)
@@ -255,6 +279,7 @@ Automatyczny pipeline uruchamiany przy każdym push oraz pull request na branch 
 Zaplanowane kierunki dalszego rozwoju:
 
   - Wyniesienie pozostałych osadzonych skryptów do plików i zdjęcie wyjątku `'unsafe-inline'` z CSP
+  - Mocniejszy odczyt etykiet pisanych krojem odręcznym. Model `eng` Tesseracta jest uczony na drukach i przy takich opakowaniach myli pojedyncze litery na tyle często, że nawet dopasowanie przybliżone nie ratuje listy
   - Integracja z LLM (OpenAI API / Claude API): asystent kosmetyczny odpowiadający na pytania użytkowników
   - Rozszerzone algorytmy rekomendacji: collaborative filtering bazujący na preferencjach podobnych użytkowników
   - Aplikacja mobilna: React Native lub Flutter z natywnym OCR

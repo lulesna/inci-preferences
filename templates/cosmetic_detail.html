@@ -5,6 +5,9 @@
 
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'css/detail.css' %}">
+    {% if user.is_authenticated %}
+    <link rel="stylesheet" href="{% static 'css/ingredient-modal.css' %}">
+    {% endif %}
 {% endblock %}
 
 {% block main_class %}main-wide{% endblock %}
@@ -15,52 +18,14 @@
     </section>
 
     {% if user.is_authenticated %}
-    <div id="ingredient-modal" style="display: none;">
-        <div class="modal-overlay" onclick="closeIngredientModal()"></div>
-        <div class="modal-content">
-            <h3 id="modal-ingredient-name"></h3>
-            <p class="modal-lead">How does this ingredient work for your skin?</p>
-
-            <div class="preference-buttons">
-                <button class="preference-btn safe" onclick="setIngredientPreference('GREEN')">
-                    Safe
-                </button>
-                <button class="preference-btn moderate" onclick="setIngredientPreference('YELLOW')">
-                    Moderate
-                </button>
-                <button class="preference-btn unsafe" onclick="setIngredientPreference('RED')">
-                    Unsafe
-                </button>
-            </div>
-
-            <div class="propose-section">
-                <button type="button" class="propose-toggle" onclick="toggleProposeForm()">
-                    Suggest a correction
-                </button>
-
-                <div id="propose-form" style="display: none;">
-                    <label for="propose-purpose">Purpose</label>
-                    <textarea id="propose-purpose" rows="3" maxlength="100"></textarea>
-                    <p class="propose-hint">
-                        Suggestions go to moderation — the catalogue changes only after an admin approves.
-                    </p>
-                    <button type="button" id="propose-submit-btn" class="propose-submit" onclick="submitEditProposal()">
-                        Submit for review
-                    </button>
-                    <p id="propose-status" class="propose-status" role="status"></p>
-                </div>
-            </div>
-
-            <button class="cancel-btn" onclick="closeIngredientModal()">Cancel</button>
-        </div>
-    </div>
+    {% include "partials/ingredient_modal.html" %}
 
     <div id="cosmetic-modal" style="display: none;">
         <div class="modal-overlay" onclick="closeCosmeticModal()"></div>
         <div class="modal-content modal-wide">
             <h3>Suggest an edit</h3>
             <p class="propose-hint">
-                Corrections go to moderation — the catalogue changes only after an admin approves.
+                Corrections go to moderation, so the catalogue changes only after an admin approves.
             </p>
 
             <div class="edit-field">
@@ -187,7 +152,6 @@
     const rawId = window.location.pathname.split('/').filter(Boolean).pop();
     const cosmeticId = /^\d+$/.test(rawId) ? rawId : null;
     let userPreferences = null;
-    let selectedIngredient = null;
     let currentCosmetic = null;
 
     async function loadUserPreferences() {
@@ -221,117 +185,6 @@
     }
 
     {% if user.is_authenticated %}
-    function openIngredientModal(ingredientId, ingredientName, ingredientPurpose, currentColour) {
-        selectedIngredient = ingredientId;
-        document.getElementById('modal-ingredient-name').textContent = ingredientName;
-
-        // obecna ocena podświetlona, żeby było widać, że kliknięcie ją zmienia,
-        // a nie ustawia od zera
-        document.querySelectorAll('.preference-btn').forEach(btn => {
-            btn.classList.toggle('current', !!currentColour && btn.classList.contains(currentColour));
-        });
-
-        resetProposeForm(ingredientPurpose);
-        document.getElementById('ingredient-modal').style.display = 'block';
-    }
-
-    function closeIngredientModal() {
-        document.getElementById('ingredient-modal').style.display = 'none';
-        selectedIngredient = null;
-    }
-
-    // Formularz zgłoszenia startuje zwinięty i wypełniony obecną wartością,
-    // żeby użytkownik poprawiał tekst, a nie pisał go od zera.
-    function resetProposeForm(ingredientPurpose) {
-        const field = document.getElementById('propose-purpose');
-        // 'Unknown' to zapchajdziura parsera, nie ma co kazać jej kasować
-        const known = ingredientPurpose && ingredientPurpose.trim().toLowerCase() !== 'unknown';
-        field.value = known ? ingredientPurpose : '';
-        field.disabled = false;
-
-        document.getElementById('propose-form').style.display = 'none';
-        document.getElementById('propose-submit-btn').disabled = false;
-
-        const statusEl = document.getElementById('propose-status');
-        statusEl.textContent = '';
-        statusEl.className = 'propose-status';
-    }
-
-    function toggleProposeForm() {
-        const form = document.getElementById('propose-form');
-        const hidden = form.style.display === 'none';
-        form.style.display = hidden ? 'block' : 'none';
-        if (hidden) {
-            document.getElementById('propose-purpose').focus();
-        }
-    }
-
-    // DRF zwraca błędy walidacji pól jako {"pole": ["komunikat"]}, bez klucza
-    // "detail". Bez tego użytkownik dostawał ogólne "nie udało się" zamiast
-    // informacji, co dokładnie jest nie tak.
-    function extractApiError(data) {
-        if (!data || typeof data !== 'object') return null;
-        if (typeof data.detail === 'string') return data.detail;
-
-        const first = Object.values(data)[0];
-        if (Array.isArray(first) && first.length) return String(first[0]);
-        if (typeof first === 'string') return first;
-        return null;
-    }
-
-    function setProposeStatus(message, kind) {
-        const statusEl = document.getElementById('propose-status');
-        statusEl.textContent = message;
-        statusEl.className = kind ? `propose-status ${kind}` : 'propose-status';
-    }
-
-    async function submitEditProposal() {
-        if (!selectedIngredient) return;
-
-        const field = document.getElementById('propose-purpose');
-        const submitBtn = document.getElementById('propose-submit-btn');
-        const purpose = field.value.trim();
-
-        if (!purpose) {
-            setProposeStatus('Purpose cannot be empty.', 'error');
-            return;
-        }
-
-        const csrfToken = getCookie('csrftoken');
-        if (!csrfToken) {
-            setProposeStatus('Your session expired. Please reload the page and log in again.', 'error');
-            return;
-        }
-
-        submitBtn.disabled = true;
-        setProposeStatus('Sending...');
-
-        try {
-            const response = await fetch(`/api/ingredients/${encodeURIComponent(selectedIngredient)}/`, {
-                method: 'PATCH',
-                credentials: 'same-origin',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': csrfToken
-                },
-                body: JSON.stringify({purpose: purpose})
-            });
-
-            // 202, nie 200 — API przyjmuje zgłoszenie, ale katalogu jeszcze nie zmienia.
-            if (response.status === 202) {
-                setProposeStatus('Thanks! Your suggestion is waiting for admin review.', 'success');
-                field.disabled = true;
-            } else {
-                const data = await response.json().catch(() => ({}));
-                setProposeStatus(extractApiError(data) || 'Could not submit the suggestion.', 'error');
-                submitBtn.disabled = false;
-            }
-        } catch (error) {
-            setProposeStatus('Network error. Please try again.', 'error');
-            submitBtn.disabled = false;
-        }
-    }
-
     function fillSelect(select, options, placeholder, selectedValue) {
         select.innerHTML = '';
 
@@ -473,33 +326,6 @@
         }
     }
 
-    async function setIngredientPreference(color) {
-        if (!selectedIngredient) return;
-
-        try {
-            const response = await fetch('/api/preferences/set_ingredient_color/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken')
-                },
-                body: JSON.stringify({
-                    ingredient_id: selectedIngredient,
-                    color: color
-                })
-            });
-
-            if (response.ok) {
-                closeIngredientModal();
-                await loadUserPreferences();
-                await loadCosmeticDetails();
-            } else {
-                alert('Error setting preference');
-            }
-        } catch (error) {
-            alert('Error setting preference');
-        }
-    }
     {% endif %}
 
     function groupIngredients(ingredients) {
@@ -714,13 +540,12 @@
 
     function buildChip(ing) {
         const colour = getIngredientColor(ing.id);
-        const ingredientId = typeof ing.id === 'number' ? ing.id : 0;
 
         {% if user.is_authenticated %}
         const chip = el('button', `pd-chip ${colour}`);
         chip.type = 'button';
         chip.title = 'Click to change how this ingredient is rated for you';
-        chip.onclick = () => openIngredientModal(ingredientId, ing.inci_name, ing.purpose, colour);
+        chip.onclick = () => IngredientModal.open(ing, colour);
         {% else %}
         const chip = el('span', `pd-chip ${colour}`);
         {% endif %}
@@ -849,6 +674,8 @@
     }
 
     {% if user.is_authenticated %}
+    IngredientModal.init({onChange: loadCosmeticDetails});
+
     let isFavorite = false;
 
     async function checkIfFavorite() {
@@ -892,20 +719,6 @@
         }
     }
 
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
-            }
-        }
-        return cookieValue;
-    }
     {% endif %}
 
     if (cosmeticId) {

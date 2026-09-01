@@ -2,13 +2,8 @@ from pathlib import Path
 from decouple import config
 import sys
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = config('SECRET_KEY')
 
 DEBUG = config('DEBUG', default=False, cast=bool)
@@ -21,8 +16,6 @@ CSRF_TRUSTED_ORIGINS = [
     'https://incipreferences.app',
 ]
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-
-# Application definition
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -73,7 +66,8 @@ R2_PUBLIC_URL = config('R2_PUBLIC_URL', default='') if USE_R2 else ''
 CONTENT_SECURITY_POLICY = {
     'DIRECTIVES': {
         'default-src': ["'self'"],
-        'script-src': ["'self'", "'unsafe-inline'", 'https://cdn.jsdelivr.net'] + ([R2_PUBLIC_URL] if R2_PUBLIC_URL else []),
+        # 'wasm-unsafe-eval' jest dla skanera
+        'script-src': ["'self'", "'unsafe-inline'", "'wasm-unsafe-eval'", 'https://cdn.jsdelivr.net'] + ([R2_PUBLIC_URL] if R2_PUBLIC_URL else []),
         'style-src': ["'self'", "'unsafe-inline'"] + ([R2_PUBLIC_URL] if R2_PUBLIC_URL else []),
         'img-src': ["'self'", 'data:'] + ([R2_PUBLIC_URL] if R2_PUBLIC_URL else []),
         'font-src': ["'self'"] + ([R2_PUBLIC_URL] if R2_PUBLIC_URL else []),
@@ -118,10 +112,6 @@ REST_FRAMEWORK = {
     },
 }
 
-# Database
-# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -133,15 +123,11 @@ DATABASES = {
     }
 }
 
-# Password validation
-# https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
     },
     {
-        # w miejsce MinimumLengthValidator, patrz apps/users/password_rules.py
         'NAME': 'apps.users.password_rules.PasswordComplexityValidator',
     },
     {
@@ -151,9 +137,6 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
-
-# Internationalization
-# https://docs.djangoproject.com/en/5.2/topics/i18n/
 
 LANGUAGE_CODE = 'en-us'
 
@@ -170,9 +153,6 @@ STATICFILES_DIRS = [
 ]
 
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-
-# Default primary key field type
-# https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
@@ -198,8 +178,6 @@ DEFAULT_FROM_EMAIL = config(
 
 PASSWORD_RESET_TIMEOUT = 60 * 60 * 24  # doba zamiast domyslnych 3 dni
 
-# konto pokazowe z README — login i hasło są publiczne, więc profil blokuje na
-# nim zmianę nazwy, hasła i usunięcie. pusta wartość wyłącza ochronę
 DEMO_USERNAME = config('DEMO_USERNAME', default='testuser')
 
 if USE_R2:

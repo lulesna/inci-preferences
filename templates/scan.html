@@ -5,6 +5,9 @@
 
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'css/scan.css' %}">
+    {% if user.is_authenticated %}
+    <link rel="stylesheet" href="{% static 'css/ingredient-modal.css' %}">
+    {% endif %}
 {% endblock %}
 
 {% block main_class %}main-wide{% endblock %}
@@ -28,9 +31,28 @@
         </div>
 
         <div class="sc-preview" id="preview-section" style="display: none;">
-            <img class="sc-preview-image" id="image-preview" alt="Photo of the ingredient list">
+            <div class="sc-crop-guide">
+                <p class="sc-crop-title">Select just the ingredient list</p>
+                <p class="sc-crop-steps">
+                    Drag across the ingredients with your finger or the mouse. Everything outside the
+                    frame is ignored, and that is what makes the reading accurate. Drag again to pick
+                    a different area.
+                </p>
+                <p class="sc-crop-status" id="crop-status" role="status">
+                    Nothing selected yet, so the whole photo will be read.
+                </p>
+            </div>
+
+            <div class="sc-crop" id="crop-wrapper">
+                <img class="sc-preview-image" id="image-preview" alt="Photo of the ingredient list">
+                <div class="sc-crop-surface" id="crop-surface">
+                    <div class="sc-crop-box" id="crop-box" style="display: none;"></div>
+                </div>
+            </div>
+
             <div class="sc-actions">
                 <button type="button" class="sc-btn sc-btn-solid" onclick="analyzeImage()">Read the ingredients</button>
+                <button type="button" class="sc-btn" id="clear-crop-btn" onclick="clearCrop()" style="display: none;">Use the whole photo</button>
                 <button type="button" class="sc-btn" onclick="document.getElementById('image-input').click()">Change photo</button>
             </div>
         </div>
@@ -40,6 +62,15 @@
             <div class="sc-progress">
                 <div class="sc-progress-fill" id="progress-fill"></div>
             </div>
+        </div>
+
+        <div class="sc-processing sc-error" id="error-section" style="display: none;">
+            <p class="sc-processing-text" id="error-text">Could not read this photo.</p>
+            <p class="sc-error-note">
+                The clearest results come from a sharp photo taken straight on, with the ingredient
+                list filling most of the frame.
+            </p>
+            <button type="button" class="sc-btn" onclick="resetScanner()">Choose another photo</button>
         </div>
 
         <div id="results-section" style="display: none;">
@@ -53,32 +84,37 @@
                 <button type="button" class="sc-btn" id="edit-text-btn" onclick="toggleEditMode()">Edit text</button>
             </section>
 
-            {% if user.is_authenticated %}
             <section class="sc-section" id="analysis-card">
                 <h3 class="sc-section-title">Safety analysis</h3>
+
+                {% if user.is_authenticated %}
                 <div id="safety-summary"></div>
+                {% else %}
+                <div id="safety-summary">
+                    <div class="sc-verdict">
+                        <p class="sc-verdict-eyebrow">Your own colour code</p>
+                        <p class="sc-verdict-title">Log in to see this list in your colours</p>
+                        <p class="sc-verdict-lead">
+                            Each recognised ingredient gets coloured against your personal list of safe,
+                            moderate and unsafe ingredients.
+                            <a href="{% url 'users:login' %}?next={{ request.path }}">Log in</a> to see it.
+                        </p>
+                    </div>
+                </div>
+                {% endif %}
+
                 <div id="ingredients-breakdown"></div>
             </section>
-            {% else %}
-            <section class="sc-section">
-                <h3 class="sc-section-title">Safety analysis</h3>
-                <div class="sc-verdict">
-                    <p class="sc-verdict-eyebrow">Your own colour code</p>
-                    <p class="sc-verdict-title">Log in to see this list in your colours</p>
-                    <p class="sc-verdict-lead">
-                        Each recognised ingredient gets coloured against your personal list of safe,
-                        moderate and unsafe ingredients.
-                        <a href="{% url 'users:login' %}?next={{ request.path }}">Log in</a> to see it.
-                    </p>
-                </div>
-            </section>
-            {% endif %}
 
             <div class="sc-section">
                 <button type="button" class="sc-btn sc-btn-solid" onclick="resetScanner()">Scan another product</button>
             </div>
         </div>
     </section>
+
+    {% if user.is_authenticated %}
+    {% include "partials/ingredient_modal.html" %}
+    {% endif %}
 
     <script src='https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js'></script>
 
@@ -97,6 +133,8 @@
     let uploadedImage = null;
     let recognizedIngredients = [];
     let userPreferences = null;
+    // nazwa małymi literami -> wpis z katalogu {id, inci_name, purpose}
+    let catalogue = {};
 
     {% if user.is_authenticated %}
     async function loadUserPreferences() {
@@ -104,6 +142,9 @@
             const response = await fetch('/api/preferences/my_preferences/');
             const data = await response.json();
             userPreferences = {
+                safe: data.safe_ingredients.map(ing => ing.id),
+                moderate: data.moderate_ingredients.map(ing => ing.id),
+                unsafe: data.unsafe_ingredients.map(ing => ing.id),
                 safeNames: data.safe_ingredients.map(ing => ing.inci_name.toLowerCase()),
                 moderateNames: data.moderate_ingredients.map(ing => ing.inci_name.toLowerCase()),
                 unsafeNames: data.unsafe_ingredients.map(ing => ing.inci_name.toLowerCase())
@@ -114,7 +155,146 @@
     }
 
     loadUserPreferences();
+
+    // po zmianie oceny przeliczamy skan bez ponownego OCR. katalog czytamy
+    // jeszcze raz, bo oceniony składnik mógł właśnie do niego trafić
+    IngredientModal.init({onChange: async function () {
+        await loadUserPreferences();
+        if (!recognizedIngredients.length) return;
+
+        await loadCatalogue(recognizedIngredients);
+        analyzeIngredients();
+    }});
     {% endif %}
+
+    // OCR daje same nazwy, więc zastosowanie składnika i jego id bierzemy
+    // z katalogu jednym zapytaniem dla całej odczytanej listy
+    async function loadCatalogue(names) {
+        catalogue = {};
+        if (!names.length) return;
+
+        const headers = {'Content-Type': 'application/json'};
+        const csrfToken = typeof getCookie === 'function' ? getCookie('csrftoken') : null;
+        if (csrfToken) headers['X-CSRFToken'] = csrfToken;
+
+        try {
+            const response = await fetch('/api/ingredients/lookup/', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: headers,
+                body: JSON.stringify({names: names})
+            });
+
+            if (!response.ok) return;
+
+            const data = await response.json();
+            data.forEach(row => {
+                catalogue[row.query] = {
+                    ingredient: row.ingredient,
+                    fuzzy: row.match === 'fuzzy'
+                };
+            });
+        } catch (error) {
+            console.error('Ingredient lookup failed');
+        }
+    }
+
+    // zaznaczenie kadru we współrzędnych oryginalnego zdjęcia
+    let crop = null;
+    let dragStart = null;
+
+    const cropSurface = document.getElementById('crop-surface');
+    const cropBox = document.getElementById('crop-box');
+    const clearCropBtn = document.getElementById('clear-crop-btn');
+
+    function clamp(value, min, max) {
+        return Math.min(Math.max(value, min), max);
+    }
+
+    function drawCropBox(box) {
+        cropBox.style.display = 'block';
+        cropBox.style.left = box.left + 'px';
+        cropBox.style.top = box.top + 'px';
+        cropBox.style.width = box.width + 'px';
+        cropBox.style.height = box.height + 'px';
+    }
+
+    function setCropStatus(message, selected) {
+        const status = document.getElementById('crop-status');
+        status.textContent = message;
+        status.classList.toggle('selected', !!selected);
+    }
+
+    function clearCrop() {
+        crop = null;
+        cropBox.style.display = 'none';
+        clearCropBtn.style.display = 'none';
+        setCropStatus('Nothing selected yet, so the whole photo will be read.', false);
+    }
+
+    // wszystko liczymy względem samego obrazka, bo warstwa zaznaczenia bywa
+    // od niego szersza, gdy zdjęcie ogranicza wysokość
+    function imageRect() {
+        return document.getElementById('image-preview').getBoundingClientRect();
+    }
+
+    function pointInImage(event) {
+        const rect = imageRect();
+        return {
+            x: clamp(event.clientX - rect.left, 0, rect.width),
+            y: clamp(event.clientY - rect.top, 0, rect.height)
+        };
+    }
+
+    cropSurface.addEventListener('pointerdown', (event) => {
+        cropSurface.setPointerCapture(event.pointerId);
+        dragStart = pointInImage(event);
+        drawCropBox({left: dragStart.x, top: dragStart.y, width: 0, height: 0});
+    });
+
+    cropSurface.addEventListener('pointermove', (event) => {
+        if (!dragStart) return;
+
+        const point = pointInImage(event);
+
+        drawCropBox({
+            left: Math.min(point.x, dragStart.x),
+            top: Math.min(point.y, dragStart.y),
+            width: Math.abs(point.x - dragStart.x),
+            height: Math.abs(point.y - dragStart.y)
+        });
+    });
+
+    cropSurface.addEventListener('pointerup', () => {
+        if (!dragStart) return;
+        dragStart = null;
+
+        const box = {
+            left: parseFloat(cropBox.style.left),
+            top: parseFloat(cropBox.style.top),
+            width: parseFloat(cropBox.style.width),
+            height: parseFloat(cropBox.style.height)
+        };
+
+        // przypadkowe stuknięcie w zdjęcie to nie jest kadr
+        if (box.width < 24 || box.height < 24) {
+            clearCrop();
+            return;
+        }
+
+        const image = document.getElementById('image-preview');
+        const scale = image.naturalWidth / imageRect().width;
+
+        crop = {
+            x: Math.round(box.left * scale),
+            y: Math.round(box.top * scale),
+            width: Math.round(box.width * scale),
+            height: Math.round(box.height * scale)
+        };
+
+        clearCropBtn.style.display = 'inline-flex';
+        setCropStatus('Only the framed part will be read. Drag again to pick a different area.', true);
+    });
 
     function handleImageUpload(event) {
         const file = event.target.files[0];
@@ -134,6 +314,7 @@
         reader.onload = function(e) {
             uploadedImage = e.target.result;
             document.getElementById('image-preview').src = uploadedImage;
+            clearCrop();
             document.getElementById('upload-box').style.display = 'none';
             document.getElementById('preview-section').style.display = 'block';
             document.getElementById('results-section').style.display = 'none';
@@ -164,23 +345,157 @@
         }
     });
 
+    // Tesseract czyta o wiele lepiej z dużego, kontrastowego obrazu niż
+    // z surowego zdjęcia z telefonu, więc kadr wycinamy i skalujemy w górę
+    function buildSourceCanvas() {
+        const image = document.getElementById('image-preview');
+        const area = crop || {x: 0, y: 0, width: image.naturalWidth, height: image.naturalHeight};
+
+        const targetWidth = clamp(area.width * 2, 1200, 2600);
+        const scale = targetWidth / area.width;
+
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(area.width * scale);
+        canvas.height = Math.round(area.height * scale);
+
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(image, area.x, area.y, area.width, area.height, 0, 0, canvas.width, canvas.height);
+
+        return canvas;
+    }
+
+    // Ziarno matowej etykiety i szum aparatu to dla progowania lokalnego
+    // trucizna: każdy ciemniejszy pyłek robi się osobną czarną plamką i tekst
+    // tonie w kropkach. Pomiar na zaszumionym zdjęciu: bez rozmycia zero
+    // trafionych nazw z 23, po rozmyciu dwanaście.
+    function denoise(canvas) {
+        const ctx = canvas.getContext('2d');
+        if (!('filter' in ctx)) return canvas;
+
+        const blurred = document.createElement('canvas');
+        blurred.width = canvas.width;
+        blurred.height = canvas.height;
+
+        const blurredCtx = blurred.getContext('2d');
+        blurredCtx.filter = 'blur(' + clamp(canvas.width / 1200, 1.2, 3).toFixed(2) + 'px)';
+        blurredCtx.drawImage(canvas, 0, 0);
+
+        return blurred;
+    }
+
+    // Próg liczony lokalnie, w oknie wokół piksela. Globalny próg gubi tekst
+    // w cieniu, a przy zdjęciu opakowania jedna strona prawie zawsze jest
+    // ciemniejsza od drugiej.
+    function binarise(canvas) {
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+        const image = ctx.getImageData(0, 0, width, height);
+        const data = image.data;
+
+        const gray = new Uint8ClampedArray(width * height);
+        for (let i = 0, p = 0; i < data.length; i += 4, p++) {
+            gray[p] = (data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114) | 0;
+        }
+
+        // obraz całkowy, żeby średnia z okna kosztowała cztery odczyty zamiast pętli
+        const stride = width + 1;
+        const integral = new Float64Array(stride * (height + 1));
+        for (let y = 0; y < height; y++) {
+            let rowSum = 0;
+            for (let x = 0; x < width; x++) {
+                rowSum += gray[y * width + x];
+                integral[(y + 1) * stride + (x + 1)] = integral[y * stride + (x + 1)] + rowSum;
+            }
+        }
+
+        const radius = Math.max(8, Math.round(width / 40));
+        const bias = 12;
+
+        for (let y = 0; y < height; y++) {
+            const y0 = Math.max(0, y - radius);
+            const y1 = Math.min(height - 1, y + radius);
+
+            for (let x = 0; x < width; x++) {
+                const x0 = Math.max(0, x - radius);
+                const x1 = Math.min(width - 1, x + radius);
+
+                const sum = integral[(y1 + 1) * stride + (x1 + 1)]
+                    - integral[y0 * stride + (x1 + 1)]
+                    - integral[(y1 + 1) * stride + x0]
+                    + integral[y0 * stride + x0];
+
+                const mean = sum / ((x1 - x0 + 1) * (y1 - y0 + 1));
+                const value = gray[y * width + x] < mean - bias ? 0 : 255;
+                const index = (y * width + x) * 4;
+
+                data[index] = value;
+                data[index + 1] = value;
+                data[index + 2] = value;
+                data[index + 3] = 255;
+            }
+        }
+
+        ctx.putImageData(image, 0, 0);
+        return canvas;
+    }
+
+    // silnik OCR potrafi zamilknąć bez błędu: gdy przeglądarka zablokuje
+    // kompilację WebAssembly, obietnica z tesseract.js nigdy się nie kończy
+    // i pasek postępu stoi w nieskończoność
+    function withTimeout(promise, seconds) {
+        let timer;
+        const limit = new Promise((resolve, reject) => {
+            timer = setTimeout(() => reject(new Error('OCR timeout after ' + seconds + 's')), seconds * 1000);
+        });
+
+        return Promise.race([promise, limit]).finally(() => clearTimeout(timer));
+    }
+
+    function showScanError(message) {
+        document.getElementById('processing-section').style.display = 'none';
+        document.getElementById('preview-section').style.display = 'none';
+        document.getElementById('error-text').textContent = message;
+        document.getElementById('error-section').style.display = 'block';
+    }
+
     async function analyzeImage() {
         if (!uploadedImage) return;
 
         document.getElementById('preview-section').style.display = 'none';
         document.getElementById('processing-section').style.display = 'block';
+        document.getElementById('error-section').style.display = 'none';
         document.getElementById('results-section').style.display = 'none';
+        document.getElementById('processing-text').textContent = 'Reading the ingredients from the photo...';
+        document.getElementById('progress-fill').style.width = '10%';
 
         try {
-            const worker = await Tesseract.createWorker();
+            const worker = await withTimeout(Tesseract.createWorker(), 45);
 
             await worker.loadLanguage('eng');
             await worker.initialize('eng');
 
-            document.getElementById('processing-text').textContent = 'Processing the photo...';
+            // jednolity blok tekstu i wąska lista znaków: skład to nie proza,
+            // a bez tego silnik dorabiał symbole, których na etykiecie nie ma
+            await worker.setParameters({
+                tessedit_pageseg_mode: '6',
+                tessedit_char_whitelist: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 ,.:-()/",
+                preserve_interword_spaces: '1',
+                // bez tego silnik zgaduje rozdzielczość z metadanych, których
+                // przycięty kadr z canvasu w ogóle nie ma
+                user_defined_dpi: '300'
+            });
+
+            document.getElementById('processing-text').textContent = 'Preparing the photo...';
             document.getElementById('progress-fill').style.width = '30%';
 
-            const { data: { text } } = await worker.recognize(uploadedImage);
+            const prepared = binarise(denoise(buildSourceCanvas()));
+
+            document.getElementById('processing-text').textContent = 'Reading the text...';
+            document.getElementById('progress-fill').style.width = '45%';
+
+            const { data: { text } } = await withTimeout(worker.recognize(prepared), 90);
 
             document.getElementById('processing-text').textContent = 'Splitting the list into ingredients...';
             document.getElementById('progress-fill').style.width = '60%';
@@ -193,36 +508,44 @@
             document.getElementById('processing-text').textContent = 'Comparing with your list...';
             document.getElementById('progress-fill').style.width = '90%';
 
-            await new Promise(resolve => setTimeout(resolve, 500));
+            await displayResults(cleanedText);
 
             document.getElementById('progress-fill').style.width = '100%';
-
-            setTimeout(() => {
-                document.getElementById('processing-section').style.display = 'none';
-                displayResults(cleanedText);
-            }, 300);
+            document.getElementById('processing-section').style.display = 'none';
 
         } catch (error) {
             console.error('OCR Error:', error);
-            alert('Error analyzing image. Please try again with a clearer photo.');
-            resetScanner();
+            showScanError('Could not read this photo.');
         }
     }
 
-    function cleanText(text) {
-        let cleaned = String(text || '')
-            .replace(/\n+/g, ' ')
-            .replace(/\s+/g, ' ')
-            .trim();
+    // etykieta zapowiada skład na kilka sposobów, zależnie od rynku
+    const LIST_START = /(ingredients|ingr[eé]dients|ingredientes|inci|zutaten|composition|sk[lł]ad)\s*[:.\-]?\s*/i;
 
-        const markers = ['ingredients:', 'ingredientes:', 'inci:', 'composition:'];
-        for (let marker of markers) {
-            const index = cleaned.toLowerCase().indexOf(marker);
-            if (index !== -1) {
-                cleaned = cleaned.substring(index + marker.length).trim();
-                break;
-            }
+    // i kończy go tekstem, który składem już nie jest
+    const LIST_END = /\b(made in|manufactured|produced|best before|use within|net wt|net weight|distributed|store in|keep out|www\.|batch|lot no|exp\.)/i;
+
+    function cleanText(text) {
+        let cleaned = String(text || '');
+
+        // słowo przeniesione do nowej linii sklejamy z powrotem, inaczej
+        // nazwa rozbita na dwie linie wraca do jednego kawałka
+        cleaned = cleaned.replace(/-\s*\r?\n\s*/g, '');
+        // czasem myślnik i lamanie linii OCR odda jako myślnik i spacje
+        cleaned = cleaned.replace(/-\s+(?=[a-z])/g, '');
+        cleaned = cleaned.replace(/\s+/g, ' ').trim();
+
+        const start = cleaned.match(LIST_START);
+        if (start) {
+            cleaned = cleaned.slice(start.index + start[0].length).trim();
         }
+
+        const end = cleaned.match(LIST_END);
+        if (end && end.index > 0) {
+            cleaned = cleaned.slice(0, end.index).trim();
+        }
+
+        cleaned = cleaned.replace(/[.\s]+$/, '');
 
         if (cleaned.length > 10000) {
             cleaned = cleaned.substring(0, 10000);
@@ -231,15 +554,44 @@
         return cleaned;
     }
 
-    function parseIngredients(text) {
-        const parts = String(text || '').split(/[,،]\s*/);
-        recognizedIngredients = parts
-            .map(ing => ing.trim())
-            .filter(ing => ing.length > 2 && ing.length < 100)
-            .filter(ing => /^[A-Za-z\s\-\(\)0-9]+$/.test(ing));
+    function looksLikeIngredient(name) {
+        if (name.length < 3 || name.length > 80) return false;
+
+        const letters = (name.match(/[A-Za-z]/g) || []).length;
+        if (letters < 3) return false;
+
+        // odsiewa resztki kodów partii i numerów, gdzie liter jest mniej
+        // niż połowa znaków
+        return letters >= name.replace(/\s/g, '').length / 2;
     }
 
-    function displayResults(rawText) {
+    function parseIngredients(text) {
+        // przecinek między cyframi to część nazwy ('1,2-Hexanediol'),
+        // ta sama zasada co w parserze po stronie serwera
+        const parts = String(text || '').split(/(?<!\d),(?!\d)|[;•·]/);
+
+        const seen = new Set();
+        recognizedIngredients = [];
+
+        parts.forEach(part => {
+            const name = String(part || '')
+                .split(/\s+\/\s+/)[0]
+                .replace(/^[\s.,\-|*]+/, '')
+                .replace(/[\s.]+$/, '')
+                .replace(/\s+/g, ' ')
+                .trim();
+
+            if (!looksLikeIngredient(name)) return;
+
+            const key = name.toLowerCase();
+            if (seen.has(key)) return;
+
+            seen.add(key);
+            recognizedIngredients.push(name);
+        });
+    }
+
+    async function displayResults(rawText) {
         const container = document.getElementById('recognized-text');
         container.innerHTML = '';
 
@@ -253,49 +605,152 @@
         textEditor.value = rawText;
         container.appendChild(textEditor);
 
+        await loadCatalogue(recognizedIngredients);
+        renderAnalysis();
+
+        document.getElementById('results-section').style.display = 'block';
+    }
+
+    function renderAnalysis() {
         {% if user.is_authenticated %}
-        if (!userPreferences) {
-            showPreferencesPrompt();
-        } else {
+        if (userPreferences) {
             analyzeIngredients();
+        } else {
+            showPreferencesPrompt();
+        }
+        {% else %}
+        showRecognizedList();
+        {% endif %}
+    }
+
+    function catalogueEntry(name) {
+        return catalogue[name.toLowerCase()] || null;
+    }
+
+    function purposeOf(entry) {
+        const purpose = entry && entry.ingredient ? entry.ingredient.purpose : '';
+        if (!purpose) return '';
+
+        // 'Unknown' wpisuje parser przy składniku spoza bazy, nie ma czego pokazywać
+        return purpose.trim().toLowerCase() === 'unknown' ? '' : purpose.trim();
+    }
+
+    function buildChip(name, tone) {
+        const entry = catalogueEntry(name);
+        const known = entry ? entry.ingredient : null;
+        const guessed = !!(entry && entry.fuzzy);
+
+        let className = tone ? `sc-chip ${tone}` : 'sc-chip';
+        if (guessed) className += ' guessed';
+
+        {% if user.is_authenticated %}
+        // ocenić da się tylko składnik z katalogu, bo preferencje wiszą na jego
+        // id, a nie na nazwie odczytanej ze zdjęcia
+        const chip = known ? el('button', className) : el('span', className);
+        if (known) {
+            chip.type = 'button';
+            chip.title = guessed
+                ? `Read from the photo as "${name}" and matched to ${known.inci_name}`
+                : 'Click to rate this ingredient or suggest a correction';
+            chip.onclick = () => IngredientModal.open(known, tone);
+        }
+        {% else %}
+        const chip = el('span', className);
+        if (guessed) {
+            chip.title = `Read from the photo as "${name}" and matched to ${known.inci_name}`;
         }
         {% endif %}
 
-        document.getElementById('results-section').style.display = 'block';
+        // przy literówce pokazujemy nazwę z katalogu, bo to ona jest prawdziwa
+        chip.appendChild(el('span', 'sc-chip-name', guessed ? known.inci_name : name));
+
+        const purpose = purposeOf(entry);
+        if (purpose) {
+            chip.appendChild(el('span', 'sc-chip-purpose', purpose));
+        }
+
+        return chip;
+    }
+
+    function hasGuesses(names) {
+        return names.some(name => {
+            const entry = catalogueEntry(name);
+            return entry && entry.fuzzy;
+        });
+    }
+
+    const GUESS_NOTE = 'Names in dashed frames were read with a typo and matched to the closest catalogue entry. Worth a look before you rate them.';
+
+    function buildGroup(title, names, tone, note) {
+        if (!names.length) return null;
+
+        const group = el('div', 'sc-group');
+
+        const heading = el('h4', 'sc-group-title', title);
+        heading.appendChild(el('span', 'sc-group-count', String(names.length)));
+        group.appendChild(heading);
+
+        const chips = el('div', 'sc-chips');
+        names.forEach(name => chips.appendChild(buildChip(name, tone)));
+        group.appendChild(chips);
+
+        if (note) group.appendChild(note);
+
+        return group;
+    }
+
+    function showRecognizedList() {
+        const breakdown = document.getElementById('ingredients-breakdown');
+        breakdown.innerHTML = '';
+
+        const guessNote = hasGuesses(recognizedIngredients) ? el('p', 'sc-group-note', GUESS_NOTE) : null;
+        const group = buildGroup('Recognised ingredients', recognizedIngredients, '', guessNote);
+        if (group) breakdown.appendChild(group);
     }
 
     {% if user.is_authenticated %}
     function showPreferencesPrompt() {
         const summary = document.getElementById('safety-summary');
         summary.innerHTML = '';
-        document.getElementById('ingredients-breakdown').innerHTML = '';
 
         const verdict = el('div', 'sc-verdict');
         verdict.appendChild(el('p', 'sc-verdict-eyebrow', 'Your own colour code'));
         verdict.appendChild(el('p', 'sc-verdict-title', 'Your list is still empty'));
 
         const lead = el('p', 'sc-verdict-lead');
-        lead.appendChild(document.createTextNode('Mark a few ingredients as safe, moderate or unsafe and the scan starts colouring itself. '));
+        lead.appendChild(document.createTextNode('Click any ingredient below to mark it safe, moderate or unsafe, and the scan starts colouring itself. '));
 
-        const link = el('a', null, 'Set up your preferences');
+        const link = el('a', null, 'Your whole list lives in the profile');
         link.href = '/profile/';
         lead.appendChild(link);
         lead.appendChild(document.createTextNode('.'));
 
         verdict.appendChild(lead);
         summary.appendChild(verdict);
+
+        showRecognizedList();
     }
 
-    // dopasowanie po nazwie, nie po id: skan nie wie, który składnik z bazy
-    // trzyma w ręku, ma tylko tekst odczytany ze zdjęcia
+    // składnik z katalogu oceniamy po id, tak samo jak na stronie produktu.
+    // dla nazw spoza katalogu zostaje dopasowanie tekstowe, bo innego klucza nie ma
     function matchIngredient(name) {
+        const entry = catalogueEntry(name);
+        const known = entry ? entry.ingredient : null;
+
+        if (known) {
+            if (userPreferences.unsafe.includes(known.id)) return 'unsafe';
+            if (userPreferences.moderate.includes(known.id)) return 'moderate';
+            if (userPreferences.safe.includes(known.id)) return 'safe';
+            return 'unrated';
+        }
+
         const lower = name.toLowerCase();
         const hits = list => list.some(entry => lower.includes(entry) || entry.includes(lower));
 
         if (hits(userPreferences.unsafeNames)) return 'unsafe';
         if (hits(userPreferences.moderateNames)) return 'moderate';
         if (hits(userPreferences.safeNames)) return 'safe';
-        return 'unknown';
+        return 'unlisted';
     }
 
     function buildCounts(groups) {
@@ -304,7 +759,8 @@
             {key: 'unsafe', tone: 'unsafe', label: 'unsafe'},
             {key: 'moderate', tone: 'moderate', label: 'moderate'},
             {key: 'safe', tone: 'safe', label: 'safe'},
-            {key: 'unknown', tone: '', label: 'not on your list'}
+            {key: 'unrated', tone: '', label: 'not rated yet'},
+            {key: 'unlisted', tone: '', label: 'not in the catalogue'}
         ];
 
         rows.forEach(row => {
@@ -329,7 +785,7 @@
         if (rated === 0) {
             verdict.appendChild(el('p', 'sc-verdict-title', 'Nothing to compare yet'));
             verdict.appendChild(el('p', 'sc-verdict-lead',
-                'None of the recognised ingredients is on your list. Rate a few of them and the same photo will start colouring itself.'));
+                'None of the recognised ingredients is on your list. Click any of them below to rate it and the same photo will start colouring itself.'));
             verdict.appendChild(buildCounts(groups));
             return verdict;
         }
@@ -355,32 +811,17 @@
 
         verdict.appendChild(buildCounts(groups));
 
-        if (groups.unknown.length) {
+        const open = groups.unrated.length + groups.unlisted.length;
+        if (open) {
             verdict.appendChild(el('p', 'sc-verdict-lead',
-                `${groups.unknown.length} ${plural(groups.unknown.length, 'ingredient is', 'ingredients are')} not on your list yet, so the picture can still change.`));
+                `${open} ${plural(open, 'ingredient is', 'ingredients are')} still without your rating, so the picture can change.`));
         }
 
         return verdict;
     }
 
-    function buildGroup(title, names, tone) {
-        if (!names.length) return null;
-
-        const group = el('div', 'sc-group');
-
-        const heading = el('h4', 'sc-group-title', title);
-        heading.appendChild(el('span', 'sc-group-count', String(names.length)));
-        group.appendChild(heading);
-
-        const chips = el('div', 'sc-chips');
-        names.forEach(name => chips.appendChild(el('span', tone ? `sc-chip ${tone}` : 'sc-chip', name)));
-        group.appendChild(chips);
-
-        return group;
-    }
-
     function analyzeIngredients() {
-        const groups = {safe: [], moderate: [], unsafe: [], unknown: []};
+        const groups = {safe: [], moderate: [], unsafe: [], unrated: [], unlisted: []};
         recognizedIngredients.forEach(name => groups[matchIngredient(name)].push(name));
 
         const summary = document.getElementById('safety-summary');
@@ -393,31 +834,25 @@
         const sections = [
             {title: 'Best avoided', names: groups.unsafe, tone: 'unsafe'},
             {title: 'Use with care', names: groups.moderate, tone: 'moderate'},
-            {title: 'Safe for you', names: groups.safe, tone: 'safe'}
+            {title: 'Safe for you', names: groups.safe, tone: 'safe'},
+            {title: 'Not rated yet', names: groups.unrated, tone: ''}
         ];
 
         sections.forEach(section => {
-            const group = buildGroup(section.title, section.names, section.tone);
+            const guessNote = hasGuesses(section.names) ? el('p', 'sc-group-note', GUESS_NOTE) : null;
+            const group = buildGroup(section.title, section.names, section.tone, guessNote);
             if (group) breakdown.appendChild(group);
         });
 
-        const unknownGroup = buildGroup('Not on your list', groups.unknown, '');
-        if (unknownGroup) {
-            const note = el('p', 'sc-group-note');
-            note.appendChild(document.createTextNode('These are not in your preferences yet. '));
-
-            const link = el('a', null, 'Add them');
-            link.href = '/profile/';
-            note.appendChild(link);
-
-            note.appendChild(document.createTextNode(' to get a fuller picture next time.'));
-            unknownGroup.appendChild(note);
-            breakdown.appendChild(unknownGroup);
-        }
+        // spoza katalogu nie da się ocenić, bo preferencje wiszą na id składnika
+        const note = el('p', 'sc-group-note',
+            'These are not in the catalogue yet, so there is nothing to rate. They land there when a product with them goes in through the form.');
+        const unlisted = buildGroup('Not in the catalogue', groups.unlisted, '', note);
+        if (unlisted) breakdown.appendChild(unlisted);
     }
     {% endif %}
 
-    function toggleEditMode() {
+    async function toggleEditMode() {
         const display = document.getElementById('text-display');
         const editor = document.getElementById('text-editor');
         const btn = document.getElementById('edit-text-btn');
@@ -430,9 +865,8 @@
             btn.textContent = 'Edit text';
 
             parseIngredients(newText);
-            {% if user.is_authenticated %}
-            if (userPreferences) analyzeIngredients();
-            {% endif %}
+            await loadCatalogue(recognizedIngredients);
+            renderAnalysis();
         } else {
             display.style.display = 'none';
             editor.style.display = 'block';
@@ -443,9 +877,11 @@
     function resetScanner() {
         uploadedImage = null;
         recognizedIngredients = [];
+        catalogue = {};
         document.getElementById('upload-box').style.display = 'block';
         document.getElementById('preview-section').style.display = 'none';
         document.getElementById('processing-section').style.display = 'none';
+        document.getElementById('error-section').style.display = 'none';
         document.getElementById('results-section').style.display = 'none';
         document.getElementById('image-input').value = '';
     }

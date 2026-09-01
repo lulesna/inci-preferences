@@ -85,11 +85,79 @@
     margin-bottom: 40px;
 }
 
+.sc-crop-guide {
+    margin-bottom: 18px;
+    padding: 16px 20px;
+    border: 2px solid var(--main-green);
+    border-radius: 18px;
+    background: var(--card-bg);
+}
+
+.sc-crop-title {
+    font-family: 'KineksRound', sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--accent-dark);
+    margin-bottom: 6px;
+}
+
+.sc-crop-steps {
+    font-size: 14px;
+    color: var(--text-soft);
+}
+
+.sc-crop-status {
+    margin-top: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.sc-crop-status.selected {
+    color: #2d8659;
+}
+
+/* obrazek i warstwa zaznaczenia muszą mieć dokładnie ten sam prostokąt,
+   inaczej przeliczenie na współrzędne zdjęcia się rozjeżdża */
+.sc-crop {
+    position: relative;
+    /* fit-content zamiast inline-block: przy inline-block obrazek z max-width
+       100% liczył szerokość od rodzica, a rodzic od obrazka, i całość zwijała
+       się do kilku pikseli */
+    display: block;
+    width: fit-content;
+    max-width: 100%;
+    line-height: 0;
+    /* przycina przyciemnienie spoza zaznaczenia do samego zdjęcia, bez tego
+       cień z .sc-crop-box kładł się na całej stronie */
+    overflow: hidden;
+    border-radius: 18px;
+    margin-bottom: 20px;
+}
+
+.sc-crop-surface {
+    position: absolute;
+    inset: 0;
+    cursor: crosshair;
+    /* none zablokowałoby też szczypanie, a na telefonie powiększenie zdjęcia
+       jest jedynym sposobem, żeby celnie zaznaczyć drobny druk */
+    touch-action: pinch-zoom;
+}
+
+.sc-crop-box {
+    position: absolute;
+    border: 2px solid var(--lime);
+    background: rgba(159, 213, 99, 0.18);
+    box-shadow: 0 0 0 9999px rgba(74, 55, 66, 0.35);
+    pointer-events: none;
+}
+
 .sc-preview-image {
     display: block;
     max-width: 100%;
-    max-height: 460px;
-    margin-bottom: 20px;
+    /* zdjęcia etykiet są zwykle pionowe, przy 520 px skład robił się za mały,
+       żeby go celnie zaznaczyć */
+    max-height: min(80vh, 900px);
     border: 2px solid var(--main-green);
     border-radius: 18px;
 }
@@ -163,6 +231,23 @@
     height: 100%;
     background: var(--lime);
     transition: width 0.3s ease;
+}
+
+.sc-error {
+    border-color: var(--accent-dark);
+    background: rgba(253, 234, 242, 0.88);
+}
+
+.sc-error .sc-processing-text {
+    color: var(--accent-dark);
+    font-size: 20px;
+    margin-bottom: 8px;
+}
+
+.sc-error-note {
+    margin-bottom: 18px;
+    font-size: 14px;
+    color: var(--text-soft);
 }
 
 /* Sekcje wyniku */
@@ -352,13 +437,57 @@
 }
 
 .sc-chip {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 8px;
     padding: 8px 14px;
     border: 2px solid rgba(193, 207, 161, 0.65);
     border-radius: 14px;
     background: rgba(255, 255, 255, 0.62);
+    /* przyciski nie dziedziczą po body ani kroju, ani koloru tekstu */
+    font-family: 'Nunito Sans', 'Segoe UI', system-ui, sans-serif;
+    color: var(--text);
+    text-align: left;
+    transition: border-color 0.2s, transform 0.2s;
+}
+
+button.sc-chip {
+    cursor: pointer;
+}
+
+button.sc-chip:hover,
+button.sc-chip:focus-visible {
+    border-color: var(--main-pink);
+    transform: translateY(-1px);
+}
+
+.sc-chip-name {
     font-size: 15px;
     font-weight: 600;
     color: var(--text);
+}
+
+.sc-chip-purpose {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+/* przerywana ramka mówi, że nazwa nie zgadzała się co do znaku i została
+   dopasowana do najbliższego wpisu z katalogu */
+.sc-chip.guessed {
+    border-style: dashed;
+}
+
+.sc-chip.safe .sc-chip-purpose {
+    color: #2d8659;
+}
+
+.sc-chip.moderate .sc-chip-purpose {
+    color: #a86a12;
+}
+
+.sc-chip.unsafe .sc-chip-purpose {
+    color: var(--accent-dark);
 }
 
 .sc-chip.safe {

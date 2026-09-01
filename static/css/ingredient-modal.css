@@ -1,0 +1,314 @@
+/* Okno oceny składnika. Współdzielone przez stronę produktu i skaner. */
+
+#ingredient-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1000;
+}
+
+.modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    /* przygaszenie w kolorze tekstu serwisu, czerń wychodziła brudno na różu */
+    background: rgba(74, 55, 66, 0.45);
+    backdrop-filter: blur(4px);
+}
+
+.modal-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 92%;
+    max-width: 430px;
+    max-height: 88vh;
+    overflow-y: auto;
+    padding: 28px;
+    border: 2px solid var(--main-green);
+    border-radius: 22px;
+    background: #ffffff;
+    box-shadow: 0 18px 50px rgba(74, 55, 66, 0.28);
+}
+
+.modal-eyebrow {
+    font-family: 'KineksRound', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+}
+
+.modal-content h3 {
+    font-family: 'KineksRound', sans-serif;
+    font-size: 25px;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--accent-dark);
+}
+
+.modal-purpose {
+    margin-top: 4px;
+    font-size: 14px;
+    color: var(--text-muted);
+}
+
+.modal-lead {
+    margin-top: 12px;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--text-soft);
+}
+
+.preference-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 20px 0;
+}
+
+/* wiersz: kropka koloru, nazwa z krótkim wyjaśnieniem, po prawej stan */
+.preference-btn {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    padding: 13px 16px;
+    border: 2px solid;
+    border-radius: 14px;
+    background: #ffffff;
+    font-family: 'KineksRound', sans-serif;
+    text-align: left;
+    cursor: pointer;
+    transition: transform 0.15s, background-color 0.2s;
+}
+
+.preference-btn:hover,
+.preference-btn:focus-visible {
+    transform: translateY(-1px);
+}
+
+.preference-dot {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    border: 2px solid;
+    border-radius: 50%;
+}
+
+.preference-text {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.preference-label {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.preference-hint {
+    font-family: 'Nunito Sans', 'Segoe UI', system-ui, sans-serif;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.preference-state {
+    font-family: 'Nunito Sans', 'Segoe UI', system-ui, sans-serif;
+    font-size: 11px;
+    line-height: 1.3;
+    max-width: 88px;
+    text-align: right;
+    color: var(--text-muted);
+}
+
+.preference-btn.safe {
+    border-color: var(--accent-green);
+}
+
+.preference-btn.safe .preference-dot {
+    border-color: var(--accent-green);
+    background: rgba(113, 221, 153, 0.55);
+}
+
+.preference-btn.safe:hover,
+.preference-btn.safe.current {
+    background: rgba(113, 221, 153, 0.18);
+}
+
+.preference-btn.moderate {
+    border-color: #f0ad4e;
+}
+
+.preference-btn.moderate .preference-dot {
+    border-color: #f0ad4e;
+    background: rgba(240, 173, 78, 0.55);
+}
+
+.preference-btn.moderate:hover,
+.preference-btn.moderate.current {
+    background: rgba(240, 173, 78, 0.18);
+}
+
+.preference-btn.unsafe {
+    border-color: var(--accent-dark);
+}
+
+.preference-btn.unsafe .preference-dot {
+    border-color: var(--accent-dark);
+    background: rgba(214, 67, 134, 0.45);
+}
+
+.preference-btn.unsafe:hover,
+.preference-btn.unsafe.current {
+    background: rgba(214, 67, 134, 0.12);
+}
+
+.preference-btn.current .preference-dot {
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.9), 0 0 0 5px currentColor;
+}
+
+.preference-btn.current.safe {
+    color: #2d8659;
+}
+
+.preference-btn.current.moderate {
+    color: #a86a12;
+}
+
+.preference-btn.current.unsafe {
+    color: var(--accent-dark);
+}
+
+.preference-btn.current .preference-state {
+    font-weight: 600;
+    color: inherit;
+}
+
+.propose-section {
+    border-top: 2px solid rgba(193, 207, 161, 0.45);
+    padding-top: 16px;
+    margin-bottom: 18px;
+}
+
+.propose-toggle {
+    padding: 0;
+    background: none;
+    border: none;
+    color: var(--accent-dark);
+    font-family: 'KineksRound', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+}
+
+.propose-toggle:hover {
+    color: var(--main-pink);
+}
+
+#propose-form {
+    margin-top: 14px;
+    text-align: left;
+}
+
+#propose-form label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+}
+
+#propose-purpose {
+    width: 100%;
+    padding: 10px;
+    border: 2px solid var(--lime);
+    border-radius: 10px;
+    font-size: 14px;
+    font-family: 'Nunito Sans', 'Segoe UI', system-ui, sans-serif;
+    resize: vertical;
+    outline: none;
+}
+
+#propose-purpose:focus {
+    border-color: var(--main-pink);
+}
+
+#propose-purpose:disabled {
+    background: #f4f4f4;
+    color: #888;
+}
+
+.propose-hint {
+    font-size: 12px;
+    color: var(--text-soft);
+    margin: 8px 0 12px;
+}
+
+.propose-submit {
+    width: 100%;
+    padding: 12px;
+    background-color: var(--lime);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    font-size: 14px;
+    font-weight: bold;
+    font-family: 'KineksRound', sans-serif;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.propose-submit:hover:not(:disabled) {
+    background-color: var(--main-pink);
+}
+
+.propose-submit:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+.propose-status {
+    font-size: 13px;
+    margin-top: 10px;
+    min-height: 1em;
+}
+
+.propose-status.success {
+    color: #2d8659;
+    font-weight: 600;
+}
+
+.propose-status.error {
+    color: var(--accent-dark);
+    font-weight: 600;
+}
+
+.cancel-btn {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid var(--main-green);
+    border-radius: 50px;
+    background: rgba(255, 255, 255, 0.6);
+    color: var(--text);
+    font-family: 'KineksRound', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+}
+
+.cancel-btn:hover {
+    border-color: var(--main-pink);
+    color: var(--accent-dark);
+}
