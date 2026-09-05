@@ -161,6 +161,8 @@ Na surowym zdjęciu z telefonu sam silnik OCR daje słabe wyniki, dlatego liczy 
 - Wynik w tej samej formie co na stronie produktu: werdykt, liczniki i rozbicie na grupy, przy czym składniki obecne w katalogu można ocenić jednym kliknięciem
 - Niepowodzenie odczytu kończy się komunikatem z podpowiedzią, jak zrobić lepsze zdjęcie. Wywołania silnika mają limit czasu, bo zablokowana kompilacja WebAssembly potrafi nie zwrócić ani wyniku, ani błędu
 
+![Odczyt składu ze zdjęcia](docs/gifs/scan.gif)
+
 ---
 
 ## Stack technologiczny
