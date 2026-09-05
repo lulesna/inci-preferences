@@ -25,18 +25,28 @@ ACRONYMS = {
 
 
 def tidy_name(raw):
+    """taksonomia krzyczy 'AQUA', katalog trzyma 'Aqua'"""
+    # 'ALCOHOL DENAT.' z kropka na koncu nie zlapie sie z etykieta, gdzie parser
+    # kropke obcina
     raw = raw.strip().rstrip('.')
 
     words = []
     for word in raw.split():
-        upper = word.upper()
+        # o wielkosci liter decyduje pojedynczy czlon, nie cale slowo:
+        # 'POLYGLYCERYL-4' to 'Polyglyceryl-4', ale 'PEG-100' zostaje wielkimi,
+        # bo PEG to skrot. wczesniej kazde slowo z cyfra szlo capslockiem
+        pieces = []
+        for piece in re.split(r'([-/])', word):
+            if piece in ('-', '/'):
+                pieces.append(piece)
+            elif piece.upper().strip('(),.') in ACRONYMS:
+                pieces.append(piece.upper())
+            elif not any(char.isalpha() for char in piece):
+                pieces.append(piece)
+            else:
+                pieces.append(piece.capitalize())
 
-        # segmenty z cyframi ('C20-40', 'PEG-100') i skroty zostaja jak byly
-        if any(char.isdigit() for char in word) or upper.strip('-,()') in ACRONYMS:
-            words.append(upper)
-            continue
-
-        words.append('-'.join(part.capitalize() for part in word.split('-')))
+        words.append(''.join(pieces))
 
     return ' '.join(words)
 
@@ -87,6 +97,22 @@ class Command(BaseCommand):
             help='Import at most this many ingredients',
         )
         parser.add_argument(
+            '--fill-purposes',
+            action='store_true',
+            help=(
+                'Fill in the purpose of ingredients already in the catalogue that have '
+                'none or say Unknown (a purpose set by a human is never overwritten)'
+            ),
+        )
+        parser.add_argument(
+            '--fix-names',
+            action='store_true',
+            help=(
+                'Rewrite the spelling of names already in the catalogue to the tidied '
+                'form, for example POLYGLYCERYL-4 to Polyglyceryl-4'
+            ),
+        )
+        parser.add_argument(
             '--only-with-function',
             action='store_true',
             help='Skip entries that have no declared cosmetic function',
@@ -108,11 +134,20 @@ class Command(BaseCommand):
         except ValueError:
             raise CommandError('Source is not valid JSON')
 
-        existing = {
-            name.lower() for name in Ingredient.objects.values_list('inci_name', flat=True)
-        }
+        # nazwa malymi literami -> (id, obecna nazwa, obecny opis), bo przy
+        # --fill-purposes i --fix-names trzeba wiedziec, co juz w bazie stoi
+        existing = {}
+        duplicate_keys = set()
+        for pk, name, purpose in Ingredient.objects.values_list('id', 'inci_name', 'purpose'):
+            key = name.lower()
+            if key in existing:
+                duplicate_keys.add(key)
+            existing[key] = (pk, name, purpose)
 
         rows = []
+        to_fill = []
+        to_rename = []
+        rename_examples = []
         seen = set()
         skipped_no_name = 0
         skipped_too_long = 0
@@ -144,6 +179,20 @@ class Command(BaseCommand):
 
             if key in existing:
                 skipped_existing += 1
+                pk, current_name, current_purpose = existing[key]
+
+                # 'Unknown' wpisuje parser skladu przy zakladaniu skladnika,
+                # to zapchajdziura, a nie opis, wiec wolno ja nadpisac
+                if options['fill_purposes'] and purpose:
+                    if not current_purpose.strip() or current_purpose.strip().lower() == 'unknown':
+                        to_fill.append(Ingredient(id=pk, purpose=purpose))
+
+                # zmiana samej pisowni, wiec kolizja z unikalnoscia jest mozliwa
+                # tylko wtedy, gdy katalog ma juz dwa wpisy roznie zapisane
+                if options['fix_names'] and current_name != name and key not in duplicate_keys:
+                    to_rename.append(Ingredient(id=pk, inci_name=name))
+                    rename_examples.append((current_name, name))
+
                 continue
 
             rows.append((name, purpose))
@@ -169,12 +218,22 @@ class Command(BaseCommand):
                 )
             created = Ingredient.objects.count() - len(existing)
 
+        if options['commit'] and to_fill:
+            with transaction.atomic():
+                Ingredient.objects.bulk_update(to_fill, ['purpose'], batch_size=1000)
+
+        if options['commit'] and to_rename:
+            with transaction.atomic():
+                Ingredient.objects.bulk_update(to_rename, ['inci_name'], batch_size=1000)
+
         mode = 'ZAPISANE' if options['commit'] else 'PROBNY PRZEBIEG, nic nie zapisano'
         self.stdout.write(self.style.MIGRATE_HEADING(f'\n{mode}'))
         self.stdout.write(f'  wpisy w taksonomii:        {len(taxonomy)}')
         self.stdout.write(f'  do dodania:                {len(rows)}')
         self.stdout.write(f'  z opisem zastosowania:     {sum(1 for _, p in rows if p)}')
         self.stdout.write(f'  juz w katalogu:            {skipped_existing}')
+        self.stdout.write(f'  opisy do uzupelnienia:     {len(to_fill)}')
+        self.stdout.write(f'  nazwy do poprawienia:      {len(to_rename)}')
         self.stdout.write(f'  bez nazwy:                 {skipped_no_name}')
         self.stdout.write(f'  nazwa dluzsza niz pole:    {skipped_too_long}')
         self.stdout.write(f'  bez funkcji (pominiete):   {skipped_no_function}')
@@ -184,6 +243,20 @@ class Command(BaseCommand):
 
         if options['commit']:
             self.stdout.write(self.style.SUCCESS(f'  dodane do bazy:            {created}'))
+            if to_fill:
+                self.stdout.write(self.style.SUCCESS(f'  uzupelnione opisy:         {len(to_fill)}'))
+            if to_rename:
+                self.stdout.write(self.style.SUCCESS(f'  poprawione nazwy:          {len(to_rename)}'))
+        elif to_rename:
+            self.stdout.write('\n  przyklady poprawek nazw:')
+            for before, after in rename_examples[:5]:
+                self.stdout.write(f'    {before}  ->  {after}')
+
+        elif to_fill:
+            self.stdout.write('\n  opisy, ktore zostana uzupelnione:')
+            for item in to_fill[:5]:
+                name = Ingredient.objects.get(pk=item.pk).inci_name
+                self.stdout.write(f'    {name}  ->  {item.purpose}')
         elif rows:
             self.stdout.write('\n  przyklady:')
             for name, purpose in rows[:5]:

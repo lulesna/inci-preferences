@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Search - INCI Preferences{% endblock %}
 
@@ -94,6 +95,8 @@
         </div>
     </section>
 
+    <script src="{% static 'js/ingredient-search.js' %}"></script>
+
     <script>
     function escapeHtml(text) {
         if (text === null || text === undefined) return '';
@@ -105,7 +108,11 @@
     const urlParams = new URLSearchParams(window.location.search);
     const initialQuery = urlParams.get('q') || '';
 
-    let allIngredients = [];
+    // id -> skladnik, uzupelniane tym, co wroci z wyszukiwania i tym, co
+    // uzytkownik wybral. wystarczy do wypisania nazw na chipach filtra
+    const knownIngredients = new Map();
+    let includeToken = 0;
+    let excludeToken = 0;
     let selectedIngredients = [];
     let excludedIngredients = [];
     let userPreferences = null;
@@ -138,12 +145,8 @@
         return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
     }
 
-    async function loadIngredients() {
-        try {
-            allIngredients = await fetchAllPages('/api/ingredients/');
-        } catch (error) {
-            console.error('Error loading ingredients');
-        }
+    function rememberIngredients(list) {
+        list.forEach(ing => knownIngredients.set(ing.id, ing));
     }
 
     {% if user.is_authenticated %}
@@ -287,8 +290,8 @@
         });
     }
 
-    document.getElementById('ingredient-filter')?.addEventListener('input', function(e) {
-        const searchTerm = e.target.value.toLowerCase();
+    document.getElementById('ingredient-filter')?.addEventListener('input', debounce(async function(e) {
+        const searchTerm = e.target.value.trim();
         const suggestionsContainer = document.getElementById('ingredient-suggestions');
 
         if (searchTerm.length < 2) {
@@ -296,10 +299,13 @@
             return;
         }
 
-        const matches = allIngredients.filter(ing =>
-            ing.inci_name.toLowerCase().includes(searchTerm) &&
-            !selectedIngredients.includes(ing.id)
-        ).slice(0, 10);
+        const token = ++includeToken;
+        const found = await searchIngredients(searchTerm, 20);
+        if (token !== includeToken) return;
+
+        rememberIngredients(found);
+
+        const matches = found.filter(ing => !selectedIngredients.includes(ing.id)).slice(0, 10);
 
         suggestionsContainer.innerHTML = '';
 
@@ -310,17 +316,17 @@
             matches.forEach(ing => {
                 const item = document.createElement('div');
                 item.className = 'suggestion-item';
-                item.textContent = ing.inci_name;
+                item.appendChild(highlightMatch(ing.inci_name, searchTerm));
                 item.onclick = () => addIngredientFilter(ing.id, ing.inci_name);
                 listDiv.appendChild(item);
             });
 
             suggestionsContainer.appendChild(listDiv);
         }
-    });
+    }));
 
-    document.getElementById('exclude-ingredient-filter')?.addEventListener('input', function(e) {
-        const searchTerm = e.target.value.toLowerCase();
+    document.getElementById('exclude-ingredient-filter')?.addEventListener('input', debounce(async function(e) {
+        const searchTerm = e.target.value.trim();
         const suggestionsContainer = document.getElementById('exclude-ingredient-suggestions');
 
         if (searchTerm.length < 2) {
@@ -328,10 +334,13 @@
             return;
         }
 
-        const matches = allIngredients.filter(ing =>
-            ing.inci_name.toLowerCase().includes(searchTerm) &&
-            !excludedIngredients.includes(ing.id)
-        ).slice(0, 10);
+        const token = ++excludeToken;
+        const found = await searchIngredients(searchTerm, 20);
+        if (token !== excludeToken) return;
+
+        rememberIngredients(found);
+
+        const matches = found.filter(ing => !excludedIngredients.includes(ing.id)).slice(0, 10);
 
         suggestionsContainer.innerHTML = '';
 
@@ -342,14 +351,14 @@
             matches.forEach(ing => {
                 const item = document.createElement('div');
                 item.className = 'suggestion-item';
-                item.textContent = ing.inci_name;
+                item.appendChild(highlightMatch(ing.inci_name, searchTerm));
                 item.onclick = () => addExcludeFilter(ing.id, ing.inci_name);
                 listDiv.appendChild(item);
             });
 
             suggestionsContainer.appendChild(listDiv);
         }
-    });
+    }));
 
     function addIngredientFilter(id, name) {
         selectedIngredients.push(id);
@@ -372,7 +381,7 @@
         container.innerHTML = '';
 
         selectedIngredients.forEach(id => {
-            const ing = allIngredients.find(i => i.id === id);
+            const ing = knownIngredients.get(id);
             if (ing) {
                 const chip = document.createElement('span');
                 chip.className = 'ingredient-chip';
@@ -394,7 +403,7 @@
         container.innerHTML = '';
 
         excludedIngredients.forEach(id => {
-            const ing = allIngredients.find(i => i.id === id);
+            const ing = knownIngredients.get(id);
             if (ing) {
                 const chip = document.createElement('span');
                 chip.className = 'ingredient-chip exclude';
@@ -655,7 +664,6 @@
         }
     });
 
-    loadIngredients();
     {% if user.is_authenticated %}
     loadUserPreferences();
     {% endif %}

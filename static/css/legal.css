@@ -24,15 +24,6 @@
 }
 
 .legal-header {
-    /* reset po globalnym header {} ze style.css, który przykleiłby nagłówek
-       dokumentu do góry ekranu */
-    position: static;
-    z-index: auto;
-    border-radius: 0;
-    backdrop-filter: none;
-    box-shadow: none;
-    background: none;
-
     padding: 0 0 1.5rem;
     margin-bottom: 2rem;
     border-bottom: 2px solid var(--main-pink);

@@ -1,0 +1,500 @@
+/* Profil. Ten sam układ co strona produktu i skaner: jedna kolumna, sekcje
+   jedna pod drugą, ramki tylko tam, gdzie coś jest osobnym elementem. */
+
+.pf-page {
+    max-width: 1400px;
+    margin: 0 auto;
+    text-align: left;
+    color: var(--text);
+}
+
+.pf-page p {
+    max-width: none;
+}
+
+/* Nagłówek */
+
+.pf-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 20px 32px;
+    padding-bottom: 22px;
+    border-bottom: 2px solid rgba(193, 207, 161, 0.5);
+    margin-bottom: 38px;
+}
+
+.pf-eyebrow {
+    font-family: 'KineksRound', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+}
+
+.pf-title {
+    font-family: 'KineksRound', sans-serif;
+    font-size: 40px;
+    font-weight: 700;
+    line-height: 1.15;
+    /* --main-pink na jasnym tle daje kontrast poniżej 3:1, stąd ciemniejszy róż */
+    color: var(--accent-dark);
+    margin-bottom: 8px;
+}
+
+.pf-lead {
+    font-size: 16px;
+    color: var(--text-soft);
+}
+
+.pf-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+/* Przyciski */
+
+.pf-btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 10px 18px;
+    border: 2px solid var(--main-green);
+    border-radius: 50px;
+    background: rgba(255, 255, 255, 0.6);
+    /* przyciski nie dziedziczą po body ani kroju, ani koloru tekstu */
+    font-family: 'KineksRound', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    text-decoration: none;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s, background-color 0.2s;
+}
+
+.pf-btn:hover {
+    border-color: var(--main-pink);
+    color: var(--accent-dark);
+}
+
+.pf-btn-solid {
+    border-color: var(--lime);
+    background: var(--lime);
+    color: #ffffff;
+    font-weight: 700;
+}
+
+.pf-btn-solid:hover {
+    border-color: var(--main-pink);
+    background: var(--main-pink);
+    color: #ffffff;
+}
+
+.pf-btn-danger {
+    border-color: var(--accent-dark);
+    color: var(--accent-dark);
+}
+
+.pf-btn-danger:hover {
+    background: rgba(214, 67, 134, 0.12);
+    border-color: var(--accent-dark);
+}
+
+/* Sekcje */
+
+.pf-section {
+    margin-bottom: 46px;
+}
+
+.pf-section-title {
+    font-family: 'KineksRound', sans-serif;
+    font-size: 25px;
+    font-weight: 700;
+    color: var(--accent-dark);
+}
+
+.pf-section-note {
+    margin-top: 6px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    color: var(--text-soft);
+}
+
+/* Liczniki, ten sam język co werdykt na stronie produktu */
+
+.pf-counts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    list-style: none;
+    margin-top: 18px;
+}
+
+.pf-count {
+    padding: 6px 15px;
+    border: 2px solid rgba(193, 207, 161, 0.7);
+    border-radius: 50px;
+    background: rgba(255, 255, 255, 0.75);
+    font-size: 14px;
+    color: var(--text-soft);
+}
+
+.pf-count b {
+    font-weight: 700;
+    color: var(--text);
+}
+
+.pf-count.safe {
+    border-color: var(--accent-green);
+}
+
+.pf-count.moderate {
+    border-color: #f0ad4e;
+}
+
+.pf-count.unsafe {
+    border-color: var(--accent-dark);
+}
+
+/* Wyszukiwanie składnika */
+
+.pf-search {
+    position: relative;
+    max-width: 640px;
+}
+
+.pf-search label {
+    display: block;
+    font-family: 'KineksRound', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 8px;
+}
+
+.pf-search input {
+    width: 100%;
+    padding: 13px 18px;
+    border: 2px solid var(--main-green);
+    border-radius: 50px;
+    background: rgba(255, 255, 255, 0.7);
+    font-family: 'Nunito Sans', 'Segoe UI', system-ui, sans-serif;
+    font-size: 15px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.pf-search input:focus {
+    border-color: var(--main-pink);
+}
+
+#suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    margin-top: 6px;
+    border: 2px solid var(--main-green);
+    border-radius: 18px;
+    background: #ffffff;
+    overflow: hidden;
+    box-shadow: 0 10px 26px rgba(74, 55, 66, 0.18);
+}
+
+#suggestions > div {
+    padding: 12px 18px;
+    cursor: pointer;
+    font-size: 15px;
+    color: var(--text-soft);
+    border-bottom: 1px solid rgba(193, 207, 161, 0.35);
+    transition: background-color 0.2s;
+}
+
+#suggestions > div:last-child {
+    border-bottom: none;
+}
+
+#suggestions > div:hover {
+    background: rgba(193, 207, 161, 0.18);
+}
+
+#suggestions strong {
+    color: var(--text);
+    font-weight: 600;
+}
+
+/* Wybrany składnik */
+
+.pf-selected {
+    margin-top: 22px;
+    padding: 24px 26px;
+    border: 2px solid var(--main-green);
+    border-radius: 22px;
+    background: var(--card-bg);
+    max-width: 640px;
+}
+
+.pf-selected-name {
+    font-family: 'KineksRound', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--accent-dark);
+}
+
+.pf-selected-purpose {
+    margin-top: 4px;
+    margin-bottom: 18px;
+    font-size: 14px;
+    color: var(--text-muted);
+}
+
+.pf-field {
+    display: block;
+    font-family: 'KineksRound', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 8px;
+}
+
+.pf-selected select {
+    width: 100%;
+    padding: 11px 14px;
+    border: 2px solid var(--main-green);
+    border-radius: 12px;
+    background: #ffffff;
+    font-family: 'Nunito Sans', 'Segoe UI', system-ui, sans-serif;
+    font-size: 15px;
+    color: var(--text);
+    outline: none;
+    margin-bottom: 18px;
+}
+
+.pf-selected select:focus {
+    border-color: var(--main-pink);
+}
+
+.pf-selected-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+/* Lista ocenionych składników */
+
+.pf-group {
+    margin-bottom: 28px;
+}
+
+.pf-group-title {
+    font-family: 'KineksRound', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 12px;
+}
+
+.pf-group-count {
+    font-family: 'Nunito Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-left: 8px;
+}
+
+.pf-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.pf-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px 8px 14px;
+    border: 2px solid rgba(193, 207, 161, 0.65);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.62);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.pf-chip.safe {
+    border-color: var(--accent-green);
+    background: rgba(113, 221, 153, 0.2);
+}
+
+.pf-chip.moderate {
+    border-color: #f0ad4e;
+    background: rgba(240, 173, 78, 0.2);
+}
+
+.pf-chip.unsafe {
+    border-color: var(--accent-dark);
+    background: rgba(214, 67, 134, 0.14);
+}
+
+/* krzyżyk zdejmujący ocenę, na tyle duży, żeby dało się w niego trafić palcem */
+.pf-chip-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.75);
+    font-family: 'Nunito Sans', sans-serif;
+    font-size: 15px;
+    line-height: 1;
+    color: var(--text-soft);
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.pf-chip-remove:hover {
+    background: var(--accent-dark);
+    color: #ffffff;
+}
+
+/* Podpowiedzi z ulubionych */
+
+.pf-insight {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 14px;
+    padding: 16px 20px;
+    margin-bottom: 12px;
+    border: 2px solid var(--main-green);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.62);
+    max-width: 720px;
+}
+
+.pf-insight-name {
+    font-family: 'KineksRound', sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.pf-insight-note {
+    margin-top: 2px;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+/* Konto */
+
+.pf-account {
+    max-width: 640px;
+    padding: 24px 26px;
+    border: 2px solid var(--main-green);
+    border-radius: 22px;
+    background: var(--card-bg);
+}
+
+.pf-account h4 {
+    font-family: 'KineksRound', sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--accent-dark);
+    margin-bottom: 14px;
+}
+
+.pf-account-block + .pf-account-block {
+    margin-top: 26px;
+    padding-top: 26px;
+    border-top: 2px solid rgba(193, 207, 161, 0.45);
+}
+
+.pf-account-field {
+    margin-bottom: 16px;
+}
+
+.pf-account-field label {
+    display: block;
+    font-family: 'KineksRound', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+}
+
+.pf-account-field input {
+    width: 100%;
+    padding: 11px 14px;
+    border: 2px solid var(--main-green);
+    border-radius: 12px;
+    background: #ffffff;
+    font-family: 'Nunito Sans', 'Segoe UI', system-ui, sans-serif;
+    font-size: 15px;
+    color: var(--text);
+    outline: none;
+}
+
+.pf-account-field input:focus {
+    border-color: var(--main-pink);
+}
+
+.pf-account-field small {
+    display: block;
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.pf-account-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 18px;
+}
+
+@media (max-width: 768px) {
+    .pf-head {
+        align-items: flex-start;
+        margin-bottom: 28px;
+    }
+
+    .pf-title {
+        font-size: 28px;
+    }
+
+    .pf-actions {
+        width: 100%;
+    }
+
+    .pf-actions .pf-btn {
+        flex: 1;
+        justify-content: center;
+    }
+
+    .pf-section {
+        margin-bottom: 36px;
+    }
+
+    .pf-section-title {
+        font-size: 21px;
+    }
+
+    .pf-selected,
+    .pf-account {
+        padding: 20px;
+    }
+
+    .pf-insight {
+        align-items: flex-start;
+    }
+}

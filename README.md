@@ -17,8 +17,8 @@ Zdecydowana większość funkcji (personalizowana klasyfikacja składników, rek
 kolorowanie kosmetyków wg profilu) jest dostępna dopiero po zalogowaniu. Żeby nie trzeba było
 zakładać konta, przygotowałyśmy konto pokazowe:
 
-| Login | Hasło |
-|-------|-------|
+| Login      | Hasło      |
+|------------|------------|
 | `testuser` | `testuser` |
 
 Konto jest współdzielone: jego nazwa, hasło i istnienie są zablokowane przed zmianą, a preferencje
@@ -166,18 +166,18 @@ Na surowym zdjęciu z telefonu sam silnik OCR daje słabe wyniki, dlatego liczy 
 ## Stack technologiczny
 
 ### Backend
-| Technologia | Cel |
-|------------|-----|
-| **Python 3.12** | Język programowania |
-| **Django 6.0** | Framework webowy (MTV) |
-| **Django REST Framework** | RESTful API z ViewSetami |
-| **PostgreSQL 15** | Relacyjna baza danych |
-| **Gunicorn** | Production WSGI HTTP Server |
-| **Whitenoise** | Serwowanie plików statycznych |
-| **django-filter** | Zaawansowane filtrowanie API |
-| **django-csp** | Content Security Policy |
-| **psycopg2-binary** | PostgreSQL adapter |
-| **python-decouple** | Environment variables management |
+| Technologia               | Cel                              |
+|---------------------------|----------------------------------|
+| **Python 3.12**           | Język programowania              |
+| **Django 6.0**            | Framework webowy (MTV)           |
+| **Django REST Framework** | RESTful API z ViewSetami         |
+| **PostgreSQL 15**         | Relacyjna baza danych            |
+| **Gunicorn**              | Production WSGI HTTP Server      |
+| **Whitenoise**            | Serwowanie plików statycznych    |
+| **django-filter**         | Zaawansowane filtrowanie API     |
+| **django-csp**            | Content Security Policy          |
+| **psycopg2-binary**       | PostgreSQL adapter               |
+| **python-decouple**       | Environment variables management |
 
 ### Frontend
 | Technologia            | Cel                                                       |
@@ -287,6 +287,19 @@ Zaplanowane kierunki dalszego rozwoju:
   - Push notifications: alerty o nowych bezpiecznych produktach spełniających preferencje
 
 -----
+
+## Źródła danych i materiałów
+
+* Katalog składników INCI wraz z zastosowaniami pochodzi z taksonomii
+[Open Beauty Facts](https://world.openbeautyfacts.org/), czyli z danych CosIng Komisji Europejskiej,
+i jest udostępniany na licencji [ODbL](https://opendatacommons.org/licenses/odbl/). Import robi
+komenda `import_inci_taxonomy`.
+* Ikonki: [Magnific](https://www.flaticon.com/authors/magnific) na Flaticon.
+
+Oba źródła są podane w stopce serwisu, bo licencja ODbL wymaga wskazania pochodzenia danych,
+a Flaticon wskazania autora grafik.
+
+---
 
 ## Autorki
 

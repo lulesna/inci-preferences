@@ -1,6 +1,13 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}My Profile - INCI Preferences{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/profile.css' %}">
+{% endblock %}
+
+{% block main_class %}main-wide{% endblock %}
 
 {% block content %}
     {% if not user.is_authenticated %}
@@ -8,123 +15,142 @@
             <p>You must be <a href="{% url 'users:login' %}">logged in</a> to view your profile.</p>
         </section>
     {% else %}
-        <div class="profile-container">
-            <section class="main-section">
-                <h2>My Profile</h2>
-            </section>
+    <section class="pf-page">
+        <header class="pf-head">
+            <div>
+                <p class="pf-eyebrow">Your account</p>
+                <h2 class="pf-title">{{ user.username }}</h2>
+                <p class="pf-lead">
+                    Your list decides how the whole catalogue is coloured. Rate an ingredient once
+                    and every product carrying it changes colour for you.
+                </p>
+            </div>
 
-            <div class="profile-section">
-                <h3>Account Settings</h3>
-                <div class="account-info">
-                    <p><strong>Username:</strong> {{ user.username }}</p>
+            <div class="pf-actions">
+                <button type="button" class="pf-btn" onclick="toggleEditAccount()">Account settings</button>
+            </div>
+        </header>
+
+        <section class="pf-section">
+            <h3 class="pf-section-title">Your list at a glance</h3>
+            <p class="pf-section-note">Counted across every ingredient you have rated so far.</p>
+            <ul class="pf-counts" id="summary"></ul>
+        </section>
+
+        <section class="pf-section">
+            <h3 class="pf-section-title">Rate an ingredient</h3>
+            <p class="pf-section-note">
+                Start typing an INCI name. The matching part of each suggestion is picked out for you.
+            </p>
+
+            <div class="pf-search">
+                <label for="ingredient-input">Ingredient name</label>
+                <input type="text" id="ingredient-input" placeholder="For example Niacinamide" autocomplete="off" maxlength="100">
+                <div id="suggestions"></div>
+            </div>
+
+            <div id="selected-ingredient" class="pf-selected" style="display: none;">
+                <p class="pf-selected-name" id="selected-name"></p>
+                <p class="pf-selected-purpose" id="selected-purpose"></p>
+
+                <label class="pf-field" for="color-select">How does it work for your skin?</label>
+                <select id="color-select">
+                    <option value="NONE">Not rated</option>
+                    <option value="GREEN">Safe for you</option>
+                    <option value="YELLOW">Use with care</option>
+                    <option value="RED">Best avoided</option>
+                </select>
+
+                <div class="pf-selected-actions">
+                    <button type="button" class="pf-btn pf-btn-solid" onclick="savePreference()">Save rating</button>
+                    <button type="button" class="pf-btn" onclick="clearSelection()">Cancel</button>
                 </div>
+            </div>
+        </section>
 
-                <div class="profile-buttons">
-                    <button class="profile-btn" onclick="toggleEditAccount()">Edit Account</button>
-                    <button class="profile-btn profile-btn-danger" onclick="confirmDeleteAccount()">Delete Account</button>
-                </div>
+        <section class="pf-section">
+            <h3 class="pf-section-title">Your ingredient list</h3>
+            <p class="pf-section-note">Click the cross on a chip to take the rating off.</p>
+            <div id="my-preferences">
+                <p class="no-preferences-message">Loading your list...</p>
+            </div>
+        </section>
 
-                <div id="edit-account-form" class="edit-account-form" style="display: none;">
+        <section class="pf-section">
+            <h3 class="pf-section-title">Spotted in your favourites</h3>
+            <p class="pf-section-note">
+                Ingredients that keep coming back in the products you saved, so they are worth rating.
+            </p>
+            <div id="favorites-insights">
+                <p class="pf-section-note">Loading...</p>
+            </div>
+        </section>
+
+        <section class="pf-section" id="edit-account-form" style="display: none;">
+            <h3 class="pf-section-title">Account settings</h3>
+            <p class="pf-section-note">Name and address change here, the password right below.</p>
+
+            <div class="pf-account">
+                <div class="pf-account-block">
                     <h4>Account details</h4>
                     <form method="post" action="{% url 'users:update_account' %}">
                         {% csrf_token %}
-                        <div>
-                            <label for="username">Username:</label>
+                        <div class="pf-account-field">
+                            <label for="username">Username</label>
                             <input type="text" name="username" id="username" value="{{ user.username }}" required maxlength="150" autocapitalize="none">
                             <small>Letters, digits, hyphen and underscore only.</small>
                         </div>
-                        <div>
-                            <label for="email">Email (optional):</label>
+                        <div class="pf-account-field">
+                            <label for="email">Email, optional</label>
                             <input type="email" name="email" id="email" value="{{ user.email }}" autocomplete="email">
                             <small>
-                                Used only to reset your password. Without it a forgotten
-                                password cannot be recovered.
+                                Used only to reset your password. Without it a forgotten password
+                                cannot be recovered.
                             </small>
                         </div>
-                        <button type="submit">Save changes</button>
-                        <button type="button" onclick="toggleEditAccount()">Cancel</button>
+                        <div class="pf-account-actions">
+                            <button type="submit" class="pf-btn pf-btn-solid">Save changes</button>
+                            <button type="button" class="pf-btn" onclick="toggleEditAccount()">Close</button>
+                        </div>
                     </form>
+                </div>
 
-                    <hr>
-
-                    <h4>Change Password</h4>
+                <div class="pf-account-block">
+                    <h4>Change password</h4>
                     <form method="post" action="{% url 'users:change_password' %}">
                         {% csrf_token %}
-                        <div>
-                            <label for="old_password">Old Password:</label>
+                        <div class="pf-account-field">
+                            <label for="old_password">Current password</label>
                             <input type="password" name="old_password" id="old_password" required>
                         </div>
-                        <div>
-                            <label for="new_password1">New Password:</label>
+                        <div class="pf-account-field">
+                            <label for="new_password1">New password</label>
                             <input type="password" name="new_password1" id="new_password1" required>
                         </div>
-                        <div>
-                            <label for="new_password2">Confirm New Password:</label>
+                        <div class="pf-account-field">
+                            <label for="new_password2">Repeat new password</label>
                             <input type="password" name="new_password2" id="new_password2" required>
                         </div>
-                        <button type="submit">Change Password</button>
+                        <div class="pf-account-actions">
+                            <button type="submit" class="pf-btn pf-btn-solid">Change password</button>
+                        </div>
                     </form>
                 </div>
-            </div>
 
-            <div class="profile-section">
-                <h3>My Ingredient Preferences</h3>
-                <p style="color: var(--text); margin-bottom: 20px;">Mark ingredients as safe, moderate, or unsafe for your skin.</p>
-
-                <div class="ingredient-search-box">
-                    <label for="ingredient-input">Search for an ingredient:</label>
-                    <input type="text" id="ingredient-input" placeholder="Start typing ingredient name..." autocomplete="off" maxlength="100">
-                    <div id="suggestions"></div>
-                </div>
-
-                <div id="selected-ingredient" class="selected-ingredient-box" style="display: none;">
-                    <h4 id="selected-name"></h4>
-                    <p id="selected-purpose"></p>
-                    <label>Set preference:</label>
-                    <select id="color-select">
-                        <option value="NONE">Not set</option>
-                        <option value="GREEN">Safe</option>
-                        <option value="YELLOW">Moderate</option>
-                        <option value="RED">Unsafe</option>
-                    </select>
-                    <button onclick="savePreference()">Save Preference</button>
-                    <button onclick="clearSelection()">Cancel</button>
+                <div class="pf-account-block">
+                    <h4>Delete account</h4>
+                    <p class="pf-section-note">
+                        Removes the account together with your ratings and saved products. There is
+                        no undo.
+                    </p>
+                    <button type="button" class="pf-btn pf-btn-danger" onclick="confirmDeleteAccount()">Delete account</button>
                 </div>
             </div>
-
-            <div class="profile-section">
-                <h3>Insights from Your Favorites</h3>
-                <div id="favorites-insights">
-                    <p>Loading insights...</p>
-                </div>
-            </div>
-
-            <div class="profile-section">
-                <h3>Summary</h3>
-                <div id="summary" class="summary-box">
-                    <div class="summary-item">
-                        <strong>0</strong>
-                        <span>Safe ingredients</span>
-                    </div>
-                    <div class="summary-item">
-                        <strong>0</strong>
-                        <span>Moderate ingredients</span>
-                    </div>
-                    <div class="summary-item">
-                        <strong>0</strong>
-                        <span>Unsafe ingredients</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="profile-section">
-                <h3>My Preferences</h3>
-                <div id="my-preferences" class="preferences-list">
-                    <p class="no-preferences-message">Loading your preferences...</p>
-                </div>
-            </div>
-        </div>
+        </section>
+    </section>
     {% endif %}
+
+    <script src="{% static 'js/ingredient-search.js' %}"></script>
 
     <script>
     {% if user.is_authenticated %}
@@ -135,8 +161,13 @@
         return div.innerHTML;
     }
 
-    let allIngredients = [];
+    // ostatnie podpowiedzi z serwera, tylko po to, zeby klikniecie wiedzialo,
+    // ktory skladnik wybrano
+    let suggestedIngredients = [];
     let selectedIngredient = null;
+    // numer ostatniego zapytania. wolniejsza odpowiedz na wczesniejsza fraze
+    // potrafi wrocic po nowszej i podmienic liste pod palcami
+    let searchToken = 0;
     let userPreferences = {
         safe: [],
         moderate: [],
@@ -144,13 +175,7 @@
     };
 
     async function loadIngredients() {
-        try {
-            allIngredients = await fetchAllPages('/api/ingredients/');
-
-            await loadUserPreferences();
-        } catch (error) {
-            console.error('Error loading ingredients');
-        }
+        await loadUserPreferences();
     }
 
     async function loadUserPreferences() {
@@ -170,8 +195,8 @@
         }
     }
 
-    document.getElementById('ingredient-input').addEventListener('input', function(e) {
-        const searchTerm = e.target.value.toLowerCase();
+    document.getElementById('ingredient-input').addEventListener('input', debounce(async function(e) {
+        const searchTerm = e.target.value.trim();
         const suggestionsContainer = document.getElementById('suggestions');
 
         if (searchTerm.length < 2) {
@@ -180,9 +205,11 @@
             return;
         }
 
-        const matches = allIngredients.filter(ing =>
-            ing.inci_name.toLowerCase().includes(searchTerm)
-        ).slice(0, 10);
+        const token = ++searchToken;
+        const matches = await searchIngredients(searchTerm, 10);
+        if (token !== searchToken) return;
+
+        suggestedIngredients = matches;
 
         if (matches.length === 0) {
             suggestionsContainer.style.display = 'none';
@@ -196,7 +223,7 @@
             const suggestion = document.createElement('div');
 
             const strong = document.createElement('strong');
-            strong.textContent = ing.inci_name;
+            strong.appendChild(highlightMatch(ing.inci_name, searchTerm));
             suggestion.appendChild(strong);
 
             if (ing.purpose) {
@@ -210,10 +237,10 @@
         });
 
         suggestionsContainer.style.display = 'block';
-    });
+    }));
 
     function selectIngredient(ingredientId) {
-        selectedIngredient = allIngredients.find(ing => ing.id === ingredientId);
+        selectedIngredient = suggestedIngredients.find(ing => ing.id === ingredientId);
 
         if (!selectedIngredient) return;
 
@@ -274,28 +301,25 @@
     }
 
     function updateSummary() {
-        const summaryContainer = document.getElementById('summary');
-        summaryContainer.innerHTML = '';
+        const container = document.getElementById('summary');
+        container.innerHTML = '';
 
-        const categories = [
-            { label: 'Safe ingredients', count: userPreferences.safe.length },
-            { label: 'Moderate ingredients', count: userPreferences.moderate.length },
-            { label: 'Unsafe ingredients', count: userPreferences.unsafe.length }
+        const rows = [
+            {tone: 'unsafe', label: 'best avoided', count: userPreferences.unsafe.length},
+            {tone: 'moderate', label: 'use with care', count: userPreferences.moderate.length},
+            {tone: 'safe', label: 'safe for you', count: userPreferences.safe.length}
         ];
 
-        categories.forEach(cat => {
-            const item = document.createElement('div');
-            item.className = 'summary-item';
+        rows.forEach(row => {
+            const item = document.createElement('li');
+            item.className = `pf-count ${row.tone}`;
 
-            const strong = document.createElement('strong');
-            strong.textContent = cat.count;
-            item.appendChild(strong);
+            const number = document.createElement('b');
+            number.textContent = String(row.count);
+            item.appendChild(number);
+            item.appendChild(document.createTextNode(' ' + row.label));
 
-            const span = document.createElement('span');
-            span.textContent = cat.label;
-            item.appendChild(span);
-
-            summaryContainer.appendChild(item);
+            container.appendChild(item);
         });
     }
 
@@ -303,49 +327,58 @@
         const container = document.getElementById('my-preferences');
         container.innerHTML = '';
 
-        const createPreferenceSection = (title, ingredients, listClass, headerColor) => {
-            if (ingredients.length === 0) return null;
+        const groups = [
+            {title: 'Best avoided', tone: 'unsafe', items: userPreferences.unsafe},
+            {title: 'Use with care', tone: 'moderate', items: userPreferences.moderate},
+            {title: 'Safe for you', tone: 'safe', items: userPreferences.safe}
+        ];
 
-            const h4 = document.createElement('h4');
-            h4.style.color = headerColor;
-            h4.textContent = title;
+        groups.forEach(group => {
+            if (!group.items.length) return;
 
-            const ul = document.createElement('ul');
-            ul.className = listClass;
+            const section = document.createElement('div');
+            section.className = 'pf-group';
 
-            ingredients.forEach(ing => {
-                const li = document.createElement('li');
-                li.textContent = ing.inci_name + ' ';
+            const heading = document.createElement('h4');
+            heading.className = 'pf-group-title';
+            heading.textContent = group.title;
+
+            const count = document.createElement('span');
+            count.className = 'pf-group-count';
+            count.textContent = String(group.items.length);
+            heading.appendChild(count);
+            section.appendChild(heading);
+
+            const chips = document.createElement('div');
+            chips.className = 'pf-chips';
+
+            group.items.forEach(ing => {
+                const chip = document.createElement('span');
+                chip.className = `pf-chip ${group.tone}`;
+                chip.appendChild(document.createTextNode(ing.inci_name));
 
                 const ingredientId = typeof ing.id === 'number' ? ing.id : 0;
-                const btn = document.createElement('button');
-                btn.textContent = 'Remove';
-                btn.onclick = () => removePreference(ingredientId);
+                const remove = document.createElement('button');
+                remove.type = 'button';
+                remove.className = 'pf-chip-remove';
+                remove.title = `Take the rating off ${ing.inci_name}`;
+                remove.setAttribute('aria-label', `Take the rating off ${ing.inci_name}`);
+                remove.textContent = '×';
+                remove.onclick = () => removePreference(ingredientId);
 
-                li.appendChild(btn);
-                ul.appendChild(li);
+                chip.appendChild(remove);
+                chips.appendChild(chip);
             });
 
-            const fragment = document.createDocumentFragment();
-            fragment.appendChild(h4);
-            fragment.appendChild(ul);
-            return fragment;
-        };
+            section.appendChild(chips);
+            container.appendChild(section);
+        });
 
-        const safeSection = createPreferenceSection('Safe Ingredients', userPreferences.safe, 'safe-list', 'var(--accent-green)');
-        if (safeSection) container.appendChild(safeSection);
-
-        const moderateSection = createPreferenceSection('Moderate Ingredients', userPreferences.moderate, 'moderate-list', 'rgba(181,131,60,0.67)');
-        if (moderateSection) container.appendChild(moderateSection);
-
-        const unsafeSection = createPreferenceSection('Unsafe Ingredients', userPreferences.unsafe, 'unsafe-list', 'var(--accent-dark)');
-        if (unsafeSection) container.appendChild(unsafeSection);
-
-        if (container.children.length === 0) {
-            const p = document.createElement('p');
-            p.className = 'no-preferences-message';
-            p.textContent = 'No preferences set yet. Start by searching for an ingredient above.';
-            container.appendChild(p);
+        if (!container.children.length) {
+            const empty = document.createElement('p');
+            empty.className = 'no-preferences-message';
+            empty.textContent = 'Nothing rated yet. Search for an ingredient above and give it a colour.';
+            container.appendChild(empty);
         }
     }
 
@@ -413,71 +446,64 @@
     }
 
     async function loadFavoritesInsights() {
+        const container = document.getElementById('favorites-insights');
+
+        function message(text) {
+            container.innerHTML = '';
+            const paragraph = document.createElement('p');
+            paragraph.className = 'pf-section-note';
+            paragraph.textContent = text;
+            container.appendChild(paragraph);
+        }
+
         try {
             const response = await fetch('/api/cosmetics/analyze_favorites/');
             const data = await response.json();
 
-            const container = document.getElementById('favorites-insights');
-            container.innerHTML = '';
-
-            if (data.suggestions && data.suggestions.length > 0) {
-                const intro = document.createElement('p');
-                intro.style.color = 'var(--text)';
-                intro.style.marginBottom = '15px';
-                intro.textContent = 'We noticed these ingredients appear frequently in your favorites:';
-                container.appendChild(intro);
-
-                data.suggestions.forEach(suggestion => {
-                    const card = document.createElement('div');
-                    card.className = 'insight-card';
-
-                    const info = document.createElement('div');
-                    info.className = 'insight-info';
-
-                    const strong = document.createElement('strong');
-                    strong.textContent = suggestion.ingredient_name;
-                    info.appendChild(strong);
-
-                    const p = document.createElement('p');
-                    p.style.color = 'var(--text)';
-                    p.style.fontSize = '14px';
-                    p.style.margin = '5px 0';
-                    const count = typeof suggestion.count === 'number' ? suggestion.count : 0;
-                    const total = typeof suggestion.total_favorites === 'number' ? suggestion.total_favorites : 0;
-                    const percentage = typeof suggestion.percentage === 'number' ? suggestion.percentage : 0;
-                    p.textContent = `Appears in ${count} of ${total} favorites (${percentage}%)`;
-                    info.appendChild(p);
-
-                    card.appendChild(info);
-
-                    const btn = document.createElement('button');
-                    btn.className = 'add-preference-btn';
-                    btn.textContent = 'Add to Safe';
-                    const ingredientId = typeof suggestion.ingredient_id === 'number' ? suggestion.ingredient_id : 0;
-                    btn.dataset.ingredientId = ingredientId;
-                    btn.onclick = () => addFromInsight(ingredientId);
-
-                    card.appendChild(btn);
-                    container.appendChild(card);
-                });
-            } else if (data.total_favorites < 3) {
-                const p = document.createElement('p');
-                p.style.color = 'var(--text)';
-                p.textContent = 'Add at least 3 products to favorites to discover your ingredient preferences!';
-                container.appendChild(p);
-            } else {
-                const p = document.createElement('p');
-                p.style.color = 'var(--text)';
-                p.textContent = 'No common ingredients found in your favorites yet. Keep adding products you love!';
-                container.appendChild(p);
+            if (!data.suggestions || !data.suggestions.length) {
+                message(data.total_favorites < 3
+                    ? 'Save at least three products and the shared ingredients will show up here.'
+                    : 'Nothing repeats often enough in your favourites yet.');
+                return;
             }
-        } catch (error) {
-            const container = document.getElementById('favorites-insights');
+
             container.innerHTML = '';
-            const p = document.createElement('p');
-            p.style.color = 'var(--text)';
-            p.textContent = 'Unable to load insights.';
-            container.appendChild(p);
+
+            data.suggestions.forEach(suggestion => {
+                const row = document.createElement('div');
+                row.className = 'pf-insight';
+
+                const info = document.createElement('div');
+
+                const name = document.createElement('p');
+                name.className = 'pf-insight-name';
+                name.textContent = suggestion.ingredient_name;
+                info.appendChild(name);
+
+                const count = typeof suggestion.count === 'number' ? suggestion.count : 0;
+                const total = typeof suggestion.total_favorites === 'number' ? suggestion.total_favorites : 0;
+                const percentage = typeof suggestion.percentage === 'number' ? suggestion.percentage : 0;
+
+                const note = document.createElement('p');
+                note.className = 'pf-insight-note';
+                note.textContent = `In ${count} of your ${total} saved products, that is ${percentage} percent`;
+                info.appendChild(note);
+
+                row.appendChild(info);
+
+                const ingredientId = typeof suggestion.ingredient_id === 'number' ? suggestion.ingredient_id : 0;
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'pf-btn pf-btn-solid add-preference-btn';
+                button.textContent = 'Mark as safe';
+                button.dataset.ingredientId = ingredientId;
+                button.onclick = () => addFromInsight(ingredientId);
+
+                row.appendChild(button);
+                container.appendChild(row);
+            });
+        } catch (error) {
+            message('Could not load this right now.');
         }
     }
 
@@ -491,10 +517,8 @@
         });
 
         if (clickedBtn) {
-            clickedBtn.textContent = 'Adding...';
+            clickedBtn.textContent = 'Saving...';
             clickedBtn.disabled = true;
-            clickedBtn.style.background = '#ccc';
-            clickedBtn.style.cursor = 'default';
         }
 
         try {
@@ -512,17 +536,15 @@
 
             if (response.ok) {
                 if (clickedBtn) {
-                    clickedBtn.textContent = 'Added';
+                    clickedBtn.textContent = 'Saved';
                 }
                 loadUserPreferences();
                 setTimeout(() => loadFavoritesInsights(), 1000);
             }
         } catch (error) {
             if (clickedBtn) {
-                clickedBtn.textContent = 'Add to Safe';
+                clickedBtn.textContent = 'Mark as safe';
                 clickedBtn.disabled = false;
-                clickedBtn.style.background = '';
-                clickedBtn.style.cursor = '';
             }
         }
     }
